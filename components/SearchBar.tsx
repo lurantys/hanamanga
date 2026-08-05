@@ -79,14 +79,6 @@ export function SearchBar() {
 
       {open && (
         <div className="glass-in absolute right-0 top-11 z-50 w-72 overflow-hidden rounded-[2rem] border border-white/10 bg-zinc-950/70 p-4 shadow-[0_24px_60px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.08)] ring-1 ring-inset ring-white/10 backdrop-blur-2xl sm:w-80">
-          <span
-            aria-hidden
-            className="pointer-events-none absolute -left-10 -top-10 h-24 w-24 rounded-full bg-red-500/20 blur-2xl"
-          />
-          <span
-            aria-hidden
-            className="pointer-events-none absolute -bottom-12 -right-8 h-28 w-28 rounded-full bg-red-500/15 blur-3xl"
-          />
 
           <form
             onSubmit={onSubmit}

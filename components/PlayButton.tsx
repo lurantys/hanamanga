@@ -17,7 +17,7 @@ export function PlayButton({
   const { openWip } = useWip();
 
   const baseStyles =
-    "inline-flex items-center justify-center gap-2 rounded-lg px-6 py-2.5 text-sm font-bold transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400";
+    "inline-flex items-center justify-center gap-2 rounded-lg px-6 py-2.5 text-sm font-bold transition active:scale-[0.97] focus:outline-none focus-visible:ring-2 focus-visible:ring-emerald-400";
 
   if (variant === "info") {
     return (

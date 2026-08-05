@@ -34,7 +34,7 @@ export function BrowseFilters({ sort, genre, page }: BrowseFiltersProps) {
           <Link
             key={option.key}
             href={hrefFor({ sort: option.key, genre })}
-            className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+            className={`rounded-full px-4 py-1.5 text-sm font-medium transition active:scale-[0.97] ${
               sort === option.key
                 ? "bg-zinc-100 text-zinc-950"
                 : "text-zinc-300 hover:bg-zinc-800 hover:text-white"

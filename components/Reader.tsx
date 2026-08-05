@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getProgress, saveContinueHero, saveProgress } from "@/lib/progress";
@@ -55,10 +55,10 @@ function ChevronDown({ className = "h-4 w-4" }: { className?: string }) {
 }
 
 const controlButton =
-  "inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-zinc-900/70 px-3.5 py-2 text-sm font-semibold text-zinc-200 shadow-[0_8px_24px_rgba(0,0,0,0.35)] transition-colors hover:bg-zinc-800/80 hover:text-white";
+  "inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-zinc-900/70 px-3.5 py-2 text-sm font-semibold text-zinc-200 shadow-[0_8px_24px_rgba(0,0,0,0.35)] transition active:scale-[0.97] hover:bg-zinc-800/80 hover:text-white";
 
 const iconButton =
-  "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-zinc-900/70 text-zinc-200 shadow-[0_8px_24px_rgba(0,0,0,0.35)] transition-colors hover:bg-zinc-800/80 hover:text-white";
+  "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-zinc-900/70 text-zinc-200 shadow-[0_8px_24px_rgba(0,0,0,0.35)] transition active:scale-[0.97] hover:bg-zinc-800/80 hover:text-white";
 
 export function Reader({
   mangaId,
@@ -76,8 +76,71 @@ export function Reader({
   const [open, setOpen] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentPage, setCurrentPage] = useState(0);
+  const [advanceCount, setAdvanceCount] = useState<number | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
   const pageRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const advanceTimerRef = useRef(0);
+  const navigatingRef = useRef(false);
+  const userActiveRef = useRef(false);
+  const nextHrefRef = useRef<string | null | undefined>(nextHref);
+
+  useEffect(() => {
+    nextHrefRef.current = nextHref;
+  }, [nextHref]);
+
+  useEffect(() => {
+    navigatingRef.current = false;
+  }, [currentChapterId]);
+
+  useEffect(() => {
+    const markActive = () => {
+      userActiveRef.current = true;
+    };
+    window.addEventListener("wheel", markActive, { passive: true });
+    window.addEventListener("touchstart", markActive, { passive: true });
+    window.addEventListener("pointerdown", markActive);
+    window.addEventListener("keydown", markActive);
+    return () => {
+      window.removeEventListener("wheel", markActive);
+      window.removeEventListener("touchstart", markActive);
+      window.removeEventListener("pointerdown", markActive);
+      window.removeEventListener("keydown", markActive);
+    };
+  }, []);
+
+  useEffect(
+    () => () => {
+      if (advanceTimerRef.current) window.clearInterval(advanceTimerRef.current);
+      advanceTimerRef.current = 0;
+    },
+    [],
+  );
+
+  const stopAdvance = useCallback(() => {
+    if (advanceTimerRef.current) {
+      window.clearInterval(advanceTimerRef.current);
+      advanceTimerRef.current = 0;
+    }
+    setAdvanceCount(null);
+  }, []);
+
+  const scheduleAdvance = useCallback(() => {
+    if (advanceTimerRef.current || navigatingRef.current) return;
+    const href = nextHrefRef.current;
+    if (!href) return;
+    let remaining = 3;
+    setAdvanceCount(remaining);
+    advanceTimerRef.current = window.setInterval(() => {
+      remaining -= 1;
+      if (remaining <= 0) {
+        stopAdvance();
+        navigatingRef.current = true;
+        router.push(href);
+      } else {
+        setAdvanceCount(remaining);
+      }
+    }, 1000);
+  }, [router, stopAdvance]);
 
   useEffect(() => {
     let saveTimer = 0;
@@ -87,8 +150,7 @@ export function Reader({
       const value = max > 0 ? Math.min(1, Math.max(0, doc.scrollTop / max)) : 0;
       setProgress(value);
       window.clearTimeout(saveTimer);
-      saveTimer = window.setTimeout(() => {
-        const index = chapters.findIndex(
+      saveTimer = window.setTimeout(() => {        const index = chapters.findIndex(
           (chapter) => chapter.id === currentChapterId,
         );
         const mangaFraction =
@@ -121,14 +183,28 @@ export function Reader({
           updatedAt: entry.updatedAt,
         });
       }, 600);
+      if (userActiveRef.current && value >= 0.98) {
+        scheduleAdvance();
+      } else {
+        stopAdvance();
+      }
     }
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
       window.removeEventListener("scroll", onScroll);
       window.clearTimeout(saveTimer);
+      stopAdvance();
     };
-  }, [mangaId, currentChapterId, chapterLabel, mangaTitle, chapters]);
+  }, [
+    mangaId,
+    currentChapterId,
+    chapterLabel,
+    mangaTitle,
+    chapters,
+    scheduleAdvance,
+    stopAdvance,
+  ]);
 
   useEffect(() => {
     const saved = getProgress(mangaId);
@@ -180,6 +256,10 @@ export function Reader({
       ? `Chapter ${chapterNumber}`
       : null;
 
+  const nextIndex = chapters.findIndex((chapter) => chapter.id === currentChapterId) + 1;
+  const nextChapterLabel =
+    nextIndex > 0 && nextIndex < chapters.length ? chapters[nextIndex].label : null;
+
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
       if (event.key === "ArrowLeft" && prevHref) router.push(prevHref);
@@ -198,7 +278,7 @@ export function Reader({
   }, [open]);
 
   return (
-    <div className="min-h-screen bg-zinc-950 bg-[radial-gradient(ellipse_at_top,rgba(220,38,38,0.08),transparent_55%)] pb-24">
+    <div className="min-h-screen bg-zinc-950 pb-24">
       <header className="sticky top-0 z-20 border-b border-white/10 bg-zinc-950/80 backdrop-blur-xl">
         <div aria-hidden className="absolute inset-x-0 top-0 h-[3px] bg-white/5">
           <div
@@ -282,7 +362,7 @@ export function Reader({
                 href={nextHref}
                 aria-label="Next chapter"
                 title="Next chapter"
-                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-red-500/40 bg-red-500/15 text-red-300 shadow-[0_8px_24px_rgba(220,38,38,0.25)] transition-colors hover:bg-red-500/25"
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-red-500/40 bg-red-500/15 text-red-300 transition active:scale-[0.97] hover:bg-red-500/25"
               >
                 <ChevronRight />
               </Link>
@@ -313,7 +393,7 @@ export function Reader({
         <Link
           href={nextHref ?? mangaHref}
           aria-disabled={!nextHref}
-          className={`inline-flex items-center justify-center gap-2 rounded-lg border border-red-500/40 bg-red-500/15 px-3.5 py-2 text-sm font-semibold text-red-300 shadow-[0_8px_24px_rgba(220,38,38,0.25)] transition-colors hover:bg-red-500/25 ${
+          className={`inline-flex items-center justify-center gap-2 rounded-lg border border-red-500/40 bg-red-500/15 px-3.5 py-2 text-sm font-semibold text-red-300 transition active:scale-[0.97] hover:bg-red-500/25 ${
             nextHref ? "" : "pointer-events-none opacity-40"
           }`}
         >
@@ -364,7 +444,7 @@ export function Reader({
         <Link
           href={nextHref ?? mangaHref}
           aria-disabled={!nextHref}
-          className={`inline-flex items-center justify-center gap-2 rounded-lg border border-red-500/40 bg-red-500/15 px-3.5 py-2 text-sm font-semibold text-red-300 shadow-[0_8px_24px_rgba(220,38,38,0.25)] transition-colors hover:bg-red-500/25 ${
+          className={`inline-flex items-center justify-center gap-2 rounded-lg border border-red-500/40 bg-red-500/15 px-3.5 py-2 text-sm font-semibold text-red-300 transition active:scale-[0.97] hover:bg-red-500/25 ${
             nextHref ? "" : "pointer-events-none opacity-40"
           }`}
         >
@@ -372,6 +452,39 @@ export function Reader({
           <ChevronRight className="h-4 w-4" />
         </Link>
       </nav>
+
+      {advanceCount !== null && (
+        <div
+          role="status"
+          className="fixed inset-x-0 bottom-6 z-30 flex justify-center px-4"
+        >
+          <div className="flex items-center gap-4 rounded-full border border-red-500/40 bg-zinc-950/90 px-5 py-2.5 backdrop-blur-xl">
+            <p className="min-w-0 text-sm text-zinc-300">
+              {nextChapterLabel ? (
+                <>
+                  Next:{" "}
+                  <span className="font-semibold text-white">
+                    {nextChapterLabel}
+                  </span>{" "}
+                  in <span className="font-bold text-red-300">{advanceCount}</span>
+                </>
+              ) : (
+                <>
+                  Next chapter in{" "}
+                  <span className="font-bold text-red-300">{advanceCount}</span>
+                </>
+              )}
+            </p>
+            <button
+              type="button"
+              onClick={stopAdvance}
+              className="rounded-full border border-white/10 px-3 py-1 text-xs font-semibold text-zinc-300 transition-colors hover:border-red-400/50 hover:text-white"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

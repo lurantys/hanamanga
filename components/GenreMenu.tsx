@@ -67,14 +67,6 @@ export function GenreMenu() {
           role="menu"
           className="glass-in absolute left-1/2 top-10 z-50 w-72 -translate-x-1/2 overflow-hidden rounded-[2rem] border border-white/10 bg-zinc-950/70 p-4 shadow-[0_24px_60px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.08)] ring-1 ring-inset ring-white/10 backdrop-blur-2xl"
         >
-          <span
-            aria-hidden
-            className="pointer-events-none absolute -left-10 -top-10 h-24 w-24 rounded-full bg-emerald-500/20 blur-2xl"
-          />
-          <span
-            aria-hidden
-            className="pointer-events-none absolute -bottom-12 -right-8 h-28 w-28 rounded-full bg-red-500/15 blur-3xl"
-          />
 
           <p className="relative mb-2.5 px-1 text-[11px] font-semibold uppercase tracking-widest text-zinc-500">
             Browse genres

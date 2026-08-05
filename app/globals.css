@@ -70,6 +70,36 @@ h3 {
   animation: kenburns 18s ease-out both;
 }
 
+@keyframes modal-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@utility animate-modal-in {
+  animation: modal-in 0.18s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-kenburns,
+  .animate-hero-in,
+  .animate-modal-in,
+  .glass-in {
+    animation: none;
+  }
+}
+
+@media (prefers-reduced-transparency: reduce) {
+  * {
+    backdrop-filter: none !important;
+  }
+}
+
 body {
   background: var(--background);
   color: var(--foreground);

@@ -80,7 +80,7 @@ export async function BrowseGrid({ sort, genre, page }: BrowseGridProps) {
         {hasPrevious ? (
           <Link
             href={pageHref(sort, genre, page - 1)}
-            className="rounded-full border border-white/10 bg-zinc-900/60 px-5 py-2 text-sm font-medium text-zinc-300 backdrop-blur-xl transition-colors hover:bg-zinc-800 hover:text-white"
+            className="rounded-full border border-white/10 bg-zinc-900/60 px-5 py-2 text-sm font-medium text-zinc-300 backdrop-blur-xl transition active:scale-[0.97] hover:bg-zinc-800 hover:text-white"
           >
             ← Previous
           </Link>
@@ -93,7 +93,7 @@ export async function BrowseGrid({ sort, genre, page }: BrowseGridProps) {
         {hasNext ? (
           <Link
             href={pageHref(sort, genre, page + 1)}
-            className="rounded-full border border-white/10 bg-zinc-900/60 px-5 py-2 text-sm font-medium text-zinc-300 backdrop-blur-xl transition-colors hover:bg-zinc-800 hover:text-white"
+            className="rounded-full border border-white/10 bg-zinc-900/60 px-5 py-2 text-sm font-medium text-zinc-300 backdrop-blur-xl transition active:scale-[0.97] hover:bg-zinc-800 hover:text-white"
           >
             Next →
           </Link>

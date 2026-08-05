@@ -58,9 +58,9 @@ export function ContinueRow() {
               key={entry.mangaId}
               href={`/read/${entry.mangaId}/${entry.chapterId}`}
               aria-label={`${manga.title} — ${entry.chapterLabel}, ${pct}% of the manga read. Continue reading.`}
-              className="group w-36 shrink-0 text-left focus:outline-none md:w-44"
+              className="group w-36 shrink-0 rounded-lg text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 md:w-44"
             >
-              <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-zinc-800 transition-transform duration-200 group-hover:scale-[1.03]">
+              <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-zinc-800 transition-transform duration-200 group-hover:scale-[1.03] group-active:scale-[1.03]">
                 {manga.coverUrl ? (
                   <Image
                     src={manga.coverUrl}

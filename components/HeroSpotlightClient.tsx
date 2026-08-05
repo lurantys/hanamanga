@@ -36,7 +36,12 @@ export function HeroSpotlightClient({ initial, bannerUrl }: HeroSpotlightClientP
   const [imageLoaded, setImageLoaded] = useState(false);
 
   const hero: Manga = snapshot?.manga ?? initial;
-  const banner: string | null = snapshot?.manga.bannerUrl ?? bannerUrl;
+  const banner: string | null = snapshot
+    ? (snapshot.manga.bannerUrl ?? null)
+    : bannerUrl;
+  const imageSrc: string | null = banner ?? hero.coverUrl ?? null;
+
+  const ready = !imageSrc || imageLoaded;
 
   useEffect(() => {
     const entry = getContinueList(1)[0];
@@ -70,32 +75,20 @@ export function HeroSpotlightClient({ initial, bannerUrl }: HeroSpotlightClientP
 
   return (
     <section
-      key={hero.id}
+      key={`${hero.id}:${imageSrc ?? "none"}`}
       className="animate-hero-in relative h-[80vh] min-h-[480px] w-full overflow-hidden bg-zinc-950"
     >
-      {banner ? (
+      {imageSrc ? (
         <Image
-          src={banner}
+          src={imageSrc}
           alt=""
           priority
           fill
           sizes="100vw"
           onLoad={() => setImageLoaded(true)}
-          className={`animate-kenburns object-cover transition-opacity duration-700 ${
-            imageLoaded ? "opacity-100" : "opacity-0"
-          }`}
-        />
-      ) : hero.coverUrl ? (
-        <Image
-          src={hero.coverUrl}
-          alt=""
-          priority
-          fill
-          sizes="100vw"
-          onLoad={() => setImageLoaded(true)}
-          className={`animate-kenburns object-cover object-top transition-opacity duration-700 ${
-            imageLoaded ? "opacity-100" : "opacity-0"
-          }`}
+          className={`object-cover transition-opacity duration-700 ${
+            ready ? "animate-kenburns opacity-100" : "opacity-0"
+          } ${!banner ? "object-top" : ""}`}
         />
       ) : (
         <div
@@ -107,10 +100,23 @@ export function HeroSpotlightClient({ initial, bannerUrl }: HeroSpotlightClientP
         />
       )}
 
+      {imageSrc && (
+        <div
+          aria-hidden
+          className={`absolute inset-0 bg-zinc-900 transition-opacity duration-700 ${
+            ready ? "opacity-0" : "animate-pulse opacity-100"
+          }`}
+        />
+      )}
+
       <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/25 to-zinc-950/60" />
       <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/50 to-transparent" />
 
-      <div className="absolute inset-x-0 bottom-0 flex flex-col gap-4 px-5 pb-20 md:px-10 lg:px-16">
+      <div
+        className={`absolute inset-x-0 bottom-0 flex flex-col gap-4 px-5 pb-20 transition-opacity duration-500 md:px-10 lg:px-16 ${
+          ready ? "opacity-100" : "opacity-0"
+        }`}
+      >
         <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
           <span className="inline-flex items-center gap-2 rounded-md bg-emerald-500/15 px-2.5 py-1 text-sm font-bold text-emerald-400">
             <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4" aria-hidden>

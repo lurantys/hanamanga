@@ -7,6 +7,7 @@ const CONTENT_RATINGS = ["safe", "suggestive"];
 export type Manga = {
   id: string;
   title: string;
+  altTitles?: string[];
   description?: string;
   coverUrl?: string | null;
   genres: string[];
@@ -213,6 +214,13 @@ function normalizeManga(api: ApiManga): Manga {
   return {
     id: api.id,
     title: pickTitle(attrs.title, attrs.altTitles),
+    altTitles: (attrs.altTitles ?? [])
+      .map((entry) =>
+        Object.values(entry).find(
+          (value): value is string => typeof value === "string" && value.trim() !== "",
+        )?.trim(),
+      )
+      .filter((value): value is string => Boolean(value)),
     description: pickDescription(attrs.description) || undefined,
     coverUrl: coverFile
       ? `${UPLOADS}/covers/${api.id}/${coverFile}.512.jpg`
@@ -343,12 +351,45 @@ export async function fetchByGenre(genre: string, limit = 18): Promise<MangaList
   });
 }
 
+function searchMatchScore(manga: Manga, needle: string): number {
+  const haystack = [manga.title, ...(manga.altTitles ?? [])].map((title) =>
+    title.toLowerCase(),
+  );
+  let best = 0;
+  for (const hay of haystack) {
+    let score = 0;
+    if (hay === needle) score = 5;
+    else if (hay.startsWith(needle)) score = 4;
+    else if (hay.split(/[\s,.:;!?()[\]]{}'"&+-]+/).some((token) => token === needle))
+      score = 3;
+    else if (hay.includes(needle)) score = 2;
+    best = Math.max(best, score);
+  }
+  return best;
+}
+
 export async function fetchSearch(title: string, limit = 24): Promise<MangaListResult> {
-  return fetchMangaList({
-    limit,
-    title,
+  const query = title.trim();
+  const { data, total } = await fetchMangaList({
+    limit: 100,
+    title: query,
     order: { relevance: "desc" },
   });
+
+  const needle = query.toLowerCase();
+  const scored = data
+    .map((manga) => ({
+      manga,
+      score: searchMatchScore(manga, needle) * 1_000_000 + (manga.follows ?? 0),
+    }))
+    .sort((a, b) => b.score - a.score);
+
+  return {
+    data: scored.slice(0, limit).map(({ manga }) => manga),
+    total,
+    offset: 0,
+    limit,
+  };
 }
 
 export async function fetchMangaById(id: string): Promise<Manga> {

@@ -1,15 +1,17 @@
 import { Suspense } from "react";
 import { HeroSpotlight } from "@/components/HeroSpotlight";
 import { MangaRow } from "@/components/MangaRow";
+import { getTrending } from "@/lib/read";
 import {
   fetchByGenre,
   fetchPopular,
   fetchTopRated,
-  fetchTrending,
 } from "@/lib/mangadex";
 
+export const dynamic = "force-dynamic";
+
 async function TrendingRow() {
-  const { data } = await fetchTrending(18);
+  const { data } = await getTrending();
   return (
     <div id="trending" className="scroll-mt-16">
       <MangaRow title="Trending Now" manga={data} />

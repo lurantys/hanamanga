@@ -79,7 +79,7 @@ export default async function MangaPage({ params }: MangaPageProps) {
   const atsuReadingOrder = atsuMatch
     ? chaptersOfScanlator(atsuChapters, primaryScanlatorId ?? "")
     : [];
-  const firstChapter = atsuReadingOrder[0] ?? null;
+  const firstChapter = atsuReadingOrder[0] ?? atsuChapters[0] ?? null;
   const fallbackFirstChapter = feed.data.find((chapter) => !chapter.externalUrl) ?? null;
   const readTarget = atsuMatch ? firstChapter : fallbackFirstChapter;
 

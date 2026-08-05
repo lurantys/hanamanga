@@ -231,7 +231,7 @@ export async function fetchMangaList(
 }
 
 export async function fetchTrending(limit = 18): Promise<MangaListResult> {
-  return fetchMangaList({ limit, order: { latestUploadedChapter: "desc" } });
+  return fetchMangaList({ limit, order: { followedCount: "desc" } });
 }
 
 export async function fetchPopular(limit = 18): Promise<MangaListResult> {

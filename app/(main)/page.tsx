@@ -1,6 +1,7 @@
 import { Suspense } from "react";
 import { HeroSpotlight } from "@/components/HeroSpotlight";
 import { ContinueRow } from "@/components/ContinueRow";
+import { LibraryRow } from "@/components/LibraryRow";
 import { MangaRow } from "@/components/MangaRow";
 import { getTrending } from "@/lib/read";
 import {
@@ -127,6 +128,7 @@ export default function Home() {
 
       <div className="relative z-10 -mt-16 space-y-10 pb-20">
         <ContinueRow />
+        <LibraryRow />
 
         <Suspense fallback={<RowSkeleton title="Trending Now" />}>
           <TrendingRow />

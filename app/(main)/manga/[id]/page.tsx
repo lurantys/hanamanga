@@ -4,13 +4,13 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AtsuChapterList } from "@/components/AtsuChapterList";
 import { ExpandableDescription } from "@/components/ExpandableDescription";
+import { LibraryButton } from "@/components/LibraryButton";
 import { PlayButton } from "@/components/PlayButton";
 import { StarRating } from "@/components/StarRating";
 import {
   fetchAggregate,
   fetchFeed,
   fetchMangaById,
-  mangaLink,
   statusLabel,
   truncate,
   MangaDexError,
@@ -209,14 +209,7 @@ export default async function MangaPage({ params }: MangaPageProps) {
               ) : (
                 <PlayButton manga={manga} variant="read" />
               )}
-              <a
-                href={mangaLink(manga.id)}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-zinc-500/50 px-6 py-2.5 text-sm font-bold text-white transition-colors hover:bg-zinc-500/30"
-              >
-                View on MangaDex
-              </a>
+              <LibraryButton manga={manga} />
             </div>
           </div>
         </div>

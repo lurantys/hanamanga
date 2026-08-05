@@ -33,6 +33,12 @@ function Header() {
           >
             Browse
           </Link>
+          <Link
+            href="/library"
+            className="relative transition-colors hover:text-white after:absolute after:inset-x-0 after:-bottom-1.5 after:h-0.5 after:origin-left after:scale-x-0 after:rounded-full after:bg-red-500 after:transition-transform after:duration-200 hover:after:scale-x-100"
+          >
+            Library
+          </Link>
           <GenreMenu />
         </nav>
         <div className="flex items-center gap-3">

@@ -1,41 +1,94 @@
 import { Suspense } from "react";
 import { HeroSpotlight } from "@/components/HeroSpotlight";
+import { ContinueRow } from "@/components/ContinueRow";
 import { MangaRow } from "@/components/MangaRow";
 import { getTrending } from "@/lib/read";
 import {
   fetchByGenre,
   fetchPopular,
   fetchTopRated,
+  type Manga,
 } from "@/lib/mangadex";
 
 export const dynamic = "force-dynamic";
 
+function RowUnavailable({ title }: { title: string }) {
+  return (
+    <section aria-label={title}>
+      <h2 className="mb-3 px-4 text-lg font-bold tracking-tight text-zinc-700 md:px-10">
+        {title}
+      </h2>
+      <div className="px-4 py-4 md:px-10">
+        <p className="text-sm text-zinc-500">
+          Couldn&apos;t load this row right now. Please try again in a moment.
+        </p>
+      </div>
+    </section>
+  );
+}
+
 async function TrendingRow() {
-  const { data } = await getTrending();
+  let manga: Manga[] = [];
+  try {
+    const result = await getTrending();
+    manga = result.data;
+  } catch {
+    // fall back to the unavailable state below
+  }
+  if (manga.length === 0) {
+    return <RowUnavailable title="Trending Now" />;
+  }
   return (
     <div id="trending" className="scroll-mt-16">
-      <MangaRow title="Trending Now" manga={data} />
+      <MangaRow title="Trending Now" manga={manga} />
     </div>
   );
 }
 
 async function PopularRow() {
-  const { data } = await fetchPopular(18);
-  return <MangaRow title="All Time Popular" manga={data} />;
+  let manga: Manga[] = [];
+  try {
+    const result = await fetchPopular(18);
+    manga = result.data;
+  } catch {
+    // fall back to the unavailable state below
+  }
+  if (manga.length === 0) {
+    return <RowUnavailable title="All Time Popular" />;
+  }
+  return <MangaRow title="All Time Popular" manga={manga} />;
 }
 
 async function TopRatedRow() {
-  const { data } = await fetchTopRated(18);
+  let manga: Manga[] = [];
+  try {
+    const result = await fetchTopRated(18);
+    manga = result.data;
+  } catch {
+    // fall back to the unavailable state below
+  }
+  if (manga.length === 0) {
+    return <RowUnavailable title="Top Rated Manga" />;
+  }
   return (
     <div id="top-rated" className="scroll-mt-16">
-      <MangaRow title="Top Rated Manga" manga={data} />
+      <MangaRow title="Top Rated Manga" manga={manga} />
     </div>
   );
 }
 
 async function ActionRow() {
-  const { data } = await fetchByGenre("Action", 18);
-  return <MangaRow title="High-Octane Action" manga={data} />;
+  let manga: Manga[] = [];
+  try {
+    const result = await fetchByGenre("Action", 18);
+    manga = result.data;
+  } catch {
+    // fall back to the unavailable state below
+  }
+  if (manga.length === 0) {
+    return <RowUnavailable title="High-Octane Action" />;
+  }
+  return <MangaRow title="High-Octane Action" manga={manga} />;
 }
 
 function RowSkeleton({ title }: { title: string }) {
@@ -73,6 +126,8 @@ export default function Home() {
       </Suspense>
 
       <div className="relative z-10 -mt-16 space-y-10 pb-20">
+        <ContinueRow />
+
         <Suspense fallback={<RowSkeleton title="Trending Now" />}>
           <TrendingRow />
         </Suspense>

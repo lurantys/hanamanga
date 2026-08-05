@@ -13,6 +13,7 @@ import {
   mangaLink,
   statusLabel,
   truncate,
+  MangaDexError,
   type Chapter,
 } from "@/lib/mangadex";
 import {
@@ -39,7 +40,13 @@ export async function generateMetadata({
   params,
 }: MangaPageProps): Promise<Metadata> {
   const { id } = await params;
-  const manga = await fetchMangaById(id);
+  let manga;
+  try {
+    manga = await fetchMangaById(id);
+  } catch (error) {
+    if (error instanceof MangaDexError && error.status === 404) notFound();
+    throw error;
+  }
   return {
     title: `${manga.title} — Hana`,
     description: manga.description ? truncate(manga.description, 160) : undefined,
@@ -58,8 +65,9 @@ export default async function MangaPage({ params }: MangaPageProps) {
       fetchAggregate(id),
       fetchFeed(id),
     ]);
-  } catch {
-    notFound();
+  } catch (error) {
+    if (error instanceof MangaDexError && error.status === 404) notFound();
+    throw error;
   }
 
   let atsuMatch: AtsuMatch | null = null;

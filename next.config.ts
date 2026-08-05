@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       { protocol: "https", hostname: "uploads.mangadex.org" },
       { protocol: "https", hostname: "cdn.atsu.moe" },
+      { protocol: "https", hostname: "*.anilist.co" },
     ],
   },
 };

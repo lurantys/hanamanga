@@ -16,6 +16,8 @@ export type Manga = {
   status?: string;
   availableLanguages: string[];
   latestChapter?: string;
+  updatedAt?: string;
+  bannerUrl?: string | null;
   links?: Record<string, string>;
 };
 
@@ -55,6 +57,7 @@ type ApiManga = {
     tags: { id: string; attributes: { name: { en?: string } } }[];
     availableTranslatedLanguages?: string[];
     latestUploadedChapter?: string;
+    updatedAt?: string;
     links?: Record<string, string>;
   };
   relationships: {
@@ -102,11 +105,70 @@ async function mdFetch<T>(
 ): Promise<T> {
   const query = paramsToString(params);
   const url = query ? `${API}${path}?${query}` : `${API}${path}`;
-  const res = await fetch(url, { headers: { "User-Agent": "Hana/1.0" } });
-  if (!res.ok) {
-    throw new Error(`MangaDex request failed: ${res.status} ${res.statusText}`);
+  const cached = cacheStore.get(url);
+  if (cached && cached.expires > Date.now()) {
+    return cached.promise as Promise<T>;
   }
-  return (await res.json()) as T;
+  const promise = requestWithRetry<T>(url);
+  cacheStore.set(url, { expires: Date.now() + CACHE_TTL, promise });
+  try {
+    return (await promise) as T;
+  } catch (error) {
+    cacheStore.delete(url);
+    throw error;
+  }
+}
+
+export class MangaDexError extends Error {
+  status: number;
+
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "MangaDexError";
+    this.status = status;
+  }
+}
+
+const CACHE_TTL = 60_000;
+const cacheStore = new Map<string, { expires: number; promise: Promise<unknown> }>();
+
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function requestWithRetry<T>(url: string): Promise<T> {
+  const MAX_ATTEMPTS = 3;
+  let lastError: unknown;
+  for (let attempt = 0; attempt < MAX_ATTEMPTS; attempt++) {
+    try {
+      const res = await fetch(url, {
+        headers: { "User-Agent": "Hana/1.0" },
+        signal: AbortSignal.timeout(10_000),
+      });
+      if (res.ok) return (await res.json()) as T;
+      const error = new MangaDexError(
+        `MangaDex request failed: ${res.status} ${res.statusText}`,
+        res.status,
+      );
+      if (res.status === 429 || res.status >= 500) {
+        lastError = error;
+      } else {
+        throw error;
+      }
+    } catch (error) {
+      const retryable =
+        error instanceof MangaDexError
+          ? error.status === 429 || error.status >= 500
+          : true;
+      if (attempt < MAX_ATTEMPTS - 1 && retryable) {
+        lastError = error;
+        await sleep(250 * 2 ** attempt + Math.random() * 250);
+        continue;
+      }
+      throw error;
+    }
+  }
+  throw lastError ?? new MangaDexError("MangaDex request failed", 500);
 }
 
 function pickTitle(
@@ -162,6 +224,7 @@ function normalizeManga(api: ApiManga): Manga {
     status: attrs.status,
     availableLanguages: attrs.availableTranslatedLanguages ?? [],
     latestChapter: attrs.latestUploadedChapter,
+    updatedAt: attrs.updatedAt,
     links: attrs.links,
   };
 }
@@ -189,6 +252,7 @@ export type MangaListOptions = {
   order?: Record<string, string>;
   includedTags?: string[];
   availableLanguages?: string[];
+  ids?: string[];
 };
 
 export async function fetchMangaList(
@@ -203,6 +267,7 @@ export async function fetchMangaList(
   };
 
   if (options.title) params.title = options.title;
+  if (options.ids?.length) params["ids[]"] = options.ids;
   if (options.order) {
     for (const [key, value] of Object.entries(options.order)) {
       params[`order[${key}]`] = value;
@@ -230,8 +295,35 @@ export async function fetchMangaList(
   };
 }
 
+function recencyDecay(updatedAt?: string): number {
+  if (!updatedAt) return 0.1;
+  const age = Date.now() - Date.parse(updatedAt);
+  if (!Number.isFinite(age) || age < 0) return 0.1;
+  const days = age / 86_400_000;
+  if (days <= 7) return 1;
+  if (days <= 30) return 0.7;
+  if (days <= 90) return 0.4;
+  if (days <= 180) return 0.2;
+  return 0.1;
+}
+
 export async function fetchTrending(limit = 18): Promise<MangaListResult> {
-  return fetchMangaList({ limit, order: { followedCount: "desc" } });
+  const { data } = await fetchMangaList({
+    limit: 100,
+    order: { followedCount: "desc" },
+  });
+  const scored = data
+    .map((manga) => ({
+      manga,
+      score: (manga.follows ?? 0) * recencyDecay(manga.updatedAt),
+    }))
+    .sort((a, b) => b.score - a.score);
+  return {
+    data: scored.slice(0, limit).map(({ manga }) => manga),
+    total: Math.min(scored.length, limit),
+    offset: 0,
+    limit,
+  };
 }
 
 export async function fetchPopular(limit = 18): Promise<MangaListResult> {

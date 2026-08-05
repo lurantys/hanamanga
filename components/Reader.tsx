@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { getProgress, saveContinueHero, saveProgress } from "@/lib/progress";
 
 type ReaderPage = {
   id: string;
@@ -79,15 +80,75 @@ export function Reader({
   const pageRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   useEffect(() => {
+    let saveTimer = 0;
     function onScroll() {
       const doc = document.documentElement;
       const max = doc.scrollHeight - doc.clientHeight;
-      setProgress(max > 0 ? Math.min(1, Math.max(0, doc.scrollTop / max)) : 0);
+      const value = max > 0 ? Math.min(1, Math.max(0, doc.scrollTop / max)) : 0;
+      setProgress(value);
+      window.clearTimeout(saveTimer);
+      saveTimer = window.setTimeout(() => {
+        const index = chapters.findIndex(
+          (chapter) => chapter.id === currentChapterId,
+        );
+        const mangaFraction =
+          index >= 0 && chapters.length > 0
+            ? (index + value) / chapters.length
+            : undefined;
+        const entry = {
+          mangaId,
+          chapterId: currentChapterId,
+          chapterLabel,
+          mangaTitle,
+          scrollFraction: value,
+          mangaFraction,
+          updatedAt: Date.now(),
+        };
+        saveProgress(entry);
+        saveContinueHero({
+          manga: {
+            id: mangaId,
+            title: mangaTitle,
+            coverUrl: null,
+            bannerUrl: null,
+            genres: [],
+            availableLanguages: [],
+          },
+          chapterId: currentChapterId,
+          chapterLabel,
+          scrollFraction: value,
+          mangaFraction,
+          updatedAt: entry.updatedAt,
+        });
+      }, 600);
     }
     onScroll();
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
-  }, []);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.clearTimeout(saveTimer);
+    };
+  }, [mangaId, currentChapterId, chapterLabel, mangaTitle, chapters]);
+
+  useEffect(() => {
+    const saved = getProgress(mangaId);
+    if (!saved || saved.chapterId !== currentChapterId || !saved.scrollFraction) {
+      return;
+    }
+    const restore = () => {
+      const doc = document.documentElement;
+      const max = doc.scrollHeight - doc.clientHeight;
+      if (max > 0) window.scrollTo(0, saved.scrollFraction * max);
+    };
+    restore();
+    const onLoad = () => window.setTimeout(restore, 60);
+    window.addEventListener("load", onLoad);
+    const fallback = window.setTimeout(restore, 1200);
+    return () => {
+      window.removeEventListener("load", onLoad);
+      window.clearTimeout(fallback);
+    };
+  }, [mangaId, currentChapterId]);
 
   useEffect(() => {
     let raf = 0;

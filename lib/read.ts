@@ -1,5 +1,14 @@
 import { cache } from "react";
-import { fetchFeed, fetchMangaById, fetchTrending, type Manga } from "./mangadex";
+import { unstable_cache } from "next/cache";
+import {
+  fetchFeed,
+  fetchMangaById,
+  fetchMangaList,
+  fetchTrending,
+  type Manga,
+  type MangaListResult,
+} from "./mangadex";
+import { tagIdFor } from "./genres";
 import {
   chaptersOfScanlator,
   fetchAtsuChapters,
@@ -7,7 +16,47 @@ import {
   primaryScanlator,
 } from "./atsu";
 
-export const getTrending = cache(() => fetchTrending(18));
+const HOME_ROWS_REVALIDATE = 300;
+
+const cachedTrending = unstable_cache(
+  async (limit = 18): Promise<MangaListResult> => fetchTrending(limit),
+  ["home-trending"],
+  { revalidate: HOME_ROWS_REVALIDATE },
+);
+
+const cachedPopular = unstable_cache(
+  async (limit = 18): Promise<MangaListResult> =>
+    fetchMangaList({ limit, order: { followedCount: "desc" } }),
+  ["home-popular"],
+  { revalidate: HOME_ROWS_REVALIDATE },
+);
+
+const cachedTopRated = unstable_cache(
+  async (limit = 18): Promise<MangaListResult> =>
+    fetchMangaList({ limit, order: { rating: "desc" } }),
+  ["home-top-rated"],
+  { revalidate: HOME_ROWS_REVALIDATE },
+);
+
+const cachedByGenre = unstable_cache(
+  async (genre: string, limit = 18): Promise<MangaListResult> => {
+    const tagId = tagIdFor(genre);
+    return fetchMangaList({
+      limit,
+      order: { followedCount: "desc" },
+      includedTags: tagId ? [tagId] : undefined,
+    });
+  },
+  ["home-by-genre"],
+  { revalidate: HOME_ROWS_REVALIDATE },
+);
+
+export const getTrending = cache((limit = 18) => cachedTrending(limit));
+export const getPopular = cache((limit = 18) => cachedPopular(limit));
+export const getTopRated = cache((limit = 18) => cachedTopRated(limit));
+export const getByGenre = cache((genre: string, limit = 18) =>
+  cachedByGenre(genre, limit),
+);
 
 export function pickHero(manga: Manga[]): Manga | null {
   if (!manga.length) return null;

@@ -3,13 +3,8 @@ import { HeroSpotlight } from "@/components/HeroSpotlight";
 import { ContinueRow } from "@/components/ContinueRow";
 import { LibraryRow } from "@/components/LibraryRow";
 import { MangaRow } from "@/components/MangaRow";
-import { getTrending } from "@/lib/read";
-import {
-  fetchByGenre,
-  fetchPopular,
-  fetchTopRated,
-  type Manga,
-} from "@/lib/mangadex";
+import { getTrending, getPopular, getTopRated, getByGenre } from "@/lib/read";
+import type { Manga } from "@/lib/mangadex";
 
 export const dynamic = "force-dynamic";
 
@@ -49,7 +44,7 @@ async function TrendingRow() {
 async function PopularRow() {
   let manga: Manga[] = [];
   try {
-    const result = await fetchPopular(18);
+    const result = await getPopular(18);
     manga = result.data;
   } catch {
     // fall back to the unavailable state below
@@ -63,7 +58,7 @@ async function PopularRow() {
 async function TopRatedRow() {
   let manga: Manga[] = [];
   try {
-    const result = await fetchTopRated(18);
+    const result = await getTopRated(18);
     manga = result.data;
   } catch {
     // fall back to the unavailable state below
@@ -81,7 +76,7 @@ async function TopRatedRow() {
 async function ActionRow() {
   let manga: Manga[] = [];
   try {
-    const result = await fetchByGenre("Action", 18);
+    const result = await getByGenre("Action", 18);
     manga = result.data;
   } catch {
     // fall back to the unavailable state below

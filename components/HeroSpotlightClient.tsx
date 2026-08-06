@@ -15,7 +15,6 @@ import { statusLabel, truncate, type Manga } from "@/lib/mangadex";
 
 type HeroSpotlightClientProps = {
   initial: Manga;
-  bannerUrl: string | null;
 };
 
 function subscribe(onChange: () => void): () => void {
@@ -31,14 +30,15 @@ function subscribe(onChange: () => void): () => void {
   };
 }
 
-export function HeroSpotlightClient({ initial, bannerUrl }: HeroSpotlightClientProps) {
+export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
   const snapshot = useSyncExternalStore(subscribe, readContinueHero, () => null);
   const [imageLoaded, setImageLoaded] = useState(false);
+  const [initialBanner, setInitialBanner] = useState<string | null>(null);
 
   const hero: Manga = snapshot?.manga ?? initial;
   const banner: string | null = snapshot
     ? (snapshot.manga.bannerUrl ?? null)
-    : bannerUrl;
+    : initialBanner;
   const imageSrc: string | null = banner ?? hero.coverUrl ?? null;
 
   const ready = !imageSrc || imageLoaded;
@@ -62,6 +62,20 @@ export function HeroSpotlightClient({ initial, bannerUrl }: HeroSpotlightClientP
       })
       .catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (getContinueList(1)[0]) return;
+    let cancelled = false;
+    fetch(`/api/banner?title=${encodeURIComponent(initial.title)}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        if (!cancelled && json?.bannerUrl) setInitialBanner(json.bannerUrl);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [initial]);
 
   const rating = hero.rating ?? 0;
   const match = Math.round(rating * 10);

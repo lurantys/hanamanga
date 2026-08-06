@@ -1,5 +1,4 @@
 import { getTrending, pickHero } from "@/lib/read";
-import { bannerForTitle } from "@/lib/banner";
 import { HeroSpotlightClient } from "./HeroSpotlightClient";
 
 function HeroFallback() {
@@ -28,6 +27,5 @@ export async function HeroSpotlight() {
   }
   const hero = data ? pickHero(data.data) : null;
   if (!hero) return <HeroFallback />;
-  const bannerUrl = await bannerForTitle(hero.title);
-  return <HeroSpotlightClient initial={hero} bannerUrl={bannerUrl} />;
+  return <HeroSpotlightClient initial={hero} />;
 }

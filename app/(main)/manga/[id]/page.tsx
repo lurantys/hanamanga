@@ -18,6 +18,7 @@ import {
 } from "@/lib/mangadex";
 import {
   chaptersOfScanlator,
+  fetchAtsuChapters,
   findAtsuManga,
   primaryScanlator,
   type AtsuChapter,
@@ -74,7 +75,7 @@ export default async function MangaPage({ params }: MangaPageProps) {
   try {
     atsuMatch = await findAtsuManga({ title: manga.title, links: manga.links });
     if (atsuMatch) {
-      atsuChapters = atsuMatch.manga.chapters;
+      atsuChapters = await fetchAtsuChapters(atsuMatch.manga.id);
     }
   } catch {
     atsuMatch = null;

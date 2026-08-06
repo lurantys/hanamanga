@@ -2,6 +2,7 @@ import { cache } from "react";
 import { fetchFeed, fetchMangaById, fetchTrending, type Manga } from "./mangadex";
 import {
   chaptersOfScanlator,
+  fetchAtsuChapters,
   findAtsuManga,
   primaryScanlator,
 } from "./atsu";
@@ -23,7 +24,7 @@ export async function resolveFirstChapter(
       links: manga.links,
     });
     if (atsuMatch) {
-      const chapters = atsuMatch.manga.chapters;
+      const chapters = await fetchAtsuChapters(atsuMatch.manga.id);
       const scanlator = primaryScanlator(atsuMatch.manga.scanlators, chapters);
       const ordered = chaptersOfScanlator(chapters, scanlator?.id ?? "");
       const first = ordered[0] ?? chapters[0];

@@ -392,12 +392,15 @@ export async function fetchSearch(title: string, limit = 24): Promise<MangaListR
   };
 }
 
-export async function fetchMangaById(id: string): Promise<Manga> {
+export async function fetchMangaById(
+  id: string,
+  options: { withStats?: boolean } = {},
+): Promise<Manga> {
   const json = await mdFetch<{ data: ApiManga }>(`/manga/${id}`, {
     "includes[]": ["cover_art", "author", "artist"],
   });
   const manga = normalizeManga(json.data);
-  await enrichWithStats([manga]);
+  if (options.withStats !== false) await enrichWithStats([manga]);
   return manga;
 }
 
@@ -411,7 +414,6 @@ export async function fetchFeed(
     "order[volume]": order.volume ?? "asc",
     "order[chapter]": order.chapter ?? "asc",
     limit,
-    "includes[]": ["scanlation_group"],
   };
   const json = await mdFetch<{ data: ApiChapter[]; total: number }>(
     `/manga/${mangaId}/feed`,

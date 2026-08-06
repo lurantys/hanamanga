@@ -54,6 +54,10 @@ export function getProgress(mangaId: string): ProgressEntry | null {
   return readAll()[mangaId] ?? null;
 }
 
+export function getAllProgress(): Record<string, ProgressEntry> {
+  return readAll();
+}
+
 export function getContinueList(limit = 18): ProgressEntry[] {
   return Object.values(readAll())
     .sort((a, b) => b.updatedAt - a.updatedAt)

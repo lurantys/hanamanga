@@ -3,7 +3,6 @@ import { notFound, redirect } from "next/navigation";
 import { Reader } from "@/components/Reader";
 import {
   chapterPageUrl,
-  fetchChapterById,
   fetchChapterReader,
   fetchFeed,
   fetchMangaById,
@@ -16,7 +15,6 @@ import {
   atsuChapterLabel,
   atsuPageUrl,
   fetchAtsuChapter,
-  fetchAtsuChapters,
   findAtsuManga,
 } from "@/lib/atsu";
 
@@ -40,34 +38,11 @@ function mdChapterNumber(chapter: Chapter): number | null {
 export async function generateMetadata({
   params,
 }: ReadPageProps): Promise<Metadata> {
-  const { mangaId, chapterId } = await params;
+  const { mangaId } = await params;
   try {
-    const manga = await fetchMangaById(mangaId);
-    let subtitle: string | null = null;
-
-    try {
-      const match = await findAtsuManga({ title: manga.title, links: manga.links });
-      if (match) {
-        const chapter = await fetchAtsuChapter(match.manga.id, chapterId);
-        if (chapter?.title) subtitle = chapter.title;
-      }
-    } catch {
-      subtitle = null;
-    }
-
-    if (!subtitle) {
-      try {
-        const chapter = await fetchChapterById(chapterId);
-        if (chapter?.title) subtitle = chapter.title;
-      } catch {
-        subtitle = null;
-      }
-    }
-
+    const manga = await fetchMangaById(mangaId, { withStats: false });
     return {
-      title: subtitle
-        ? `${manga.title} · ${subtitle} — Hana`
-        : `${manga.title} — Hana`,
+      title: `${manga.title} — Hana`,
       description: manga.description ? truncate(manga.description, 160) : undefined,
     };
   } catch {
@@ -80,7 +55,7 @@ export default async function ReadPage({ params }: ReadPageProps) {
 
   let manga;
   try {
-    manga = await fetchMangaById(mangaId);
+    manga = await fetchMangaById(mangaId, { withStats: false });
   } catch (error) {
     if (error instanceof MangaDexError && error.status === 404) notFound();
     throw error;
@@ -93,85 +68,60 @@ export default async function ReadPage({ params }: ReadPageProps) {
     atsuMatch = null;
   }
 
-  let atsuReader:
-    | {
-        chapterLabel: string;
-        chapterNumber: number | null;
-        chapters: { id: string; label: string }[];
-        pages: {
-          id: string;
-          image: string;
-          width?: number;
-          height?: number;
-        }[];
-        prevHref: string | null;
-        nextHref: string | null;
-      }
-    | null = null;
-
   if (atsuMatch) {
-    try {
-      const atsuChapters = await fetchAtsuChapters(atsuMatch.manga.id);
-      const currentAtsuChapter = atsuChapters.find((item) => item.id === chapterId);
-      if (currentAtsuChapter) {
-        const chapter = await fetchAtsuChapter(atsuMatch.manga.id, chapterId);
-        const sorted = [...atsuChapters].sort((a, b) => a.index - b.index);
-        const groupChapters = sorted.filter(
-          (item) => item.scanlationMangaId === currentAtsuChapter.scanlationMangaId,
-        );
-        const currentIndex = groupChapters.findIndex(
-          (item) => item.id === chapterId,
-        );
-        const prev = currentIndex > 0 ? groupChapters[currentIndex - 1] : null;
-        const next =
-          currentIndex >= 0 && currentIndex < groupChapters.length - 1
-            ? groupChapters[currentIndex + 1]
-            : null;
+    const atsuChapters = atsuMatch.manga.chapters;
+    const currentAtsuChapter = atsuChapters.find((item) => item.id === chapterId);
+    if (currentAtsuChapter) {
+      const chapter = await fetchAtsuChapter(atsuMatch.manga.id, chapterId);
+      const sorted = [...atsuChapters].sort((a, b) => a.index - b.index);
+      const groupChapters = sorted.filter(
+        (item) => item.scanlationMangaId === currentAtsuChapter.scanlationMangaId,
+      );
+      const currentIndex = groupChapters.findIndex(
+        (item) => item.id === chapterId,
+      );
+      const prev = currentIndex > 0 ? groupChapters[currentIndex - 1] : null;
+      const next =
+        currentIndex >= 0 && currentIndex < groupChapters.length - 1
+          ? groupChapters[currentIndex + 1]
+          : null;
 
-        atsuReader = {
-          chapterLabel: chapter.title
-            ? chapter.title
-            : atsuChapterLabel({ title: chapter.title, number: null }),
-          chapterNumber: currentAtsuChapter.number ?? null,
-          chapters: groupChapters.map((item) => ({
+      return (
+        <Reader
+          mangaId={mangaId}
+          mangaTitle={manga.title}
+          mangaHref={`/manga/${mangaId}`}
+          chapterLabel={
+            chapter.title
+              ? chapter.title
+              : atsuChapterLabel({ title: chapter.title, number: null })
+          }
+          chapterNumber={currentAtsuChapter.number ?? null}
+          currentChapterId={chapterId}
+          chapters={groupChapters.map((item) => ({
             id: item.id,
             label: atsuChapterLabel(item),
-          })),
-          pages: chapter.pages.map((page) => ({
+          }))}
+          pages={chapter.pages.map((page) => ({
             id: page.id,
             image: atsuPageUrl(page),
             width: page.width,
             height: page.height,
-          })),
-          prevHref: prev ? `/read/${mangaId}/${prev.id}` : null,
-          nextHref: next ? `/read/${mangaId}/${next.id}` : null,
-        };
-      }
-    } catch {
-      // Atsumaru source unavailable — fall through to MangaDex chapters.
+          }))}
+          prevHref={prev ? `/read/${mangaId}/${prev.id}` : null}
+          nextHref={next ? `/read/${mangaId}/${next.id}` : null}
+        />
+      );
     }
   }
 
-  if (atsuReader) {
-    return (
-      <Reader
-        mangaId={mangaId}
-        mangaTitle={manga.title}
-        mangaHref={`/manga/${mangaId}`}
-        chapterLabel={atsuReader.chapterLabel}
-        chapterNumber={atsuReader.chapterNumber}
-        currentChapterId={chapterId}
-        chapters={atsuReader.chapters}
-        pages={atsuReader.pages}
-        prevHref={atsuReader.prevHref}
-        nextHref={atsuReader.nextHref}
-      />
-    );
-  }
-
   let feed;
+  let reader;
   try {
-    feed = await fetchFeed(mangaId);
+    [feed, reader] = await Promise.all([
+      fetchFeed(mangaId),
+      fetchChapterReader(chapterId),
+    ]);
   } catch (error) {
     if (error instanceof MangaDexError && error.status === 404) notFound();
     throw error;
@@ -185,7 +135,6 @@ export default async function ReadPage({ params }: ReadPageProps) {
     redirect(mdChapter.externalUrl);
   }
 
-  const reader = await fetchChapterReader(chapterId);
   const prev = currentIndex > 0 ? feed.data[currentIndex - 1] : null;
   const next =
     currentIndex < feed.data.length - 1 ? feed.data[currentIndex + 1] : null;

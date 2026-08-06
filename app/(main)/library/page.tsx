@@ -8,10 +8,14 @@ import {
   removeFromLibrary,
   subscribeLibrary,
 } from "@/lib/library";
-import { getProgress } from "@/lib/progress";
+import { getAllProgress } from "@/lib/progress";
 
 function getServerSnapshot(): ReturnType<typeof getLibrarySnapshot> {
   return {};
+}
+
+function thumbUrl(coverUrl?: string | null): string | null {
+  return coverUrl?.replace(/\.512\.jpg$/, ".256.jpg") ?? coverUrl ?? null;
 }
 
 export default function LibraryPage() {
@@ -21,6 +25,7 @@ export default function LibraryPage() {
     getServerSnapshot,
   );
   const entries = Object.values(library).sort((a, b) => b.addedAt - a.addedAt);
+  const progress = getAllProgress();
 
   return (
     <main className="bg-zinc-950 pb-24">
@@ -67,26 +72,26 @@ export default function LibraryPage() {
         ) : (
           <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">
             {entries.map(({ manga, addedAt }) => {
-              const progress = getProgress(manga.id);
+              const mangaProgress = progress[manga.id];
               return (
                 <div key={manga.id} className="group">
                   <Link
                     href={
-                      progress
-                        ? `/read/${manga.id}/${progress.chapterId}`
+                      mangaProgress
+                        ? `/read/${manga.id}/${mangaProgress.chapterId}`
                         : `/manga/${manga.id}`
                     }
                     className="block focus:outline-none"
                     aria-label={
-                      progress
-                        ? `${manga.title} — continue from ${progress.chapterLabel}`
+                      mangaProgress
+                        ? `${manga.title} — continue from ${mangaProgress.chapterLabel}`
                         : manga.title
                     }
                   >
                     <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-zinc-800 transition-transform duration-200 group-hover:scale-[1.03]">
-                      {manga.coverUrl ? (
+                      {thumbUrl(manga.coverUrl) ? (
                         <Image
-                          src={manga.coverUrl}
+                          src={thumbUrl(manga.coverUrl)!}
                           alt=""
                           fill
                           sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
@@ -97,14 +102,14 @@ export default function LibraryPage() {
                           {manga.title}
                         </span>
                       )}
-                      {progress && (
+                      {mangaProgress && (
                         <div className="absolute inset-x-0 bottom-0 h-1 bg-white/10">
                           <div
                             className="h-full bg-red-500"
                             style={{
                               width: `${Math.round(
-                                (progress.mangaFraction ??
-                                  progress.scrollFraction) * 100,
+                                (mangaProgress.mangaFraction ??
+                                  mangaProgress.scrollFraction) * 100,
                               )}%`,
                             }}
                           />
@@ -117,8 +122,8 @@ export default function LibraryPage() {
                       {manga.title}
                     </p>
                     <p className="mt-0.5 text-xs text-zinc-500">
-                      {progress
-                        ? `Continue · ${progress.chapterLabel}`
+                      {mangaProgress
+                        ? `Continue · ${mangaProgress.chapterLabel}`
                         : `Added ${new Date(addedAt).toLocaleDateString()}`}
                     </p>
                   </div>

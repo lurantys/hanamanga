@@ -64,6 +64,9 @@ export type AtsuMatch = {
 
 type LinkMap = Record<string, string> | undefined;
 
+const ATSU_CACHE_TTL = 60_000;
+const atsuCacheStore = new Map<string, { expires: number; promise: Promise<unknown> }>();
+
 async function atsuFetch<T>(
   path: string,
   params: Record<string, string | number | boolean | undefined> = {},
@@ -73,15 +76,29 @@ async function atsuFetch<T>(
     if (value === undefined) continue;
     usp.set(key, String(value));
   }
-  const res = await fetch(`${ATSU_API}${path}?${usp.toString()}`, {
-    headers: {
-      "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Hana/1.0",
-    },
-  });
-  if (!res.ok) {
-    throw new Error(`Atsumaru request failed: ${res.status} ${res.statusText}`);
+  const url = `${ATSU_API}${path}?${usp.toString()}`;
+  const cached = atsuCacheStore.get(url);
+  if (cached && cached.expires > Date.now()) {
+    return cached.promise as Promise<T>;
   }
-  return (await res.json()) as T;
+  const promise = (async () => {
+    const res = await fetch(url, {
+      headers: {
+        "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Hana/1.0",
+      },
+    });
+    if (!res.ok) {
+      throw new Error(`Atsumaru request failed: ${res.status} ${res.statusText}`);
+    }
+    return (await res.json()) as T;
+  })();
+  atsuCacheStore.set(url, { expires: Date.now() + ATSU_CACHE_TTL, promise });
+  try {
+    return (await promise) as T;
+  } catch (error) {
+    atsuCacheStore.delete(url);
+    throw error;
+  }
 }
 
 export async function searchAtsu(
@@ -296,13 +313,19 @@ export async function findAtsuManga(opts: {
   const hasLinks = Object.keys(expected).length > 0;
   const checkOrder = candidates.slice(0, 3);
 
-  for (const candidate of checkOrder) {
-    let manga: AtsuManga;
-    try {
-      manga = await fetchAtsuManga(candidate.id);
-    } catch {
-      continue;
-    }
+  const resolved = await Promise.all(
+    checkOrder.map(async (candidate) => {
+      try {
+        return { candidate, manga: await fetchAtsuManga(candidate.id) };
+      } catch {
+        return null;
+      }
+    }),
+  );
+
+  for (const entry of resolved) {
+    if (!entry) continue;
+    const { candidate, manga } = entry;
     if (hasLinks) {
       const matched = Object.entries(expected).some(([field, value]) => {
         const actual = (manga as unknown as Record<string, unknown>)[field];

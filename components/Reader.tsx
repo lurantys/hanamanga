@@ -144,6 +144,8 @@ export function Reader({
   const [zoom, setZoom] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const listRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
+  const lastZoomRef = useRef(1);
   const pageRefs = useRef<(HTMLDivElement | null)[]>([]);
   const advanceTimerRef = useRef(0);
   const navigatingRef = useRef(false);
@@ -365,6 +367,20 @@ export function Reader({
     setZoom((value) => Math.max(0.5, Number((value - 0.25).toFixed(2))));
   }, []);
 
+  useEffect(() => {
+    const prev = lastZoomRef.current;
+    if (prev === zoom) return;
+    lastZoomRef.current = zoom;
+    const el = contentRef.current;
+    if (!el) return;
+    const ratio = zoom / prev;
+    const center = window.innerHeight / 2;
+    const elTop = el.getBoundingClientRect().top + window.scrollY;
+    const anchor = window.scrollY + center;
+    const newAnchor = elTop + (anchor - elTop) * ratio;
+    window.scrollTo(0, Math.max(0, newAnchor - center));
+  }, [zoom]);
+
   return (
     <div className="min-h-screen bg-zinc-950 pb-24">
       <header className="sticky top-0 z-20 border-b border-white/10 bg-zinc-950/80 backdrop-blur-xl">
@@ -491,8 +507,9 @@ export function Reader({
       </nav>
 
       <div
+        ref={contentRef}
         className="mx-auto mt-5 flex max-w-4xl flex-col gap-2 px-3 sm:px-4"
-        style={{ zoom }}
+        style={{ transform: `scale(${zoom})`, transformOrigin: "top center" }}
       >
         {pages.map((page, index) => (
           <div

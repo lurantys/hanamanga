@@ -109,7 +109,7 @@ function HeroSkeleton() {
   return (
     <section
       aria-hidden
-      className="h-[80vh] min-h-[480px] w-full animate-pulse bg-gradient-to-t from-zinc-900 to-zinc-800"
+      className="h-[80dvh] min-h-[480px] w-full animate-pulse bg-gradient-to-t from-zinc-900 to-zinc-800"
     />
   );
 }

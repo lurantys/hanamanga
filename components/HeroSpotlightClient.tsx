@@ -72,7 +72,7 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
   return (
     <section
       key={`${hero.id}:${imageSrc ?? "none"}`}
-      className="animate-hero-in relative h-[80vh] min-h-[480px] w-full overflow-hidden bg-zinc-950"
+      className="animate-hero-in relative h-[80dvh] min-h-[480px] w-full overflow-hidden bg-zinc-950"
     >
       {imageSrc ? (
         <Image
@@ -160,7 +160,7 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
               )}
             </div>
 
-            <h1 className="max-w-3xl text-4xl font-extrabold tracking-tight text-white drop-shadow-lg md:text-6xl">
+            <h1 className="line-clamp-3 max-w-3xl text-4xl font-extrabold tracking-tight text-white drop-shadow-lg md:line-clamp-2 md:text-6xl">
               {hero.title}
             </h1>
 

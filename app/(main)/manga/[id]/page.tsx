@@ -107,7 +107,7 @@ export default async function MangaPage({ params }: MangaPageProps) {
 
   return (
     <main className="bg-zinc-950 pb-24">
-      <div className="relative h-[46vh] min-h-[320px] w-full overflow-hidden">
+      <div className="relative h-[46dvh] min-h-[320px] w-full overflow-hidden">
         {manga.coverUrl ? (
           <Image
             src={manga.coverUrl}

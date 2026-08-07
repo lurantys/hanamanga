@@ -936,7 +936,7 @@ export function Reader({
             ))}
           </div>
 
-          <nav className="mx-auto mt-10 flex max-w-4xl items-center justify-between gap-2 px-4">
+          <nav className="mx-auto mt-10 flex max-w-4xl flex-wrap items-center justify-center gap-3 px-4">
             <Link
               href={prevHref ?? mangaHref}
               aria-disabled={!prevHref}

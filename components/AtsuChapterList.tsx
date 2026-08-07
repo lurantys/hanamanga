@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { AtsuChapter, AtsuScanlator } from "@/lib/atsu";
 import { atsuChapterLabel } from "@/lib/atsu";
+import { markAllRead, useReadChapters } from "@/lib/read-state";
 
 type AtsuChapterListProps = {
   mangaId: string;
@@ -22,6 +23,7 @@ export function AtsuChapterList({
     defaultScanlatorId ?? scanlators[0]?.id ?? "",
   );
   const [query, setQuery] = useState("");
+  const readChapters = useReadChapters(mangaId);
 
   const groupChapters = useMemo(
     () =>
@@ -40,6 +42,9 @@ export function AtsuChapterList({
   }, [groupChapters, query]);
 
   const hasMultipleScanlators = scanlators.length > 1;
+  const readCount = groupChapters.filter((chapter) =>
+    readChapters.has(chapter.id),
+  ).length;
 
   return (
     <div className="space-y-4">
@@ -65,30 +70,53 @@ export function AtsuChapterList({
           <span />
         )}
 
-        <label className="relative block sm:w-56">
-          <span className="sr-only">Find a chapter</span>
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
-            aria-hidden
-          >
-            <circle cx="11" cy="11" r="8" />
-            <path d="m21 21-4.35-4.35" />
-          </svg>
-          <input
-            type="text"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder={`Find chapter (${groupChapters.length} available)`}
-            className="w-full rounded-lg border border-white/10 bg-zinc-900/60 py-2 pl-9 pr-3 text-sm text-zinc-100 outline-none transition-colors placeholder:text-zinc-500 focus:border-emerald-400/50"
-          />
-        </label>
+        <div className="flex items-center gap-2">
+          {groupChapters.length > 0 && (
+            <button
+              type="button"
+              onClick={() =>
+                markAllRead(
+                  mangaId,
+                  groupChapters.map((chapter) => chapter.id),
+                )
+              }
+              className="shrink-0 rounded-lg border border-white/10 bg-zinc-800/60 px-3 py-2 text-xs font-semibold text-zinc-300 transition-colors hover:border-emerald-400/40 hover:text-emerald-300"
+            >
+              Mark all read
+            </button>
+          )}
+          <label className="relative block sm:w-56">
+            <span className="sr-only">Find a chapter</span>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
+              aria-hidden
+            >
+              <circle cx="11" cy="11" r="8" />
+              <path d="m21 21-4.35-4.35" />
+            </svg>
+            <input
+              type="text"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder={`Find chapter (${groupChapters.length} available)`}
+              className="w-full rounded-lg border border-white/10 bg-zinc-900/60 py-2 pl-9 pr-3 text-sm text-zinc-100 outline-none transition-colors placeholder:text-zinc-500 focus:border-emerald-400/50"
+            />
+          </label>
+        </div>
       </div>
+
+      {groupChapters.length > 0 && readCount > 0 && (
+        <p className="text-xs text-zinc-500">
+          {readCount.toLocaleString()} of {groupChapters.length.toLocaleString()}{" "}
+          chapters read
+        </p>
+      )}
 
       {visibleChapters.length === 0 ? (
         <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 px-6 py-10 text-center">
@@ -100,28 +128,55 @@ export function AtsuChapterList({
         </div>
       ) : (
         <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-          {visibleChapters.map((chapter) => (
-            <Link
-              key={chapter.id}
-              href={`/read/${mangaId}/${chapter.id}`}
-              className="group flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-zinc-900/60 px-4 py-3 backdrop-blur-xl transition-colors hover:border-emerald-400/40"
-            >
-              <div className="min-w-0">
-                <p className="truncate text-sm font-semibold text-zinc-200 group-hover:text-white">
-                  {atsuChapterLabel(chapter)}
-                </p>
-                <p className="text-xs text-zinc-500">
-                  {chapter.pageCount} {chapter.pageCount === 1 ? "page" : "pages"}
-                  {chapter.createdAt
-                    ? ` · ${new Date(chapter.createdAt * 1000).toLocaleDateString()}`
-                    : ""}
-                </p>
-              </div>
-              <span className="shrink-0 rounded-lg border border-white/10 bg-zinc-800/60 px-3.5 py-1.5 text-xs font-semibold text-zinc-200 transition-colors group-hover:border-emerald-400/40 group-hover:bg-zinc-700/60 group-hover:text-white">
-                Read
-              </span>
-            </Link>
-          ))}
+          {visibleChapters.map((chapter) => {
+            const isRead = readChapters.has(chapter.id);
+            return (
+              <Link
+                key={chapter.id}
+                href={`/read/${mangaId}/${chapter.id}`}
+                className={`group flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-zinc-900/60 px-4 py-3 backdrop-blur-xl transition-colors ${
+                  isRead
+                    ? "hover:border-emerald-400/30"
+                    : "hover:border-emerald-400/40"
+                }`}
+              >
+                <div className="min-w-0">
+                  <p
+                    className={`truncate text-sm font-semibold group-hover:text-white ${
+                      isRead ? "text-zinc-500" : "text-zinc-200"
+                    }`}
+                  >
+                    <span className="flex items-center gap-2">
+                      {isRead && (
+                        <svg
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2.5"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          className="h-3.5 w-3.5 shrink-0 text-emerald-400"
+                          aria-hidden
+                        >
+                          <path d="M20 6 9 17l-5-5" />
+                        </svg>
+                      )}
+                      <span className="truncate">{atsuChapterLabel(chapter)}</span>
+                    </span>
+                  </p>
+                  <p className="text-xs text-zinc-500">
+                    {chapter.pageCount} {chapter.pageCount === 1 ? "page" : "pages"}
+                    {chapter.createdAt
+                      ? ` · ${new Date(chapter.createdAt * 1000).toLocaleDateString()}`
+                      : ""}
+                  </p>
+                </div>
+                <span className="shrink-0 rounded-lg border border-white/10 bg-zinc-800/60 px-3.5 py-1.5 text-xs font-semibold text-zinc-200 transition-colors group-hover:border-emerald-400/40 group-hover:bg-zinc-700/60 group-hover:text-white">
+                  {isRead ? "Re-read" : "Read"}
+                </span>
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>

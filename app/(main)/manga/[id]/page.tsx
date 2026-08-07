@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AtsuChapterList } from "@/components/AtsuChapterList";
+import { ChapterReadCheck } from "@/components/ChapterReadCheck";
 import { ExpandableDescription } from "@/components/ExpandableDescription";
 import { LibraryButton } from "@/components/LibraryButton";
 import { PlayButton } from "@/components/PlayButton";
@@ -268,23 +269,29 @@ export default async function MangaPage({ params }: MangaPageProps) {
                               : ""}
                           </p>
                         </div>
-                        {chapter.externalUrl ? (
-                          <a
-                            href={chapter.externalUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="rounded-lg border border-white/10 bg-zinc-800/60 px-3.5 py-1.5 text-xs font-semibold text-zinc-200 transition-colors hover:bg-zinc-700/60 hover:text-white"
-                          >
-                            External
-                          </a>
-                        ) : (
-                          <Link
-                            href={`/read/${id}/${chapter.id}`}
-                            className="rounded-lg border border-white/10 bg-zinc-800/60 px-3.5 py-1.5 text-xs font-semibold text-zinc-200 transition-colors hover:bg-zinc-700/60 hover:text-white"
-                          >
-                            Read
-                          </Link>
-                        )}
+                        <div className="flex shrink-0 items-center gap-2">
+                          <ChapterReadCheck
+                            mangaId={id}
+                            chapterId={chapter.id}
+                          />
+                          {chapter.externalUrl ? (
+                            <a
+                              href={chapter.externalUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="rounded-lg border border-white/10 bg-zinc-800/60 px-3.5 py-1.5 text-xs font-semibold text-zinc-200 transition-colors hover:bg-zinc-700/60 hover:text-white"
+                            >
+                              External
+                            </a>
+                          ) : (
+                            <Link
+                              href={`/read/${id}/${chapter.id}`}
+                              className="rounded-lg border border-white/10 bg-zinc-800/60 px-3.5 py-1.5 text-xs font-semibold text-zinc-200 transition-colors hover:bg-zinc-700/60 hover:text-white"
+                            >
+                              Read
+                            </Link>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>

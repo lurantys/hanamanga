@@ -1,9 +1,29 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  type TouchEvent as ReactTouchEvent,
+} from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { getProgress, saveContinueHero, saveProgress } from "@/lib/progress";
+import {
+  DEFAULT_READER_SETTINGS,
+  getReaderSettings,
+  setReaderSettings,
+  subscribeReaderSettings,
+  type ReaderMode,
+  type ReaderSettings,
+} from "@/lib/reader-settings";
+import {
+  markChapterRead,
+  useReadChapters,
+} from "@/lib/read-state";
 
 type ReaderPage = {
   id: string;
@@ -115,6 +135,48 @@ function MinimizeIcon({ className = "h-5 w-5" }: { className?: string }) {
   );
 }
 
+function ScrollIcon({ className = "h-5 w-5" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
+      <path d="M4 6h16M4 12h16M4 18h16" />
+    </svg>
+  );
+}
+
+function PagedIcon({ className = "h-5 w-5" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
+      <rect x="4" y="3" width="16" height="18" rx="2" />
+      <path d="M9 8h6M9 12h6" />
+    </svg>
+  );
+}
+
+function SettingsIcon({ className = "h-5 w-5" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
+      <path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1-2 0l-.15-.08a2 2 0 0 0-2.73.73l-.22.38a2 2 0 0 0 .73 2.73l.15.1a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z" />
+      <circle cx="12" cy="12" r="3" />
+    </svg>
+  );
+}
+
+function CheckIcon({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
+      <path d="M20 6 9 17l-5-5" />
+    </svg>
+  );
+}
+
+function CloseIcon({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
+      <path d="M6 6l12 12M18 6L6 18" />
+    </svg>
+  );
+}
+
 const controlButton =
   "inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-zinc-900/70 px-3.5 py-2 text-sm font-semibold text-zinc-200 shadow-[0_8px_24px_rgba(0,0,0,0.35)] transition active:scale-[0.97] hover:bg-zinc-800/80 hover:text-white";
 
@@ -123,6 +185,75 @@ const iconButton =
 
 const railButton =
   "inline-flex h-11 w-11 items-center justify-center rounded-full text-zinc-200 transition active:scale-[0.95] hover:bg-white/5 hover:text-white disabled:pointer-events-none disabled:opacity-40";
+
+function Segmented<T extends string>({
+  value,
+  options,
+  onChange,
+}: {
+  value: T;
+  options: { value: T; label: string }[];
+  onChange: (value: T) => void;
+}) {
+  return (
+    <div className="flex rounded-full border border-white/10 bg-zinc-950/60 p-1">
+      {options.map((option) => (
+        <button
+          key={option.value}
+          type="button"
+          onClick={() => onChange(option.value)}
+          className={`flex-1 rounded-full px-4 py-1.5 text-sm font-medium transition active:scale-[0.97] ${
+            value === option.value
+              ? "bg-zinc-100 text-zinc-950"
+              : "text-zinc-300 hover:text-white"
+          }`}
+        >
+          {option.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+function Toggle({
+  checked,
+  label,
+  onChange,
+}: {
+  checked: boolean;
+  label: string;
+  onChange: (checked: boolean) => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={checked}
+      onClick={() => onChange(!checked)}
+      className="flex w-full items-center justify-between gap-4 py-1 text-left"
+    >
+      <span className="text-sm text-zinc-300">{label}</span>
+      <span
+        className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
+          checked ? "bg-emerald-500" : "bg-zinc-700"
+        }`}
+      >
+        <span
+          className="absolute top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform duration-200"
+          style={{ transform: checked ? "translateX(1.375rem)" : "translateX(0.125rem)" }}
+        />
+      </span>
+    </button>
+  );
+}
+
+function SectionLabel({ children }: { children: string }) {
+  return (
+    <p className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-zinc-500">
+      {children}
+    </p>
+  );
+}
 
 export function Reader({
   mangaId,
@@ -137,20 +268,74 @@ export function Reader({
   nextHref,
 }: ReaderProps) {
   const router = useRouter();
+  const settings = useSyncExternalStore(
+    subscribeReaderSettings,
+    getReaderSettings,
+    () => DEFAULT_READER_SETTINGS,
+  );
+  const updateSettings = useCallback((patch: Partial<ReaderSettings>) => {
+    setReaderSettings(patch);
+  }, []);
+
   const [open, setOpen] = useState(false);
+  const [settingsOpen, setSettingsOpen] = useState(false);
   const [progress, setProgress] = useState(0);
   const [currentPage, setCurrentPage] = useState(0);
+  const [pagedIndex, setPagedIndex] = useState(0);
   const [advanceCount, setAdvanceCount] = useState<number | null>(null);
-  const [zoom, setZoom] = useState(1);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const readChapters = useReadChapters(mangaId);
+  const [prevChapter, setPrevChapter] = useState<{
+    mangaId: string;
+    chapterId: string;
+  } | null>(null);
+
+  if (
+    prevChapter?.mangaId !== mangaId ||
+    prevChapter?.chapterId !== currentChapterId
+  ) {
+    setPrevChapter({ mangaId, chapterId: currentChapterId });
+    let initial = 0;
+    const saved = getProgress(mangaId);
+    if (
+      saved?.chapterId === currentChapterId &&
+      saved.scrollFraction &&
+      pages.length > 0
+    ) {
+      initial = Math.min(
+        pages.length - 1,
+        Math.round(saved.scrollFraction * (pages.length - 1)),
+      );
+    }
+    setPagedIndex(initial);
+    setProgress(0);
+  }
+
   const listRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
-  const lastZoomRef = useRef(1);
+  const lastZoomRef = useRef(settings.zoom);
   const pageRefs = useRef<(HTMLDivElement | null)[]>([]);
   const advanceTimerRef = useRef(0);
   const navigatingRef = useRef(false);
   const userActiveRef = useRef(false);
   const nextHrefRef = useRef<string | null | undefined>(nextHref);
+  const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const pendingScrollTargetRef = useRef<number | null>(null);
+
+  const mode = settings.mode;
+
+  const displayProgress =
+    mode === "paged"
+      ? pages.length > 0
+        ? (pagedIndex + 1) / pages.length
+        : 0
+      : progress;
+
+  const imageFilterCss = useMemo(() => {
+    let css = `brightness(${settings.brightness})`;
+    if (settings.filter === "sepia") css += " sepia(0.35)";
+    return css;
+  }, [settings.brightness, settings.filter]);
 
   useEffect(() => {
     nextHrefRef.current = nextHref;
@@ -217,14 +402,17 @@ export function Reader({
   }, [router, stopAdvance]);
 
   useEffect(() => {
+    if (mode !== "webtoon") return;
     let saveTimer = 0;
     function onScroll() {
       const doc = document.documentElement;
       const max = doc.scrollHeight - doc.clientHeight;
       const value = max > 0 ? Math.min(1, Math.max(0, doc.scrollTop / max)) : 0;
       setProgress(value);
+      if (value >= 0.95) markChapterRead(mangaId, currentChapterId);
       window.clearTimeout(saveTimer);
-      saveTimer = window.setTimeout(() => {        const index = chapters.findIndex(
+      saveTimer = window.setTimeout(() => {
+        const index = chapters.findIndex(
           (chapter) => chapter.id === currentChapterId,
         );
         const mangaFraction =
@@ -257,7 +445,7 @@ export function Reader({
           updatedAt: entry.updatedAt,
         });
       }, 600);
-      if (userActiveRef.current && value >= 0.98) {
+      if (userActiveRef.current && value >= 0.98 && settings.autoAdvance) {
         scheduleAdvance();
       } else {
         stopAdvance();
@@ -278,9 +466,61 @@ export function Reader({
     chapters,
     scheduleAdvance,
     stopAdvance,
+    mode,
+    settings.autoAdvance,
   ]);
 
   useEffect(() => {
+    if (mode !== "paged") return;
+    const fraction = pages.length > 0 ? (pagedIndex + 1) / pages.length : 0;
+    const index = chapters.findIndex(
+      (chapter) => chapter.id === currentChapterId,
+    );
+    const mangaFraction =
+      index >= 0 && chapters.length > 0
+        ? (index + fraction) / chapters.length
+        : undefined;
+    const entry = {
+      mangaId,
+      chapterId: currentChapterId,
+      chapterLabel,
+      mangaTitle,
+      scrollFraction: fraction,
+      mangaFraction,
+      updatedAt: Date.now(),
+    };
+    saveProgress(entry);
+    saveContinueHero({
+      manga: {
+        id: mangaId,
+        title: mangaTitle,
+        coverUrl: null,
+        bannerUrl: null,
+        genres: [],
+        availableLanguages: [],
+      },
+      chapterId: currentChapterId,
+      chapterLabel,
+      scrollFraction: fraction,
+      mangaFraction,
+      updatedAt: entry.updatedAt,
+    });
+    if (pagedIndex >= pages.length - 1) {
+      markChapterRead(mangaId, currentChapterId);
+    }
+  }, [
+    pagedIndex,
+    pages.length,
+    mode,
+    mangaId,
+    currentChapterId,
+    chapterLabel,
+    mangaTitle,
+    chapters,
+  ]);
+
+  useEffect(() => {
+    if (mode === "paged") return;
     const saved = getProgress(mangaId);
     if (!saved || saved.chapterId !== currentChapterId || !saved.scrollFraction) {
       return;
@@ -298,9 +538,10 @@ export function Reader({
       window.removeEventListener("load", onLoad);
       window.clearTimeout(fallback);
     };
-  }, [mangaId, currentChapterId]);
+  }, [mangaId, currentChapterId, mode]);
 
   useEffect(() => {
+    if (mode !== "webtoon") return;
     let raf = 0;
     function computeCurrentPage() {
       raf = 0;
@@ -323,7 +564,19 @@ export function Reader({
       window.removeEventListener("resize", onScroll);
       if (raf) cancelAnimationFrame(raf);
     };
-  }, [pages.length]);
+  }, [pages.length, mode]);
+
+  useEffect(() => {
+    if (mode !== "webtoon") return;
+    const target = pendingScrollTargetRef.current;
+    if (target == null) return;
+    pendingScrollTargetRef.current = null;
+    const raf = requestAnimationFrame(() => {
+      const el = pageRefs.current[target];
+      if (el) window.scrollTo(0, Math.max(0, el.offsetTop - 88));
+    });
+    return () => cancelAnimationFrame(raf);
+  }, [mode]);
 
   const chapterPrefix =
     chapterNumber !== null && chapterNumber !== undefined
@@ -334,14 +587,106 @@ export function Reader({
   const nextChapterLabel =
     nextIndex > 0 && nextIndex < chapters.length ? chapters[nextIndex].label : null;
 
+  const switchMode = useCallback(
+    (target: ReaderMode) => {
+      if (target === mode) return;
+      if (target === "paged") {
+        setPagedIndex(currentPage);
+        pendingScrollTargetRef.current = null;
+        window.scrollTo(0, 0);
+      } else {
+        pendingScrollTargetRef.current = pagedIndex;
+      }
+      updateSettings({ mode: target });
+    },
+    [mode, currentPage, pagedIndex, updateSettings],
+  );
+
+  const pageNext = useCallback(() => {
+    if (pagedIndex < pages.length - 1) {
+      setPagedIndex(pagedIndex + 1);
+    } else if (nextHrefRef.current) {
+      scheduleAdvance();
+    }
+  }, [pagedIndex, pages.length, scheduleAdvance]);
+
+  const pagePrev = useCallback(() => {
+    if (pagedIndex > 0) {
+      setPagedIndex(pagedIndex - 1);
+    } else if (prevHref) {
+      router.push(prevHref);
+    }
+  }, [pagedIndex, prevHref, router]);
+
+  const zoneNext = useCallback(() => {
+    if (settings.direction === "rtl") pagePrev();
+    else pageNext();
+  }, [settings.direction, pagePrev, pageNext]);
+
+  const zonePrev = useCallback(() => {
+    if (settings.direction === "rtl") pageNext();
+    else pagePrev();
+  }, [settings.direction, pageNext, pagePrev]);
+
+  const onTouchStart = useCallback((event: ReactTouchEvent<HTMLDivElement>) => {
+    const touch = event.touches[0];
+    touchStartRef.current = { x: touch.clientX, y: touch.clientY };
+  }, []);
+
+  const onTouchEnd = useCallback(
+    (event: ReactTouchEvent<HTMLDivElement>) => {
+      const start = touchStartRef.current;
+      touchStartRef.current = null;
+      if (!start) return;
+      const touch = event.changedTouches[0];
+      const dx = touch.clientX - start.x;
+      const dy = touch.clientY - start.y;
+      if (Math.abs(dx) < 48 || Math.abs(dx) < Math.abs(dy)) return;
+      if (dx < 0) {
+        if (settings.direction === "ltr") pageNext();
+        else pagePrev();
+      } else {
+        if (settings.direction === "ltr") pagePrev();
+        else pageNext();
+      }
+    },
+    [settings.direction, pageNext, pagePrev],
+  );
+
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
-      if (event.key === "ArrowLeft" && prevHref) router.push(prevHref);
-      if (event.key === "ArrowRight" && nextHref) router.push(nextHref);
+      if (settingsOpen || open) return;
+      if (mode === "paged") {
+        if (event.key === "ArrowLeft") {
+          event.preventDefault();
+          if (settings.direction === "rtl") pageNext();
+          else pagePrev();
+        } else if (event.key === "ArrowRight") {
+          event.preventDefault();
+          if (settings.direction === "rtl") pagePrev();
+          else pageNext();
+        } else if (event.key === " ") {
+          event.preventDefault();
+          pageNext();
+        }
+      } else {
+        if (event.key === "ArrowLeft" && prevHref) router.push(prevHref);
+        if (event.key === "ArrowRight" && nextHref) router.push(nextHref);
+      }
     }
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [router, prevHref, nextHref]);
+  }, [
+    router,
+    prevHref,
+    nextHref,
+    mode,
+    settings.direction,
+    pageNext,
+    pagePrev,
+    settingsOpen,
+    open,
+  ]);
 
   useEffect(() => {
     if (open && listRef.current) {
@@ -350,6 +695,19 @@ export function Reader({
         ?.scrollIntoView({ block: "center" });
     }
   }, [open]);
+
+  useEffect(() => {
+    if (!settingsOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setSettingsOpen(false);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.body.style.overflow = "";
+    };
+  }, [settingsOpen]);
 
   const toggleFullscreen = useCallback(() => {
     if (document.fullscreenElement) {
@@ -360,26 +718,54 @@ export function Reader({
   }, []);
 
   const zoomIn = useCallback(() => {
-    setZoom((value) => Math.min(2, Number((value + 0.25).toFixed(2))));
-  }, []);
+    const value = Math.min(2, Number((settings.zoom + 0.25).toFixed(2)));
+    updateSettings({ zoom: value });
+  }, [settings.zoom, updateSettings]);
 
   const zoomOut = useCallback(() => {
-    setZoom((value) => Math.max(0.5, Number((value - 0.25).toFixed(2))));
-  }, []);
+    const value = Math.max(0.5, Number((settings.zoom - 0.25).toFixed(2)));
+    updateSettings({ zoom: value });
+  }, [settings.zoom, updateSettings]);
 
   useEffect(() => {
+    if (mode !== "webtoon") return;
     const prev = lastZoomRef.current;
-    if (prev === zoom) return;
-    lastZoomRef.current = zoom;
+    if (prev === settings.zoom) return;
+    lastZoomRef.current = settings.zoom;
     const el = contentRef.current;
     if (!el) return;
-    const ratio = zoom / prev;
+    const ratio = settings.zoom / prev;
     const center = window.innerHeight / 2;
     const elTop = el.getBoundingClientRect().top + window.scrollY;
     const anchor = window.scrollY + center;
     const newAnchor = elTop + (anchor - elTop) * ratio;
     window.scrollTo(0, Math.max(0, newAnchor - center));
-  }, [zoom]);
+  }, [settings.zoom, mode]);
+
+  const nextNextHref = useMemo(() => {
+    const index = chapters.findIndex((chapter) => chapter.id === currentChapterId);
+    if (index < 0 || index >= chapters.length - 2) return null;
+    return `/read/${mangaId}/${chapters[index + 2].id}`;
+  }, [chapters, currentChapterId, mangaId]);
+
+  useEffect(() => {
+    if (nextHref) router.prefetch(nextHref);
+    if (displayProgress > 0.6 && nextNextHref) router.prefetch(nextNextHref);
+  }, [router, nextHref, nextNextHref, displayProgress]);
+
+  const fitStyle =
+    settings.fit === "height"
+      ? {
+          maxHeight: "calc(100dvh - 9rem)",
+          maxWidth: "calc(100vw - 2rem)",
+          width: "auto",
+        }
+      : {
+          maxHeight: "calc(100dvh - 9rem)",
+          maxWidth: "calc(100vw - 2rem)",
+          width: "100%",
+          height: "auto",
+        };
 
   return (
     <div className="min-h-screen bg-zinc-950 pb-24">
@@ -387,7 +773,7 @@ export function Reader({
         <div aria-hidden className="absolute inset-x-0 top-0 h-[3px] bg-white/5">
           <div
             className="h-full bg-red-500 transition-[width] duration-150 ease-out"
-            style={{ width: `${Math.round(progress * 100)}%` }}
+            style={{ width: `${Math.round(displayProgress * 100)}%` }}
           />
         </div>
 
@@ -403,7 +789,10 @@ export function Reader({
           <div className="relative min-w-0 flex-1">
             <button
               type="button"
-              onClick={() => setOpen((value) => !value)}
+              onClick={() => {
+                setOpen((value) => !value);
+                setSettingsOpen(false);
+              }}
               aria-expanded={open}
               aria-haspopup="listbox"
               className="flex w-full items-center gap-1.5 rounded-lg px-2 py-1 text-left transition-colors hover:bg-white/5"
@@ -431,21 +820,30 @@ export function Reader({
                   ref={listRef}
                   className="absolute left-0 right-0 top-full z-40 mt-2 max-h-80 overflow-y-auto rounded-xl border border-white/10 bg-zinc-900/95 p-1.5 shadow-2xl shadow-zinc-950/70 backdrop-blur-xl"
                 >
-                  {chapters.map((chapter) => (
-                    <Link
-                      key={chapter.id}
-                      href={`/read/${mangaId}/${chapter.id}`}
-                      data-active={chapter.id === currentChapterId}
-                      onClick={() => setOpen(false)}
-                      className={`block truncate rounded-lg px-3 py-2 text-sm transition-colors ${
-                        chapter.id === currentChapterId
-                          ? "bg-red-500/15 font-bold text-red-300"
-                          : "text-zinc-300 hover:bg-white/5 hover:text-white"
-                      }`}
-                    >
-                      {chapter.label}
-                    </Link>
-                  ))}
+                  {chapters.map((chapter) => {
+                    const isActive = chapter.id === currentChapterId;
+                    const isRead = readChapters.has(chapter.id);
+                    return (
+                      <Link
+                        key={chapter.id}
+                        href={`/read/${mangaId}/${chapter.id}`}
+                        data-active={isActive}
+                        onClick={() => setOpen(false)}
+                        className={`block rounded-lg px-3 py-2 text-sm transition-colors ${
+                          isActive
+                            ? "bg-red-500/15 font-bold text-red-300"
+                            : "text-zinc-300 hover:bg-white/5 hover:text-white"
+                        }`}
+                      >
+                        <span className="flex items-center gap-2">
+                          {isRead && (
+                            <CheckIcon className="h-3.5 w-3.5 shrink-0 text-emerald-400" />
+                          )}
+                          <span className="truncate">{chapter.label}</span>
+                        </span>
+                      </Link>
+                    );
+                  })}
                 </div>
               </>
             )}
@@ -479,87 +877,141 @@ export function Reader({
         </div>
       </header>
 
-      <nav className="mx-auto flex max-w-4xl items-center justify-between gap-2 px-4 pt-5">
-        <Link
-          href={prevHref ?? mangaHref}
-          aria-disabled={!prevHref}
-          className={`${controlButton} ${
-            prevHref ? "" : "pointer-events-none opacity-40"
-          }`}
-        >
-          <ChevronLeft className="h-4 w-4" />
-          Previous
-        </Link>
-        <span className="hidden text-xs font-medium uppercase tracking-widest text-zinc-500 sm:block">
-          {chapterPrefix ? `${chapterPrefix} · ` : ""}Page {currentPage + 1} of{" "}
-          {pages.length} · use ← → keys
-        </span>
-        <Link
-          href={nextHref ?? mangaHref}
-          aria-disabled={!nextHref}
-          className={`inline-flex items-center justify-center gap-2 rounded-lg border border-red-500/40 bg-red-500/15 px-3.5 py-2 text-sm font-semibold text-red-300 transition active:scale-[0.97] hover:bg-red-500/25 ${
-            nextHref ? "" : "pointer-events-none opacity-40"
-          }`}
-        >
-          Next
-          <ChevronRight className="h-4 w-4" />
-        </Link>
-      </nav>
+      {mode === "webtoon" ? (
+        <>
+          <nav className="mx-auto flex max-w-4xl items-center justify-between gap-2 px-4 pt-5">
+            <Link
+              href={prevHref ?? mangaHref}
+              aria-disabled={!prevHref}
+              className={`${controlButton} ${
+                prevHref ? "" : "pointer-events-none opacity-40"
+              }`}
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Previous
+            </Link>
+            <span className="hidden text-xs font-medium uppercase tracking-widest text-zinc-500 sm:block">
+              {chapterPrefix ? `${chapterPrefix} · ` : ""}Page {currentPage + 1} of{" "}
+              {pages.length} · use ← → keys
+            </span>
+            <Link
+              href={nextHref ?? mangaHref}
+              aria-disabled={!nextHref}
+              className={`inline-flex items-center justify-center gap-2 rounded-lg border border-red-500/40 bg-red-500/15 px-3.5 py-2 text-sm font-semibold text-red-300 transition active:scale-[0.97] hover:bg-red-500/25 ${
+                nextHref ? "" : "pointer-events-none opacity-40"
+              }`}
+            >
+              Next
+              <ChevronRight className="h-4 w-4" />
+            </Link>
+          </nav>
 
-      <div
-        ref={contentRef}
-        className="mx-auto mt-5 flex max-w-4xl flex-col gap-2 px-3 sm:px-4"
-        style={{ transform: `scale(${zoom})`, transformOrigin: "top center" }}
-      >
-        {pages.map((page, index) => (
           <div
-            key={page.id}
-            ref={(el) => {
-              pageRefs.current[index] = el;
+            ref={contentRef}
+            className="mx-auto mt-5 flex max-w-4xl flex-col gap-2 px-3 sm:px-4"
+            style={{
+              transform: `scale(${settings.zoom})`,
+              transformOrigin: "top center",
+              filter: imageFilterCss,
             }}
           >
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src={page.image}
-              alt={`${chapterPrefix ? `${chapterPrefix} · ` : ""}Page ${index + 1}`}
-              width={page.width ?? undefined}
-              height={page.height ?? undefined}
-              loading={index === 0 ? "eager" : "lazy"}
-              decoding="async"
-              className="h-auto w-full rounded-lg shadow-2xl shadow-zinc-950/60 ring-1 ring-white/5"
-            />
+            {pages.map((page, index) => (
+              <div
+                key={page.id}
+                ref={(el) => {
+                  pageRefs.current[index] = el;
+                }}
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={page.image}
+                  alt={`${chapterPrefix ? `${chapterPrefix} · ` : ""}Page ${index + 1}`}
+                  width={page.width ?? undefined}
+                  height={page.height ?? undefined}
+                  loading={index === 0 ? "eager" : "lazy"}
+                  decoding="async"
+                  className="h-auto w-full rounded-lg shadow-2xl shadow-zinc-950/60 ring-1 ring-white/5"
+                />
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
 
-      <nav className="mx-auto mt-10 flex max-w-4xl items-center justify-between gap-2 px-4">
-        <Link
-          href={prevHref ?? mangaHref}
-          aria-disabled={!prevHref}
-          className={`${controlButton} ${
-            prevHref ? "" : "pointer-events-none opacity-40"
-          }`}
+          <nav className="mx-auto mt-10 flex max-w-4xl items-center justify-between gap-2 px-4">
+            <Link
+              href={prevHref ?? mangaHref}
+              aria-disabled={!prevHref}
+              className={`${controlButton} ${
+                prevHref ? "" : "pointer-events-none opacity-40"
+              }`}
+            >
+              <ChevronLeft className="h-4 w-4" />
+              Previous
+            </Link>
+            <Link
+              href={mangaHref}
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-zinc-900/70 px-3.5 py-2 text-sm font-semibold text-zinc-200 shadow-[0_8px_24px_rgba(0,0,0,0.35)] transition-colors hover:bg-zinc-800/80 hover:text-white"
+            >
+              All Chapters
+            </Link>
+            <Link
+              href={nextHref ?? mangaHref}
+              aria-disabled={!nextHref}
+              className={`inline-flex items-center justify-center gap-2 rounded-lg border border-red-500/40 bg-red-500/15 px-3.5 py-2 text-sm font-semibold text-red-300 transition active:scale-[0.97] hover:bg-red-500/25 ${
+                nextHref ? "" : "pointer-events-none opacity-40"
+              }`}
+            >
+              Next
+              <ChevronRight className="h-4 w-4" />
+            </Link>
+          </nav>
+        </>
+      ) : (
+        <div
+          className="fixed inset-0 z-0 overflow-auto bg-zinc-950"
+          onTouchStart={onTouchStart}
+          onTouchEnd={onTouchEnd}
         >
-          <ChevronLeft className="h-4 w-4" />
-          Previous
-        </Link>
-        <Link
-          href={mangaHref}
-          className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-zinc-900/70 px-3.5 py-2 text-sm font-semibold text-zinc-200 shadow-[0_8px_24px_rgba(0,0,0,0.35)] transition-colors hover:bg-zinc-800/80 hover:text-white"
-        >
-          All Chapters
-        </Link>
-        <Link
-          href={nextHref ?? mangaHref}
-          aria-disabled={!nextHref}
-          className={`inline-flex items-center justify-center gap-2 rounded-lg border border-red-500/40 bg-red-500/15 px-3.5 py-2 text-sm font-semibold text-red-300 transition active:scale-[0.97] hover:bg-red-500/25 ${
-            nextHref ? "" : "pointer-events-none opacity-40"
-          }`}
-        >
-          Next
-          <ChevronRight className="h-4 w-4" />
-        </Link>
-      </nav>
+          <div className="flex min-h-full items-center justify-center px-4 pb-16 pt-20">
+            <div style={{ transform: `scale(${settings.zoom})`, filter: imageFilterCss }}>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={pages[pagedIndex]?.image}
+                alt={`${chapterPrefix ? `${chapterPrefix} · ` : ""}Page ${pagedIndex + 1}`}
+                width={pages[pagedIndex]?.width}
+                height={pages[pagedIndex]?.height}
+                decoding="async"
+                className="rounded-lg object-contain shadow-2xl shadow-zinc-950/60 ring-1 ring-white/5"
+                style={fitStyle}
+              />
+            </div>
+          </div>
+
+          {settings.tapZones && (
+            <>
+              <button
+                type="button"
+                onClick={zonePrev}
+                aria-label="Previous page"
+                title="Previous page"
+                className="absolute inset-y-0 left-0 z-10 w-1/3"
+              />
+              <button
+                type="button"
+                onClick={zoneNext}
+                aria-label="Next page"
+                title="Next page"
+                className="absolute inset-y-0 right-0 z-10 w-1/3"
+              />
+            </>
+          )}
+
+          <div className="pointer-events-none absolute bottom-4 left-1/2 z-10 -translate-x-1/2">
+            <span className="rounded-full border border-white/10 bg-zinc-950/80 px-3 py-1 text-xs font-semibold text-zinc-300 backdrop-blur-xl">
+              {pagedIndex + 1} / {pages.length}
+            </span>
+          </div>
+        </div>
+      )}
 
       <nav
         aria-label="Reader controls"
@@ -583,6 +1035,15 @@ export function Reader({
         </Link>
         <button
           type="button"
+          onClick={() => switchMode(mode === "webtoon" ? "paged" : "webtoon")}
+          aria-label={`Switch to ${mode === "webtoon" ? "paged" : "webtoon"} mode`}
+          title={`Switch to ${mode === "webtoon" ? "paged" : "webtoon"} mode`}
+          className={railButton}
+        >
+          {mode === "webtoon" ? <PagedIcon /> : <ScrollIcon />}
+        </button>
+        <button
+          type="button"
           onClick={zoomIn}
           aria-label="Zoom in"
           title="Zoom in"
@@ -598,6 +1059,15 @@ export function Reader({
           className={railButton}
         >
           <ZoomOutIcon />
+        </button>
+        <button
+          type="button"
+          onClick={() => setSettingsOpen((value) => !value)}
+          aria-label="Reader settings"
+          title="Reader settings"
+          className={railButton}
+        >
+          <SettingsIcon />
         </button>
         <button
           type="button"
@@ -639,6 +1109,132 @@ export function Reader({
             >
               Cancel
             </button>
+          </div>
+        </div>
+      )}
+
+      {settingsOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="Reader settings"
+          onClick={() => setSettingsOpen(false)}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/80 p-4 backdrop-blur-sm"
+        >
+          <div
+            onClick={(event) => event.stopPropagation()}
+            className="animate-modal-in relative w-full max-w-md overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900 shadow-2xl shadow-zinc-950/60"
+          >
+            <div className="flex items-center justify-between border-b border-zinc-800 px-6 py-4">
+              <h2 className="text-base font-bold tracking-tight text-white">
+                Reader Settings
+              </h2>
+              <button
+                type="button"
+                onClick={() => setSettingsOpen(false)}
+                aria-label="Close settings"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-400 transition active:scale-95 hover:bg-zinc-800 hover:text-zinc-100"
+              >
+                <CloseIcon />
+              </button>
+            </div>
+
+            <div className="max-h-[70vh] space-y-6 overflow-y-auto px-6 py-5">
+              <section>
+                <SectionLabel>Reading mode</SectionLabel>
+                <Segmented
+                  value={mode}
+                  onChange={(value) => switchMode(value)}
+                  options={[
+                    { value: "webtoon" as const, label: "Webtoon" },
+                    { value: "paged" as const, label: "Paged" },
+                  ]}
+                />
+              </section>
+
+              {mode === "paged" && (
+                <>
+                  <section>
+                    <SectionLabel>Reading direction</SectionLabel>
+                    <Segmented
+                      value={settings.direction}
+                      onChange={(value) => updateSettings({ direction: value })}
+                      options={[
+                        { value: "ltr" as const, label: "Left → Right" },
+                        { value: "rtl" as const, label: "Right → Left" },
+                      ]}
+                    />
+                  </section>
+                  <section>
+                    <SectionLabel>Page fit</SectionLabel>
+                    <Segmented
+                      value={settings.fit}
+                      onChange={(value) => updateSettings({ fit: value })}
+                      options={[
+                        { value: "height" as const, label: "Fit height" },
+                        { value: "width" as const, label: "Fit width" },
+                      ]}
+                    />
+                  </section>
+                  <Toggle
+                    checked={settings.tapZones}
+                    onChange={(value) => updateSettings({ tapZones: value })}
+                    label="Tap zones (left / right edges)"
+                  />
+                </>
+              )}
+
+              <section>
+                <div className="mb-2 flex items-center justify-between">
+                  <SectionLabel>Brightness</SectionLabel>
+                  <span className="text-xs font-semibold text-zinc-400">
+                    {Math.round(settings.brightness * 100)}%
+                  </span>
+                </div>
+                <input
+                  type="range"
+                  min={0.5}
+                  max={1.5}
+                  step={0.05}
+                  value={settings.brightness}
+                  onChange={(event) =>
+                    updateSettings({ brightness: Number(event.target.value) })
+                  }
+                  className="w-full accent-emerald-500"
+                  aria-label="Brightness"
+                />
+              </section>
+
+              <section>
+                <SectionLabel>Color filter</SectionLabel>
+                <Segmented
+                  value={settings.filter}
+                  onChange={(value) => updateSettings({ filter: value })}
+                  options={[
+                    { value: "none" as const, label: "Normal" },
+                    { value: "sepia" as const, label: "Sepia" },
+                  ]}
+                />
+              </section>
+
+              <Toggle
+                checked={settings.autoAdvance}
+                onChange={(value) => updateSettings({ autoAdvance: value })}
+                label="Auto-advance to next chapter at the end"
+              />
+
+              <div className="flex justify-end border-t border-zinc-800 pt-4">
+                <button
+                  type="button"
+                  onClick={() =>
+                    setReaderSettings({ ...DEFAULT_READER_SETTINGS })
+                  }
+                  className="rounded-lg border border-white/10 bg-zinc-800/60 px-4 py-2 text-sm font-semibold text-zinc-300 transition-colors hover:bg-zinc-700/60 hover:text-white"
+                >
+                  Reset defaults
+                </button>
+              </div>
+            </div>
           </div>
         </div>
       )}

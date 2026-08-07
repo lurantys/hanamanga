@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
   useSyncExternalStore,
+  type MouseEvent as ReactMouseEvent,
   type TouchEvent as ReactTouchEvent,
 } from "react";
 import Link from "next/link";
@@ -186,6 +187,9 @@ const iconButton =
 const railButton =
   "inline-flex h-11 w-11 items-center justify-center rounded-full text-zinc-200 transition active:scale-[0.95] hover:bg-white/5 hover:text-white disabled:pointer-events-none disabled:opacity-40";
 
+const mobileRailButton =
+  "inline-flex h-10 w-10 items-center justify-center rounded-full text-zinc-200 transition active:scale-[0.95] hover:bg-white/5 hover:text-white disabled:pointer-events-none disabled:opacity-40";
+
 function Segmented<T extends string>({
   value,
   options,
@@ -284,6 +288,8 @@ export function Reader({
   const [pagedIndex, setPagedIndex] = useState(0);
   const [advanceCount, setAdvanceCount] = useState<number | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [controlsVisible, setControlsVisible] = useState(true);
+  const [isMobile, setIsMobile] = useState(false);
   const readChapters = useReadChapters(mangaId);
   const [prevChapter, setPrevChapter] = useState<{
     mangaId: string;
@@ -321,6 +327,8 @@ export function Reader({
   const nextHrefRef = useRef<string | null | undefined>(nextHref);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
   const pendingScrollTargetRef = useRef<number | null>(null);
+  const controlsVisibleRef = useRef(true);
+  const controlsTimerRef = useRef(0);
 
   const mode = settings.mode;
 
@@ -602,21 +610,49 @@ export function Reader({
     [mode, currentPage, pagedIndex, updateSettings],
   );
 
+  const setControls = useCallback((visible: boolean) => {
+    controlsVisibleRef.current = visible;
+    setControlsVisible(visible);
+  }, []);
+
+  const showControls = useCallback(() => {
+    if (isMobile) {
+      setControls(true);
+      window.clearTimeout(controlsTimerRef.current);
+      controlsTimerRef.current = window.setTimeout(() => setControls(false), 3500);
+    }
+  }, [isMobile, setControls]);
+
+  const toggleControls = useCallback(() => {
+    if (isMobile) {
+      const next = !controlsVisibleRef.current;
+      if (next) {
+        window.clearTimeout(controlsTimerRef.current);
+        controlsTimerRef.current = window.setTimeout(() => setControls(false), 3500);
+      } else {
+        window.clearTimeout(controlsTimerRef.current);
+      }
+      setControls(next);
+    }
+  }, [isMobile, setControls]);
+
   const pageNext = useCallback(() => {
     if (pagedIndex < pages.length - 1) {
       setPagedIndex(pagedIndex + 1);
+      showControls();
     } else if (nextHrefRef.current) {
       scheduleAdvance();
     }
-  }, [pagedIndex, pages.length, scheduleAdvance]);
+  }, [pagedIndex, pages.length, scheduleAdvance, showControls]);
 
   const pagePrev = useCallback(() => {
     if (pagedIndex > 0) {
       setPagedIndex(pagedIndex - 1);
+      showControls();
     } else if (prevHref) {
       router.push(prevHref);
     }
-  }, [pagedIndex, prevHref, router]);
+  }, [pagedIndex, prevHref, router, showControls]);
 
   const zoneNext = useCallback(() => {
     if (settings.direction === "rtl") pagePrev();
@@ -728,6 +764,32 @@ export function Reader({
   }, [settings.zoom, updateSettings]);
 
   useEffect(() => {
+    const mq = window.matchMedia("(max-width: 640px)");
+    const update = () => setIsMobile(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+
+  const onViewportClick = useCallback(
+    (event: ReactMouseEvent<HTMLDivElement>) => {
+      if (settings.tapZones) {
+        const width = event.currentTarget.clientWidth;
+        const x = event.clientX;
+        if (x < width / 3 || x > (width * 2) / 3) return;
+      }
+      toggleControls();
+    },
+    [settings.tapZones, toggleControls],
+  );
+
+  useEffect(() => {
+    if (!isMobile || settingsOpen || open || advanceCount !== null) return;
+    window.clearTimeout(controlsTimerRef.current);
+    controlsTimerRef.current = window.setTimeout(() => setControls(false), 3500);
+  }, [isMobile, settingsOpen, open, advanceCount, setControls]);
+
+  useEffect(() => {
     if (mode !== "webtoon") return;
     const prev = lastZoomRef.current;
     if (prev === settings.zoom) return;
@@ -766,6 +828,82 @@ export function Reader({
           width: "100%",
           height: "auto",
         };
+
+  const renderControls = (buttonClass: string) => (
+    <>
+      <Link href="/" aria-label="Home" title="Home" className={buttonClass}>
+        <HomeIcon />
+      </Link>
+      <Link
+        href={mangaHref}
+        aria-label="Manga details"
+        title={mangaTitle}
+        className={buttonClass}
+      >
+        <BookOpenIcon />
+      </Link>
+      <button
+        type="button"
+        onClick={() => {
+          switchMode(mode === "webtoon" ? "paged" : "webtoon");
+          showControls();
+        }}
+        aria-label={`Switch to ${mode === "webtoon" ? "paged" : "webtoon"} mode`}
+        title={`Switch to ${mode === "webtoon" ? "paged" : "webtoon"} mode`}
+        className={buttonClass}
+      >
+        {mode === "webtoon" ? <PagedIcon /> : <ScrollIcon />}
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          zoomIn();
+          showControls();
+        }}
+        aria-label="Zoom in"
+        title="Zoom in"
+        className={buttonClass}
+      >
+        <ZoomInIcon />
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          zoomOut();
+          showControls();
+        }}
+        aria-label="Zoom out"
+        title="Zoom out"
+        className={buttonClass}
+      >
+        <ZoomOutIcon />
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          setSettingsOpen((value) => !value);
+          showControls();
+        }}
+        aria-label="Reader settings"
+        title="Reader settings"
+        className={buttonClass}
+      >
+        <SettingsIcon />
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          toggleFullscreen();
+          showControls();
+        }}
+        aria-label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+        title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+        className={buttonClass}
+      >
+        {isFullscreen ? <MinimizeIcon /> : <FullscreenIcon />}
+      </button>
+    </>
+  );
 
   return (
     <div className="min-h-screen bg-zinc-950 pb-24">
@@ -909,6 +1047,7 @@ export function Reader({
           <div
             ref={contentRef}
             className="mx-auto mt-5 flex max-w-4xl flex-col gap-2 px-3 sm:px-4"
+            onClick={toggleControls}
             style={{
               transform: `scale(${settings.zoom})`,
               transformOrigin: "top center",
@@ -970,6 +1109,7 @@ export function Reader({
           className="fixed inset-0 z-0 overflow-auto bg-zinc-950"
           onTouchStart={onTouchStart}
           onTouchEnd={onTouchEnd}
+          onClick={onViewportClick}
         >
           <div className="flex min-h-full items-center justify-center px-4 pb-16 pt-20">
             <div style={{ transform: `scale(${settings.zoom})`, filter: imageFilterCss }}>
@@ -1015,70 +1155,25 @@ export function Reader({
 
       <nav
         aria-label="Reader controls"
-        className="fixed right-3 top-1/2 z-30 flex -translate-y-1/2 flex-col items-center gap-1.5 rounded-full border border-zinc-700/50 bg-zinc-950/70 py-2 shadow-[0_8px_40px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.06)] ring-1 ring-inset ring-white/10 backdrop-blur-xl sm:right-5"
+        className="fixed right-3 top-1/2 z-30 hidden -translate-y-1/2 flex-col items-center gap-1.5 rounded-full border border-zinc-700/50 bg-zinc-950/70 py-2 shadow-[0_8px_40px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.06)] ring-1 ring-inset ring-white/10 backdrop-blur-xl sm:right-5 sm:flex"
       >
-        <Link
-          href="/"
-          aria-label="Home"
-          title="Home"
-          className={railButton}
-        >
-          <HomeIcon />
-        </Link>
-        <Link
-          href={mangaHref}
-          aria-label="Manga details"
-          title={mangaTitle}
-          className={railButton}
-        >
-          <BookOpenIcon />
-        </Link>
-        <button
-          type="button"
-          onClick={() => switchMode(mode === "webtoon" ? "paged" : "webtoon")}
-          aria-label={`Switch to ${mode === "webtoon" ? "paged" : "webtoon"} mode`}
-          title={`Switch to ${mode === "webtoon" ? "paged" : "webtoon"} mode`}
-          className={railButton}
-        >
-          {mode === "webtoon" ? <PagedIcon /> : <ScrollIcon />}
-        </button>
-        <button
-          type="button"
-          onClick={zoomIn}
-          aria-label="Zoom in"
-          title="Zoom in"
-          className={railButton}
-        >
-          <ZoomInIcon />
-        </button>
-        <button
-          type="button"
-          onClick={zoomOut}
-          aria-label="Zoom out"
-          title="Zoom out"
-          className={railButton}
-        >
-          <ZoomOutIcon />
-        </button>
-        <button
-          type="button"
-          onClick={() => setSettingsOpen((value) => !value)}
-          aria-label="Reader settings"
-          title="Reader settings"
-          className={railButton}
-        >
-          <SettingsIcon />
-        </button>
-        <button
-          type="button"
-          onClick={toggleFullscreen}
-          aria-label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
-          title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
-          className={railButton}
-        >
-          {isFullscreen ? <MinimizeIcon /> : <FullscreenIcon />}
-        </button>
+        {renderControls(railButton)}
       </nav>
+
+      {!open && !settingsOpen && advanceCount === null && (
+        <nav
+          aria-label="Reader controls"
+          className={`fixed inset-x-0 bottom-0 z-40 flex justify-center px-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-4 transition-all duration-300 sm:hidden ${
+            controlsVisible
+              ? "translate-y-0 opacity-100"
+              : "pointer-events-none translate-y-4 opacity-0"
+          }`}
+        >
+          <div className="flex items-center gap-1 rounded-full border border-zinc-700/50 bg-zinc-950/85 px-1.5 py-1.5 shadow-[0_8px_40px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.06)] ring-1 ring-inset ring-white/10 backdrop-blur-xl">
+            {renderControls(mobileRailButton)}
+          </div>
+        </nav>
+      )}
 
       {advanceCount !== null && (
         <div

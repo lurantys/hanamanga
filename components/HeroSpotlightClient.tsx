@@ -33,13 +33,9 @@ function subscribe(onChange: () => void): () => void {
 export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
   const snapshot = useSyncExternalStore(subscribe, readContinueHero, () => null);
   const [imageLoaded, setImageLoaded] = useState(false);
-  const [initialBanner, setInitialBanner] = useState<string | null>(null);
 
   const hero: Manga = snapshot?.manga ?? initial;
-  const banner: string | null = snapshot
-    ? (snapshot.manga.bannerUrl ?? null)
-    : initialBanner;
-  const imageSrc: string | null = banner ?? hero.coverUrl ?? null;
+  const imageSrc: string | null = hero.coverUrl ?? null;
 
   const ready = !imageSrc || imageLoaded;
 
@@ -62,20 +58,6 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
       })
       .catch(() => {});
   }, []);
-
-  useEffect(() => {
-    if (getContinueList(1)[0]) return;
-    let cancelled = false;
-    fetch(`/api/banner?title=${encodeURIComponent(initial.title)}`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((json) => {
-        if (!cancelled && json?.bannerUrl) setInitialBanner(json.bannerUrl);
-      })
-      .catch(() => {});
-    return () => {
-      cancelled = true;
-    };
-  }, [initial]);
 
   const rating = hero.rating ?? 0;
   const match = Math.round(rating * 10);
@@ -100,9 +82,9 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
           fill
           sizes="100vw"
           onLoad={() => setImageLoaded(true)}
-          className={`object-cover transition-opacity duration-700 ${
-            ready ? "animate-kenburns opacity-100" : "opacity-0"
-          } ${!banner ? "object-top" : ""}`}
+          className={`scale-125 object-cover blur-2xl object-top transition-opacity duration-700 ${
+            ready ? "opacity-100" : "opacity-0"
+          }`}
         />
       ) : (
         <div
@@ -112,6 +94,10 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
               "radial-gradient(circle at 30% 20%, #27272a 0%, #09090b 60%)",
           }}
         />
+      )}
+
+      {imageSrc && (
+        <div aria-hidden className="absolute inset-0 bg-zinc-950/40" />
       )}
 
       {imageSrc && (
@@ -127,61 +113,81 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
       <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/50 to-transparent" />
 
       <div
-        className={`absolute inset-x-0 bottom-0 flex flex-col gap-4 px-5 pb-20 transition-opacity duration-500 md:px-10 lg:px-16 ${
+        className={`absolute inset-x-0 bottom-0 px-5 pb-20 transition-opacity duration-500 md:px-10 lg:px-16 ${
           ready ? "opacity-100" : "opacity-0"
         }`}
       >
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-          <span className="inline-flex items-center gap-2 rounded-md bg-emerald-500/15 px-2.5 py-1 text-sm font-bold text-emerald-400">
-            <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4" aria-hidden>
-              <path d="M12 2l2.4 7.2H22l-6 4.6 2.3 7.2-6.3-4.5-6.3 4.5L8 13.8 2 9.2h7.6Z" />
-            </svg>
-            {match}% Match
-          </span>
-          <span className="rounded-md border border-zinc-500/60 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-zinc-200">
-            {statusLabel(hero.status)}
-          </span>
-          {hero.year && (
-            <span className="text-sm text-zinc-300">{hero.year}</span>
+        <div className="flex items-end gap-8">
+          {hero.coverUrl && (
+            <Link
+              href={`/manga/${hero.id}`}
+              aria-label={hero.title}
+              className="hidden shrink-0 md:block"
+            >
+              <Image
+                src={hero.coverUrl}
+                alt=""
+                width={224}
+                height={336}
+                sizes="224px"
+                className="aspect-[2/3] w-44 rounded-xl object-cover shadow-2xl shadow-zinc-950/70 ring-1 ring-white/10 transition hover:ring-white/30 xl:w-56"
+              />
+            </Link>
           )}
-          {hero.follows ? (
-            <span className="text-sm text-zinc-400">
-              {hero.follows.toLocaleString()} followers
-            </span>
-          ) : null}
-          {snapshot && pct !== null && (
-            <span className="rounded-md bg-red-500/15 px-2 py-0.5 text-xs font-bold text-red-300">
-              {snapshot.chapterLabel} · {pct}% of manga read
-            </span>
-          )}
-        </div>
+          <div className="flex min-w-0 flex-1 flex-col gap-4">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <span className="inline-flex items-center gap-2 rounded-md bg-emerald-500/15 px-2.5 py-1 text-sm font-bold text-emerald-400">
+                <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4" aria-hidden>
+                  <path d="M12 2l2.4 7.2H22l-6 4.6 2.3 7.2-6.3-4.5-6.3 4.5L8 13.8 2 9.2h7.6Z" />
+                </svg>
+                {match}% Match
+              </span>
+              <span className="rounded-md border border-zinc-500/60 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-zinc-200">
+                {statusLabel(hero.status)}
+              </span>
+              {hero.year && (
+                <span className="text-sm text-zinc-300">{hero.year}</span>
+              )}
+              {hero.follows ? (
+                <span className="text-sm text-zinc-400">
+                  {hero.follows.toLocaleString()} followers
+                </span>
+              ) : null}
+              {snapshot && pct !== null && (
+                <span className="rounded-md bg-red-500/15 px-2 py-0.5 text-xs font-bold text-red-300">
+                  {snapshot.chapterLabel} · {pct}% of manga read
+                </span>
+              )}
+            </div>
 
-        <h1 className="max-w-3xl text-4xl font-extrabold tracking-tight text-white drop-shadow-lg md:text-6xl">
-          {hero.title}
-        </h1>
+            <h1 className="max-w-3xl text-4xl font-extrabold tracking-tight text-white drop-shadow-lg md:text-6xl">
+              {hero.title}
+            </h1>
 
-        {description && (
-          <p className="line-clamp-2 max-w-2xl text-sm leading-relaxed text-zinc-200 md:text-base">
-            {description}
-          </p>
-        )}
+            {description && (
+              <p className="line-clamp-2 max-w-2xl text-sm leading-relaxed text-zinc-200 md:text-base">
+                {description}
+              </p>
+            )}
 
-        <div className="mt-2 flex flex-wrap gap-3">
-          <Link
-            href={primaryHref}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-6 py-2.5 text-sm font-bold text-zinc-950 transition active:scale-[0.97] hover:bg-white/80"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>
-              <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-            </svg>
-            {snapshot ? "Continue" : "Read Now"}
-          </Link>
-          <Link
-            href={`/manga/${hero.id}`}
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-zinc-500/50 px-6 py-2.5 text-sm font-bold text-white transition active:scale-[0.97] hover:bg-zinc-500/30"
-          >
-            More Info
-          </Link>
+            <div className="mt-2 flex flex-wrap gap-3">
+              <Link
+                href={primaryHref}
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-6 py-2.5 text-sm font-bold text-zinc-950 transition active:scale-[0.97] hover:bg-white/80"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>
+                  <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+                </svg>
+                {snapshot ? "Continue" : "Read Now"}
+              </Link>
+              <Link
+                href={`/manga/${hero.id}`}
+                className="inline-flex items-center justify-center gap-2 rounded-lg bg-zinc-500/50 px-6 py-2.5 text-sm font-bold text-white transition active:scale-[0.97] hover:bg-zinc-500/30"
+              >
+                More Info
+              </Link>
+            </div>
+          </div>
         </div>
       </div>
     </section>

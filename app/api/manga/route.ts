@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { fetchMangaList } from "@/lib/mangadex";
-import { bannerForTitle } from "@/lib/banner";
+import { bannerForManga } from "@/lib/banner";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +17,10 @@ export async function GET(request: Request) {
     if (withBanners) {
       await Promise.all(
         data.map(async (manga) => {
-          manga.bannerUrl = await bannerForTitle(manga.title);
+          manga.bannerUrl = await bannerForManga({
+            title: manga.title,
+            anilistId: manga.links?.al,
+          });
         }),
       );
     }

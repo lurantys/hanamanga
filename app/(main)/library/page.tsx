@@ -10,8 +10,10 @@ import {
 } from "@/lib/library";
 import { getAllProgress } from "@/lib/progress";
 
+const EMPTY_LIBRARY_SNAPSHOT = {};
+
 function getServerSnapshot(): ReturnType<typeof getLibrarySnapshot> {
-  return {};
+  return EMPTY_LIBRARY_SNAPSHOT;
 }
 
 function thumbUrl(coverUrl?: string | null): string | null {

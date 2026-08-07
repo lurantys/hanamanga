@@ -8,8 +8,10 @@ import {
   subscribeLibrary,
 } from "@/lib/library";
 
+const EMPTY_LIBRARY_SNAPSHOT = {};
+
 function getServerSnapshot(): ReturnType<typeof getLibrarySnapshot> {
-  return {};
+  return EMPTY_LIBRARY_SNAPSHOT;
 }
 
 export function LibraryRow() {

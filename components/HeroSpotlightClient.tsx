@@ -133,7 +133,7 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
       <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/50 to-transparent" />
 
       <div
-        className={`relative z-10 px-5 pb-8 pt-10 transition-opacity duration-500 md:absolute md:inset-x-0 md:bottom-0 md:px-10 md:pb-20 md:pt-0 lg:px-16 ${
+        className={`relative z-10 px-5 pb-8 pt-32 transition-opacity duration-500 md:absolute md:inset-x-0 md:bottom-0 md:px-10 md:pb-20 md:pt-0 lg:px-16 ${
           ready ? "opacity-100" : "opacity-0"
         }`}
       >

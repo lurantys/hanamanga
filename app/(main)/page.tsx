@@ -109,7 +109,7 @@ function HeroSkeleton() {
   return (
     <section
       aria-hidden
-      className="h-[80dvh] min-h-[480px] w-full animate-pulse bg-gradient-to-t from-zinc-900 to-zinc-800"
+      className="h-80 w-full animate-pulse bg-gradient-to-t from-zinc-900 to-zinc-800 md:h-[80dvh] md:min-h-[480px]"
     />
   );
 }
@@ -121,7 +121,7 @@ export default function Home() {
         <HeroSpotlight />
       </Suspense>
 
-      <div className="relative z-10 -mt-16 space-y-10 pb-20">
+      <div className="relative z-10 -mt-6 space-y-10 pb-20 md:-mt-16">
         <ContinueRow />
         <LibraryRow />
 

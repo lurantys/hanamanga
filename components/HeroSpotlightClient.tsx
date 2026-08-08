@@ -61,7 +61,7 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
 
   const rating = hero.rating ?? 0;
   const match = Math.round(rating * 10);
-  const description = truncate(hero.description, 240);
+  const description = truncate(hero.description, 400);
   const pct = snapshot
     ? Math.round((snapshot.mangaFraction ?? snapshot.scrollFraction) * 100)
     : null;
@@ -69,10 +69,30 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
     ? `/read/${hero.id}/${snapshot.chapterId}`
     : `/read/${hero.id}`;
 
+  const actionButtons = (
+    <>
+      <Link
+        href={primaryHref}
+        className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-bold text-zinc-950 transition active:scale-[0.97] hover:bg-white/80 md:flex-none md:px-6"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>
+          <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+        </svg>
+        {snapshot ? "Continue" : "Read Now"}
+      </Link>
+      <Link
+        href={`/manga/${hero.id}`}
+        className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-zinc-500/50 px-4 py-2.5 text-sm font-bold text-white transition active:scale-[0.97] hover:bg-zinc-500/30 md:flex-none md:px-6"
+      >
+        More Info
+      </Link>
+    </>
+  );
+
   return (
     <section
       key={`${hero.id}:${imageSrc ?? "none"}`}
-      className="animate-hero-in relative h-[80dvh] min-h-[480px] w-full overflow-hidden bg-zinc-950"
+      className="animate-hero-in relative w-full overflow-hidden bg-zinc-950 md:h-[80dvh] md:min-h-[480px]"
     >
       {imageSrc ? (
         <Image
@@ -113,11 +133,11 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
       <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/50 to-transparent" />
 
       <div
-        className={`absolute inset-x-0 bottom-0 px-5 pb-20 transition-opacity duration-500 md:px-10 lg:px-16 ${
+        className={`relative z-10 px-5 pb-8 pt-10 transition-opacity duration-500 md:absolute md:inset-x-0 md:bottom-0 md:px-10 md:pb-20 md:pt-0 lg:px-16 ${
           ready ? "opacity-100" : "opacity-0"
         }`}
       >
-        <div className="flex items-end gap-4 md:gap-8">
+        <div className="flex items-start gap-4 md:items-end md:gap-8">
           {hero.coverUrl && (
             <Link
               href={`/manga/${hero.id}`}
@@ -129,13 +149,13 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
                 alt=""
                 width={224}
                 height={336}
-                sizes="(min-width:768px) 224px, 96px"
-                className="aspect-[2/3] w-24 rounded-xl object-cover shadow-2xl shadow-zinc-950/70 ring-1 ring-white/10 transition hover:ring-white/30 md:w-44 xl:w-56"
+                sizes="(min-width:1280px) 224px, (min-width:768px) 176px, 152px"
+                className="aspect-[2/3] w-[9.5rem] rounded-xl object-cover shadow-2xl shadow-zinc-950/70 ring-1 ring-white/10 transition hover:ring-white/30 md:w-44 xl:w-56"
               />
             </Link>
           )}
-          <div className="flex min-w-0 flex-1 flex-col gap-4">
-            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+          <div className="flex min-w-0 flex-1 flex-col gap-3 md:gap-4">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 md:gap-x-4 md:gap-y-2">
               <span className="inline-flex items-center gap-2 rounded-md bg-emerald-500/15 px-2.5 py-1 text-sm font-bold text-emerald-400">
                 <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4" aria-hidden>
                   <path d="M12 2l2.4 7.2H22l-6 4.6 2.3 7.2-6.3-4.5-6.3 4.5L8 13.8 2 9.2h7.6Z" />
@@ -160,35 +180,23 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
               )}
             </div>
 
-            <h1 className="line-clamp-3 max-w-3xl text-4xl font-extrabold tracking-tight text-white drop-shadow-lg md:line-clamp-2 md:text-6xl">
+            <h1 className="line-clamp-3 max-w-3xl text-3xl font-extrabold tracking-tight text-white drop-shadow-lg md:line-clamp-2 md:text-6xl">
               {hero.title}
             </h1>
 
             {description && (
-              <p className="line-clamp-2 max-w-2xl text-sm leading-relaxed text-zinc-200 md:text-base">
+              <p className="line-clamp-3 max-w-2xl text-sm leading-relaxed text-zinc-200 md:line-clamp-2 md:text-base">
                 {description}
               </p>
             )}
 
-            <div className="mt-2 flex flex-wrap gap-3">
-              <Link
-                href={primaryHref}
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-6 py-2.5 text-sm font-bold text-zinc-950 transition active:scale-[0.97] hover:bg-white/80"
-              >
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>
-                  <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-                </svg>
-                {snapshot ? "Continue" : "Read Now"}
-              </Link>
-              <Link
-                href={`/manga/${hero.id}`}
-                className="inline-flex items-center justify-center gap-2 rounded-lg bg-zinc-500/50 px-6 py-2.5 text-sm font-bold text-white transition active:scale-[0.97] hover:bg-zinc-500/30"
-              >
-                More Info
-              </Link>
+            <div className="mt-2 hidden flex-wrap gap-3 md:flex">
+              {actionButtons}
             </div>
           </div>
         </div>
+
+        <div className="mt-3 flex gap-3 md:hidden">{actionButtons}</div>
       </div>
     </section>
   );

@@ -3,7 +3,7 @@ import { HeroSpotlightClient } from "./HeroSpotlightClient";
 
 function HeroFallback() {
   return (
-    <section className="relative flex h-[80dvh] min-h-[480px] w-full items-center justify-center overflow-hidden bg-zinc-950">
+    <section className="relative flex h-80 w-full items-center justify-center overflow-hidden bg-zinc-950 md:h-[80dvh] md:min-h-[480px]">
       <div
         className="absolute inset-0"
         style={{

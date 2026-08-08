@@ -117,20 +117,20 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
           ready ? "opacity-100" : "opacity-0"
         }`}
       >
-        <div className="flex items-end gap-8">
+        <div className="flex items-end gap-4 md:gap-8">
           {hero.coverUrl && (
             <Link
               href={`/manga/${hero.id}`}
               aria-label={hero.title}
-              className="hidden shrink-0 md:block"
+              className="shrink-0"
             >
               <Image
                 src={hero.coverUrl}
                 alt=""
                 width={224}
                 height={336}
-                sizes="224px"
-                className="aspect-[2/3] w-44 rounded-xl object-cover shadow-2xl shadow-zinc-950/70 ring-1 ring-white/10 transition hover:ring-white/30 xl:w-56"
+                sizes="(min-width:768px) 224px, 96px"
+                className="aspect-[2/3] w-24 rounded-xl object-cover shadow-2xl shadow-zinc-950/70 ring-1 ring-white/10 transition hover:ring-white/30 md:w-44 xl:w-56"
               />
             </Link>
           )}

@@ -217,7 +217,7 @@ export default async function MangaPage({ params }: MangaPageProps) {
 
         <section className="mt-12" aria-label="Chapters">
           <h2 className="mb-1 text-xl font-bold tracking-tight text-white">
-            {atsuMatch ? "Read on Atsumaru" : "Chapters"}
+            {atsuMatch ? "Read on Hana" : "Chapters"}
           </h2>
           {atsuMatch ? (
             <p className="mb-5 text-sm text-zinc-500">

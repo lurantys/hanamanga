@@ -180,10 +180,10 @@ export default async function MangaPage({ params }: MangaPageProps) {
             )}
 
             {manga.rating ? (
-              <div className="flex items-center gap-2">
-                <StarRating rating={rating / 2} sizeClass="h-4 w-4" />
+              <div className="flex items-center gap-1.5">
+                <StarRating sizeClass="h-4 w-4" />
                 <span className="text-sm font-semibold text-zinc-300">
-                  {rating.toFixed(2)}
+                  {rating.toFixed(1)}
                 </span>
                 <span className="text-sm text-zinc-500">/ 10</span>
               </div>

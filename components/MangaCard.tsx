@@ -64,9 +64,14 @@ export function MangaCard({ manga, className = "" }: MangaCardProps) {
           {manga.title}
         </p>
         <div className="mt-1 flex items-center gap-1.5">
-          <span aria-hidden>
-            <StarRating rating={rating / 2} />
-          </span>
+          {rating > 0 && (
+            <>
+              <StarRating />
+              <span className="text-xs font-semibold text-zinc-300">
+                {rating.toFixed(1)}
+              </span>
+            </>
+          )}
           <span className="text-xs text-zinc-500">
             {statusLabel(manga.status)}
             {manga.year ? ` · ${manga.year}` : ""}

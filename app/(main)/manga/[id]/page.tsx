@@ -52,12 +52,6 @@ export async function generateMetadata({
   return {
     title: `${manga.title} — Hana`,
     description: manga.description ? truncate(manga.description, 160) : undefined,
-    openGraph: manga.coverUrl
-      ? {
-          images: [{ url: manga.coverUrl, alt: manga.title }],
-        }
-      : undefined,
-    twitter: manga.coverUrl ? { images: [manga.coverUrl] } : undefined,
   };
 }
 

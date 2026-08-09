@@ -18,6 +18,7 @@ import {
   fetchAtsuChapters,
   findAtsuManga,
 } from "@/lib/atsu";
+import { fetchKatanaReader } from "@/lib/mangakatana";
 
 type ReadPageProps = {
   params: Promise<{ mangaId: string; chapterId: string }>;
@@ -124,7 +125,7 @@ export default async function ReadPage({ params }: ReadPageProps) {
         };
       }
     } catch {
-      // Atsumaru source unavailable — fall through to MangaDex chapters.
+      // Atsumaru source unavailable — fall through to MangaKatana chapters.
     }
   }
 
@@ -145,6 +146,35 @@ export default async function ReadPage({ params }: ReadPageProps) {
     );
   }
 
+  let katanaReader: Awaited<ReturnType<typeof fetchKatanaReader>> = null;
+  try {
+    katanaReader = await fetchKatanaReader({
+      mangaTitle: manga.title,
+      chapterId,
+      mangaId,
+    });
+  } catch {
+    // MangaKatana unavailable — fall through to MangaDex.
+  }
+
+  if (katanaReader) {
+    return (
+      <Reader
+        mangaId={mangaId}
+        mangaTitle={manga.title}
+        mangaHref={`/manga/${mangaId}`}
+        chapterLabel={katanaReader.chapterLabel}
+        chapterNumber={katanaReader.chapterNumber}
+        currentChapterId={chapterId}
+        chapters={katanaReader.chapters}
+        pages={katanaReader.pages}
+        prevHref={katanaReader.prevHref}
+        nextHref={katanaReader.nextHref}
+      />
+    );
+  }
+
+  // Final fallback: MangaDex.
   let feed;
   let reader;
   try {

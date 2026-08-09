@@ -25,6 +25,7 @@ import {
   type AtsuChapter,
   type AtsuMatch,
 } from "@/lib/atsu";
+import { fetchKatanaCatalogChapters } from "@/lib/mangakatana";
 
 type MangaPageProps = {
   params: Promise<{ id: string }>;
@@ -58,14 +59,8 @@ export default async function MangaPage({ params }: MangaPageProps) {
   const { id } = await params;
 
   let manga;
-  let aggregate;
-  let feed;
   try {
-    [manga, aggregate, feed] = await Promise.all([
-      fetchMangaById(id),
-      fetchAggregate(id),
-      fetchFeed(id),
-    ]);
+    manga = await fetchMangaById(id);
   } catch (error) {
     if (error instanceof MangaDexError && error.status === 404) notFound();
     throw error;
@@ -82,6 +77,29 @@ export default async function MangaPage({ params }: MangaPageProps) {
     atsuMatch = null;
   }
 
+  let katanaChapters: Chapter[] = [];
+  let feed: Awaited<ReturnType<typeof fetchFeed>> | null = null;
+  let aggregate: Awaited<ReturnType<typeof fetchAggregate>> | null = null;
+  if (!atsuMatch) {
+    try {
+      katanaChapters = await fetchKatanaCatalogChapters(manga.title);
+    } catch {
+      katanaChapters = [];
+    }
+    if (katanaChapters.length === 0) {
+      try {
+        [feed, aggregate] = await Promise.all([
+          fetchFeed(id),
+          fetchAggregate(id),
+        ]);
+      } catch (error) {
+        if (error instanceof MangaDexError && error.status === 404) notFound();
+        feed = null;
+        aggregate = null;
+      }
+    }
+  }
+
   const primaryScanlatorId = atsuMatch
     ? (primaryScanlator(atsuMatch.manga.scanlators, atsuChapters)?.id ?? null)
     : null;
@@ -89,14 +107,18 @@ export default async function MangaPage({ params }: MangaPageProps) {
     ? chaptersOfScanlator(atsuChapters, primaryScanlatorId ?? "")
     : [];
   const firstChapter = atsuReadingOrder[0] ?? atsuChapters[0] ?? null;
-  const fallbackFirstChapter = feed.data.find((chapter) => !chapter.externalUrl) ?? null;
+  const fallbackChapters = katanaChapters.length
+    ? katanaChapters
+    : (feed?.data ?? []);
+  const fallbackFirstChapter =
+    fallbackChapters.find((chapter) => !chapter.externalUrl) ?? null;
   const readTarget = atsuMatch ? firstChapter : fallbackFirstChapter;
 
   const rating = manga.rating ?? 0;
   const match = Math.round(rating * 10);
 
   const volumesByKey = new Map<string | null, Chapter[]>();
-  for (const chapter of feed.data) {
+  for (const chapter of fallbackChapters) {
     const key = chapter.volume ?? null;
     if (!volumesByKey.has(key)) volumesByKey.set(key, []);
     volumesByKey.get(key)!.push(chapter);
@@ -224,11 +246,15 @@ export default async function MangaPage({ params }: MangaPageProps) {
               {atsuReadingOrder.length.toLocaleString()} chapters in English
               {atsuMatch.matchedByLink ? " · matched to your title" : ""}
             </p>
-          ) : feed.total ? (
+          ) : katanaChapters.length ? (
+            <p className="mb-5 text-sm text-zinc-500">
+              {katanaChapters.length.toLocaleString()} chapters
+            </p>
+          ) : feed?.total ? (
             <p className="mb-5 text-sm text-zinc-500">
               {feed.total.toLocaleString()} translated chapters across{" "}
-              {aggregate.volumes.length}{" "}
-              {aggregate.volumes.length === 1 ? "volume" : "volumes"}
+              {aggregate?.volumes.length ?? 0}{" "}
+              {(aggregate?.volumes.length ?? 0) === 1 ? "volume" : "volumes"}
             </p>
           ) : null}
 
@@ -239,7 +265,7 @@ export default async function MangaPage({ params }: MangaPageProps) {
               chapters={atsuChapters}
               defaultScanlatorId={primaryScanlatorId}
             />
-          ) : feed.data.length === 0 ? (
+          ) : fallbackChapters.length === 0 ? (
             <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 px-6 py-12 text-center">
               <p className="text-sm text-zinc-400">
                 No English chapters available yet.
@@ -263,9 +289,11 @@ export default async function MangaPage({ params }: MangaPageProps) {
                             {chapterLabel(chapter)}
                           </p>
                           <p className="text-xs text-zinc-500">
-                            {chapter.pages} {chapter.pages === 1 ? "page" : "pages"}
+                            {chapter.pages > 0
+                              ? `${chapter.pages} ${chapter.pages === 1 ? "page" : "pages"}`
+                              : null}
                             {chapter.publishedAt
-                              ? ` · ${new Date(chapter.publishedAt).toLocaleDateString()}`
+                              ? `${chapter.pages > 0 ? " · " : ""}${new Date(chapter.publishedAt).toLocaleDateString()}`
                               : ""}
                           </p>
                         </div>

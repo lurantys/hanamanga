@@ -15,6 +15,7 @@ import {
   findAtsuManga,
   primaryScanlator,
 } from "./atsu";
+import { fetchKatanaFirstChapter } from "./mangakatana";
 
 const HOME_ROWS_REVALIDATE = 300;
 
@@ -79,9 +80,12 @@ export async function resolveFirstChapter(
       const first = ordered[0] ?? chapters[0];
       if (first) return first.id;
     }
+    const katanaFirst = await fetchKatanaFirstChapter(manga.title);
+    if (katanaFirst) return katanaFirst;
     const feed = await fetchFeed(mangaId);
     const first = feed.data.find((chapter) => !chapter.externalUrl);
     if (first) return first.id;
+    return null;
   } catch {
     return null;
   }

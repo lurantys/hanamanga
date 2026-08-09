@@ -1,6 +1,9 @@
 import { NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
-import { fetchMangaList } from "@/lib/mangadex";
+import { fetchMangaList, type Manga } from "@/lib/mangadex";
+import { atsuToManga } from "@/lib/catalog";
+import { fetchAtsuManga } from "@/lib/atsu";
+import { splitMangaIds } from "@/lib/source";
 import { bannerForManga } from "@/lib/banner";
 
 export const dynamic = "force-dynamic";
@@ -20,7 +23,20 @@ export async function GET(request: Request) {
   const withBanners = searchParams.get("banners") === "1";
   if (!ids.length) return NextResponse.json({ data: [] });
   try {
-    const data = await cachedMangaByIds(ids);
+    const { mangadex, atsu } = splitMangaIds(ids);
+    const [mdData, atsuData] = await Promise.all([
+      mangadex.length ? cachedMangaByIds(mangadex) : Promise.resolve([]),
+      Promise.all(
+        atsu.map(async (ref) => {
+          try {
+            return atsuToManga(await fetchAtsuManga(ref));
+          } catch {
+            return null;
+          }
+        }),
+      ),
+    ]);
+    const data = [...mdData, ...atsuData.filter((manga): manga is Manga => manga !== null)];
     if (withBanners) {
       await Promise.all(
         data.map(async (manga) => {

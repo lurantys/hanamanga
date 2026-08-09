@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { MangaCard } from "./MangaCard";
-import { fetchSearch } from "@/lib/mangadex";
+import { searchCatalog } from "@/lib/catalog";
 
 type SearchResultsProps = {
   query: string;
 };
 
 export async function SearchResults({ query }: SearchResultsProps) {
-  const { data: results, total } = await fetchSearch(query);
+  const { data: results, total } = await searchCatalog(query);
 
   if (!results.length) {
     return (

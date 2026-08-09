@@ -1,6 +1,7 @@
 import { unstable_cache } from "next/cache";
 import { ImageResponse } from "next/og";
-import { fetchMangaById, statusLabel, truncate } from "@/lib/mangadex";
+import { statusLabel, truncate } from "@/lib/mangadex";
+import { fetchCatalogManga } from "@/lib/catalog";
 
 export const alt = "Manga page on Hana";
 export const size = { width: 1200, height: 630 };
@@ -15,15 +16,19 @@ type OgMangaCard = {
 
 const cachedMangaCard = unstable_cache(
   async (id: string): Promise<OgMangaCard> => {
-    const manga = await fetchMangaById(id, { withStats: false });
+    const manga = await fetchCatalogManga(id, { withStats: false });
     let cover: string | null = null;
-    if (manga.coverUrl) {
-      const res = await fetch(manga.coverUrl, {
+    const coverUrl = manga.coverUrl;
+    if (coverUrl && !/\.avif$/i.test(coverUrl)) {
+      const res = await fetch(coverUrl, {
         signal: AbortSignal.timeout(10_000),
       });
       if (res.ok) {
-        const bytes = Buffer.from(await res.arrayBuffer());
-        cover = `data:image/jpeg;base64,${bytes.toString("base64")}`;
+        const mime = (res.headers.get("content-type") ?? "image/jpeg").split(";")[0];
+        if (!mime.includes("avif")) {
+          const bytes = Buffer.from(await res.arrayBuffer());
+          cover = `data:${mime};base64,${bytes.toString("base64")}`;
+        }
       }
     }
     const genres = manga.genres.slice(0, 3);

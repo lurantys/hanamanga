@@ -3,7 +3,14 @@ import { HeroSpotlight } from "@/components/HeroSpotlight";
 import { ContinueRow } from "@/components/ContinueRow";
 import { LibraryRow } from "@/components/LibraryRow";
 import { MangaRow } from "@/components/MangaRow";
-import { getTrending, getPopular, getTopRated, getByGenre } from "@/lib/read";
+import {
+  getTrending,
+  getPopular,
+  getTopRated,
+  getByGenre,
+  getWebtoons,
+  getManhua,
+} from "@/lib/read";
 import type { Manga } from "@/lib/mangadex";
 
 export const revalidate = 300;
@@ -87,6 +94,36 @@ async function ActionRow() {
   return <MangaRow title="High-Octane Action" manga={manga} />;
 }
 
+async function WebtoonsRow() {
+  let manga: Manga[] = [];
+  try {
+    manga = await getWebtoons(18);
+  } catch {
+    // fall back to the unavailable state below
+  }
+  if (manga.length === 0) {
+    return <RowUnavailable title="Webtoons & Manhwa" />;
+  }
+  return (
+    <div id="webtoons" className="scroll-mt-16">
+      <MangaRow title="Webtoons & Manhwa" manga={manga} />
+    </div>
+  );
+}
+
+async function ManhuaRow() {
+  let manga: Manga[] = [];
+  try {
+    manga = await getManhua(18);
+  } catch {
+    // fall back to the unavailable state below
+  }
+  if (manga.length === 0) {
+    return <RowUnavailable title="Manhua" />;
+  }
+  return <MangaRow title="Manhua" manga={manga} />;
+}
+
 function RowSkeleton({ title }: { title: string }) {
   return (
     <section aria-hidden>
@@ -129,6 +166,10 @@ export default function Home() {
           <TrendingRow />
         </Suspense>
 
+        <Suspense fallback={<RowSkeleton title="Webtoons & Manhwa" />}>
+          <WebtoonsRow />
+        </Suspense>
+
         <Suspense fallback={<RowSkeleton title="All Time Popular" />}>
           <PopularRow />
         </Suspense>
@@ -139,6 +180,10 @@ export default function Home() {
 
         <Suspense fallback={<RowSkeleton title="High-Octane Action" />}>
           <ActionRow />
+        </Suspense>
+
+        <Suspense fallback={<RowSkeleton title="Manhua" />}>
+          <ManhuaRow />
         </Suspense>
       </div>
     </main>

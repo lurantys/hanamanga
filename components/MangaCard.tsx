@@ -18,7 +18,11 @@ export function MangaCard({ manga, className = "" }: MangaCardProps) {
   return (
     <Link
       href={`/manga/${manga.id}`}
-      aria-label={`${manga.title} — rated ${match}/100. Open detail page.`}
+      aria-label={
+        manga.rating
+          ? `${manga.title} — rated ${match}/100. Open detail page.`
+          : `${manga.title}. Open detail page.`
+      }
       className={`group w-36 shrink-0 rounded-lg text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 md:w-44 ${className}`}
     >
       <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-zinc-800 transition-transform duration-200 group-hover:scale-[1.03] group-active:scale-[1.03]">

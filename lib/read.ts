@@ -12,9 +12,12 @@ import { tagIdFor } from "./genres";
 import {
   chaptersOfScanlator,
   fetchAtsuChapters,
+  fetchAtsuManga,
   findAtsuManga,
   primaryScanlator,
 } from "./atsu";
+import { getAtsuRow } from "./catalog";
+import { parseMangaId } from "./source";
 import { fetchKatanaFirstChapter } from "./mangakatana";
 
 const HOME_ROWS_REVALIDATE = 300;
@@ -58,6 +61,8 @@ export const getTopRated = cache((limit = 18) => cachedTopRated(limit));
 export const getByGenre = cache((genre: string, limit = 18) =>
   cachedByGenre(genre, limit),
 );
+export const getWebtoons = cache((limit = 18) => getAtsuRow("Manwha", limit));
+export const getManhua = cache((limit = 18) => getAtsuRow("Manhua", limit));
 
 export function pickHero(manga: Manga[]): Manga | null {
   if (!manga.length) return null;
@@ -68,7 +73,15 @@ export async function resolveFirstChapter(
   mangaId: string,
 ): Promise<string | null> {
   try {
-    const manga = await fetchMangaById(mangaId, { withStats: false });
+    const { source, ref } = parseMangaId(mangaId);
+    if (source === "atsu") {
+      const manga = await fetchAtsuManga(ref);
+      const scanlator = primaryScanlator(manga.scanlators, manga.chapters);
+      const ordered = chaptersOfScanlator(manga.chapters, scanlator?.id ?? "");
+      const first = ordered[0] ?? manga.chapters[0];
+      return first?.id ?? null;
+    }
+    const manga = await fetchMangaById(ref, { withStats: false });
     const atsuMatch = await findAtsuManga({
       title: manga.title,
       links: manga.links,

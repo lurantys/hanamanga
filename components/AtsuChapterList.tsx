@@ -167,7 +167,7 @@ export function AtsuChapterList({
                   <p className="text-xs text-zinc-500">
                     {chapter.pageCount} {chapter.pageCount === 1 ? "page" : "pages"}
                     {chapter.createdAt
-                      ? ` · ${new Date(chapter.createdAt * 1000).toLocaleDateString()}`
+                      ? ` · ${new Date(chapter.createdAt).toLocaleDateString()}`
                       : ""}
                   </p>
                 </div>

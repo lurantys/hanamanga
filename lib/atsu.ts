@@ -10,6 +10,8 @@ export type AtsuCandidate = {
   medium?: string;
   status?: string;
   year?: number | null;
+  poster?: string | null;
+  otherNames?: string[];
 };
 
 export type AtsuChapter = {
@@ -101,6 +103,25 @@ async function atsuFetch<T>(
   }
 }
 
+function atsuCandidateFromDocument(
+  doc: Record<string, unknown>,
+): AtsuCandidate {
+  return {
+    id: String(doc.id),
+    title: (doc.title as string) ?? null,
+    englishTitle: (doc.englishTitle as string) ?? null,
+    chapterCount: (doc.chapterCount as number) ?? null,
+    type: (doc.type as string) ?? undefined,
+    medium: (doc.medium as string) ?? undefined,
+    status: (doc.status as string) ?? undefined,
+    year: (doc.year as number) ?? null,
+    poster: (doc.poster as string) ?? null,
+    otherNames: Array.isArray(doc.otherNames)
+      ? (doc.otherNames as string[])
+      : undefined,
+  };
+}
+
 export async function searchAtsu(
   title: string,
   limit = 8,
@@ -118,19 +139,31 @@ export async function searchAtsu(
     },
   );
 
-  return (json.hits ?? []).map((hit) => {
-    const doc = hit.document;
-    return {
-      id: String(doc.id),
-      title: (doc.title as string) ?? null,
-      englishTitle: (doc.englishTitle as string) ?? null,
-      chapterCount: (doc.chapterCount as number) ?? null,
-      type: (doc.type as string) ?? undefined,
-      medium: (doc.medium as string) ?? undefined,
-      status: (doc.status as string) ?? undefined,
-      year: (doc.year as number) ?? null,
-    };
-  });
+  return (json.hits ?? []).map((hit) =>
+    atsuCandidateFromDocument(hit.document),
+  );
+}
+
+export async function listAtsuManga(opts: {
+  type?: string;
+  limit?: number;
+  sort?: string;
+} = {}): Promise<AtsuCandidate[]> {
+  const filters = ["hidden:!=true", ...(opts.type ? [`type:${opts.type}`] : [])];
+  const json = await atsuFetch<{ hits?: { document: Record<string, unknown> }[] }>(
+    "/collections/manga/documents/search",
+    {
+      q: "*",
+      query_by: "title",
+      per_page: opts.limit ?? 18,
+      page: 1,
+      filter_by: filters.join(" && "),
+      sort_by: opts.sort ?? "chapterCount:desc",
+    },
+  );
+  return (json.hits ?? []).map((hit) =>
+    atsuCandidateFromDocument(hit.document),
+  );
 }
 
 type MangaPageJson = {
@@ -185,7 +218,7 @@ function normalizeAtsuManga(m: MangaPageJson["mangaPage"]): AtsuManga {
 export function atsuPosterUrl(poster: string | null): string | null {
   if (!poster) return null;
   if (poster.startsWith("http")) return poster;
-  return `${ATSU_CDN}/static/${poster.replace(/^\/+/, "")}`;
+  return `${ATSU_CDN}${poster.startsWith("/") ? poster : `/static/${poster}`}`;
 }
 
 export async function fetchAtsuManga(id: string): Promise<AtsuManga> {
@@ -380,4 +413,58 @@ export function chaptersOfScanlator(
   return chapters
     .filter((chapter) => chapter.scanlationMangaId === scanlationMangaId)
     .sort((a, b) => a.index - b.index);
+}
+
+export type AtsuReader = {
+  chapterLabel: string;
+  chapterNumber: number | null;
+  chapters: { id: string; label: string }[];
+  pages: { id: string; image: string; width?: number; height?: number }[];
+  prevHref: string | null;
+  nextHref: string | null;
+};
+
+/**
+ * Assemble reader data for an Atsumaru chapter, including prev/next navigation
+ * within the chapter's scanlation group.
+ */
+export async function buildAtsuReader(opts: {
+  mangaId: string;
+  atsuMangaId: string;
+  atsuChapters: AtsuChapter[];
+  chapterId: string;
+}): Promise<AtsuReader | null> {
+  const { atsuChapters, chapterId } = opts;
+  const current = atsuChapters.find((item) => item.id === chapterId);
+  if (!current) return null;
+  const chapter = await fetchAtsuChapter(opts.atsuMangaId, chapterId);
+  const sorted = [...atsuChapters].sort((a, b) => a.index - b.index);
+  const groupChapters = sorted.filter(
+    (item) => item.scanlationMangaId === current.scanlationMangaId,
+  );
+  const currentIndex = groupChapters.findIndex((item) => item.id === chapterId);
+  const prev = currentIndex > 0 ? groupChapters[currentIndex - 1] : null;
+  const next =
+    currentIndex >= 0 && currentIndex < groupChapters.length - 1
+      ? groupChapters[currentIndex + 1]
+      : null;
+
+  return {
+    chapterLabel: chapter.title
+      ? chapter.title
+      : atsuChapterLabel({ title: chapter.title, number: null }),
+    chapterNumber: current.number ?? null,
+    chapters: groupChapters.map((item) => ({
+      id: item.id,
+      label: atsuChapterLabel(item),
+    })),
+    pages: chapter.pages.map((page) => ({
+      id: page.id,
+      image: atsuPageUrl(page),
+      width: page.width,
+      height: page.height,
+    })),
+    prevHref: prev ? `/read/${opts.mangaId}/${prev.id}` : null,
+    nextHref: next ? `/read/${opts.mangaId}/${next.id}` : null,
+  };
 }

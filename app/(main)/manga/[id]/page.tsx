@@ -11,7 +11,6 @@ import { StarRating } from "@/components/StarRating";
 import {
   fetchAggregate,
   fetchFeed,
-  fetchMangaById,
   statusLabel,
   truncate,
   MangaDexError,
@@ -20,11 +19,15 @@ import {
 import {
   chaptersOfScanlator,
   fetchAtsuChapters,
+  fetchAtsuManga,
   findAtsuManga,
   primaryScanlator,
   type AtsuChapter,
+  type AtsuManga,
   type AtsuMatch,
 } from "@/lib/atsu";
+import { fetchCatalogManga } from "@/lib/catalog";
+import { parseMangaId } from "@/lib/source";
 import { fetchKatanaCatalogChapters } from "@/lib/mangakatana";
 
 type MangaPageProps = {
@@ -44,7 +47,7 @@ export async function generateMetadata({
   const { id } = await params;
   let manga;
   try {
-    manga = await fetchMangaById(id);
+    manga = await fetchCatalogManga(id);
   } catch (error) {
     if (error instanceof MangaDexError && error.status === 404) notFound();
     throw error;
@@ -57,10 +60,15 @@ export async function generateMetadata({
 
 export default async function MangaPage({ params }: MangaPageProps) {
   const { id } = await params;
+  const { source, ref } = parseMangaId(id);
 
   let manga;
+  let atsuManga: AtsuManga | null = null;
   try {
-    manga = await fetchMangaById(id);
+    manga = await fetchCatalogManga(id);
+    if (source === "atsu") {
+      atsuManga = await fetchAtsuManga(ref);
+    }
   } catch (error) {
     if (error instanceof MangaDexError && error.status === 404) notFound();
     throw error;
@@ -68,13 +76,22 @@ export default async function MangaPage({ params }: MangaPageProps) {
 
   let atsuMatch: AtsuMatch | null = null;
   let atsuChapters: AtsuChapter[] = [];
-  try {
-    atsuMatch = await findAtsuManga({ title: manga.title, links: manga.links });
-    if (atsuMatch) {
-      atsuChapters = await fetchAtsuChapters(atsuMatch.manga.id);
+  if (atsuManga) {
+    atsuMatch = { manga: atsuManga, matchedByLink: true };
+    try {
+      atsuChapters = await fetchAtsuChapters(atsuManga.id);
+    } catch {
+      atsuChapters = atsuManga.chapters;
     }
-  } catch {
-    atsuMatch = null;
+  } else {
+    try {
+      atsuMatch = await findAtsuManga({ title: manga.title, links: manga.links });
+      if (atsuMatch) {
+        atsuChapters = await fetchAtsuChapters(atsuMatch.manga.id);
+      }
+    } catch {
+      atsuMatch = null;
+    }
   }
 
   let katanaChapters: Chapter[] = [];
@@ -168,7 +185,7 @@ export default async function MangaPage({ params }: MangaPageProps) {
           <div className="flex-1 space-y-4 pb-2">
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
               <span className="inline-flex items-center gap-2 rounded-md bg-emerald-500/15 px-2.5 py-1 text-sm font-bold text-emerald-400">
-                {match}% Match
+                {manga.rating ? `${match}% Match` : "New"}
               </span>
               <span className="rounded-md border border-zinc-500/60 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-zinc-200">
                 {statusLabel(manga.status)}

@@ -16,7 +16,7 @@ function Header() {
             height={48}
             className="h-12 w-12 rounded-xl object-contain"
           />
-          <span className="text-xl font-bold text-zinc-50 md:text-2xl">
+          <span className="header-wordmark text-xl font-bold text-zinc-50 md:text-2xl">
             Hana
           </span>
         </Link>

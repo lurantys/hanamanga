@@ -1,50 +1,88 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useCallback, useEffect, useRef, useState, type FormEvent } from "react";
+import { SearchLiveResults } from "./SearchLiveResults";
 
-const QUICK_SELECTS = ["Action", "Fantasy", "Sci-Fi", "Romance", "Comedy", "Thriller"];
+function SearchIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      className={className}
+      aria-hidden
+    >
+      <circle cx="11" cy="11" r="7" />
+      <path d="m21 21-4.3-4.3" />
+    </svg>
+  );
+}
+
+function XIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M5 5l14 14M19 5L5 19" />
+    </svg>
+  );
+}
 
 export function SearchBar() {
   const router = useRouter();
   const [query, setQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [open, setOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
+  const close = useCallback(() => {
+    setOpen(false);
+    setQuery("");
+    setDebouncedQuery("");
+  }, []);
+
   useEffect(() => {
     if (!open) return;
-
     const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
+      if (event.key === "Escape") close();
     };
-    const onClickOutside = (event: MouseEvent) => {
+    const onPointerDown = (event: PointerEvent) => {
       if (
         containerRef.current &&
         !containerRef.current.contains(event.target as Node)
       ) {
-        setOpen(false);
+        close();
       }
     };
-
     document.addEventListener("keydown", onKeyDown);
-    document.addEventListener("mousedown", onClickOutside);
-
+    document.addEventListener("pointerdown", onPointerDown);
     return () => {
       document.removeEventListener("keydown", onKeyDown);
-      document.removeEventListener("mousedown", onClickOutside);
+      document.removeEventListener("pointerdown", onPointerDown);
     };
-  }, [open]);
+  }, [open, close]);
 
   useEffect(() => {
-    if (open) inputRef.current?.focus();
-  }, [open]);
+    if (!open) return;
+    const id = window.setTimeout(() => setDebouncedQuery(query.trim()), 250);
+    return () => window.clearTimeout(id);
+  }, [open, query]);
 
   const goTo = (search: string) => {
     const trimmed = search.trim();
     if (!trimmed) return;
-    setOpen(false);
-    setQuery("");
+    close();
     router.push(`/search?q=${encodeURIComponent(trimmed)}`);
   };
 
@@ -55,100 +93,58 @@ export function SearchBar() {
 
   return (
     <div ref={containerRef} className="relative flex items-center">
-      <button
-        type="button"
-        onClick={() => setOpen((value) => !value)}
-        aria-expanded={open}
-        aria-haspopup="dialog"
-        aria-label="Search manga"
-        className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-zinc-900/60 text-zinc-200 transition-all duration-200 hover:border-white/25 hover:bg-zinc-800/80 hover:text-white"
-      >
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          className="h-4 w-4"
-          aria-hidden
+      {open ? (
+        <form
+          onSubmit={onSubmit}
+          role="search"
+          className="animate-search-expand search-expanded flex items-center gap-2 rounded-full border border-zinc-700/60 bg-zinc-900/80 py-2 pl-3.5 pr-1.5 shadow-[0_8px_30px_rgba(0,0,0,0.4)] backdrop-blur-2xl transition-colors focus-within:border-red-400/40"
         >
-          <circle cx="11" cy="11" r="7" />
-          <path d="m21 21-4.3-4.3" />
-        </svg>
-      </button>
-
-      {open && (
-        <div className="glass-in absolute right-0 top-11 z-50 w-72 overflow-hidden rounded-[2rem] border border-white/10 bg-zinc-950/70 p-4 shadow-[0_24px_60px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.08)] ring-1 ring-inset ring-white/10 backdrop-blur-2xl sm:w-80">
-
-          <form
-            onSubmit={onSubmit}
-            role="search"
-            className="relative flex items-center"
+          <SearchIcon className="h-4 w-4 shrink-0 text-zinc-500" />
+          <input
+            ref={inputRef}
+            autoFocus
+            type="text"
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder="Search manga…"
+            aria-label="Search manga"
+            enterKeyHint="search"
+            className="w-40 bg-transparent text-sm text-zinc-50 outline-none placeholder:text-zinc-500 sm:w-56 lg:w-64"
+          />
+          <button
+            type="button"
+            onClick={() => {
+              if (query) {
+                setQuery("");
+                inputRef.current?.focus();
+              } else {
+                close();
+              }
+            }}
+            aria-label={query ? "Clear search" : "Close search"}
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
           >
-            <span className="pointer-events-none absolute left-3.5 flex h-4 w-4 items-center justify-center text-zinc-500">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2"
-                strokeLinecap="round"
-                className="h-4 w-4"
-                aria-hidden
-              >
-                <circle cx="11" cy="11" r="7" />
-                <path d="m21 21-4.3-4.3" />
-              </svg>
-            </span>
-            <input
-              ref={inputRef}
-              type="search"
-              value={query}
-              onChange={(event) => setQuery(event.target.value)}
-              placeholder="Search manga…"
-              aria-label="Search manga"
-              className="w-full rounded-full border border-white/10 bg-zinc-900/70 py-2.5 pl-10 pr-11 text-sm text-zinc-100 outline-none transition-colors placeholder:text-zinc-500 focus:border-red-400/50"
-            />
-            <button
-              type="submit"
-              aria-label="Submit search"
-              className="absolute right-1.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full bg-red-500 text-zinc-950 transition-colors hover:bg-red-400"
-            >
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="2.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-4 w-4"
-                aria-hidden
-              >
-                <path d="M5 12h14M13 6l6 6-6 6" />
-              </svg>
-            </button>
-          </form>
+            <XIcon className="h-4 w-4" />
+          </button>
+        </form>
+      ) : (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          aria-label="Search manga"
+          className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-zinc-900/60 text-zinc-200 transition-all duration-200 hover:border-white/25 hover:bg-zinc-800/80 hover:text-white"
+        >
+          <SearchIcon className="h-4 w-4" />
+        </button>
+      )}
 
-          <div
-            className="mt-4 border-t border-white/10 pt-4"
-            role="group"
-            aria-label="Quick picks"
-          >
-            <p className="mb-2.5 px-1 text-[11px] font-semibold uppercase tracking-widest text-zinc-500">
-              Quick picks
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {QUICK_SELECTS.map((genre) => (
-                <button
-                  key={genre}
-                  type="button"
-                  onClick={() => goTo(genre)}
-                  className="rounded-full border border-white/10 bg-zinc-800/50 px-3 py-1.5 text-xs font-medium text-zinc-200 transition-colors hover:border-red-400/40 hover:bg-zinc-700/60 hover:text-white"
-                >
-                  {genre}
-                </button>
-              ))}
-            </div>
-          </div>
+      {open && debouncedQuery && (
+        <div className="glass-in absolute right-0 top-[calc(100%+12px)] z-50 w-[min(24rem,calc(100vw-2rem))] overflow-hidden rounded-[2rem] border border-white/10 bg-zinc-950/95 p-4 shadow-[0_24px_60px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.08)] ring-1 ring-inset ring-white/10 backdrop-blur-2xl">
+          <SearchLiveResults
+            key={debouncedQuery}
+            query={debouncedQuery}
+            onPick={close}
+          />
         </div>
       )}
     </div>

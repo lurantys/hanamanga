@@ -19,10 +19,38 @@ const zenKaku = Zen_Kaku_Gothic_New({
   weight: ["500", "700", "900"],
 });
 
+const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(SITE_URL),
   title: "Hana — Discover Manga",
   description:
-    "A Netflix-style manga discovery catalog powered by the MangaDex API. Reading coming soon.",
+    "Hana is a Netflix-style manga catalog and reader — browse and search thousands of titles from MangaDex, build a library, and pick up right where you left off.",
+  applicationName: "Hana",
+  keywords: ["manga", "reader", "mangadex", "anime", "comics"],
+  openGraph: {
+    type: "website",
+    url: SITE_URL,
+    siteName: "Hana",
+    title: "Hana — Discover Manga",
+    description:
+      "Hana is a Netflix-style manga catalog and reader — browse and search thousands of titles from MangaDex, build a library, and pick up right where you left off.",
+    images: [
+      {
+        url: "/logo-v2.png",
+        width: 500,
+        height: 500,
+        alt: "Hana",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Hana — Discover Manga",
+    description:
+      "Hana is a Netflix-style manga catalog and reader — browse and search thousands of titles from MangaDex, build a library, and pick up right where you left off.",
+    images: ["/logo-v2.png"],
+  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

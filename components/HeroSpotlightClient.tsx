@@ -100,7 +100,7 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
           alt=""
           priority
           fill
-          sizes="100vw"
+          sizes="(min-width:768px) 100vw, 512px"
           onLoad={() => setImageLoaded(true)}
           className={`scale-125 object-cover blur-2xl object-top transition-opacity duration-700 ${
             ready ? "opacity-100" : "opacity-0"
@@ -143,6 +143,7 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
               <Image
                 src={hero.coverUrl}
                 alt=""
+                priority
                 width={224}
                 height={336}
                 sizes="(min-width:1280px) 224px, (min-width:768px) 176px, 152px"

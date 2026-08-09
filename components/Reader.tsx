@@ -1126,6 +1126,14 @@ export function Reader({
             </div>
           </div>
 
+          {pages[pagedIndex + 1] && (
+            <link
+              rel="preload"
+              as="image"
+              href={pages[pagedIndex + 1].image}
+            />
+          )}
+
           {settings.tapZones && (
             <>
               <button

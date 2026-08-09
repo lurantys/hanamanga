@@ -32,9 +32,6 @@ export const metadata: Metadata = {
     type: "website",
     url: SITE_URL,
     siteName: "Hana",
-    title: "Hana — Discover Manga",
-    description:
-      "Hana is a Netflix-style manga catalog and reader — browse and search thousands of titles from MangaDex, build a library, and pick up right where you left off.",
     images: [
       {
         url: "/logo-v2.png",
@@ -46,9 +43,6 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "Hana — Discover Manga",
-    description:
-      "Hana is a Netflix-style manga catalog and reader — browse and search thousands of titles from MangaDex, build a library, and pick up right where you left off.",
     images: ["/logo-v2.png"],
   },
 };

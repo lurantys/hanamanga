@@ -1,8 +1,15 @@
 import { NextResponse } from "next/server";
+import { unstable_cache } from "next/cache";
 import { fetchMangaList } from "@/lib/mangadex";
 import { bannerForManga } from "@/lib/banner";
 
 export const dynamic = "force-dynamic";
+
+const cachedMangaByIds = unstable_cache(
+  async (ids: string[]) => (await fetchMangaList({ ids })).data,
+  ["api-manga-ids"],
+  { revalidate: 300 },
+);
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -13,7 +20,7 @@ export async function GET(request: Request) {
   const withBanners = searchParams.get("banners") === "1";
   if (!ids.length) return NextResponse.json({ data: [] });
   try {
-    const { data } = await fetchMangaList({ ids });
+    const data = await cachedMangaByIds(ids);
     if (withBanners) {
       await Promise.all(
         data.map(async (manga) => {
@@ -24,7 +31,14 @@ export async function GET(request: Request) {
         }),
       );
     }
-    return NextResponse.json({ data });
+    return NextResponse.json(
+      { data },
+      {
+        headers: {
+          "Cache-Control": "public, max-age=300, stale-while-revalidate=600",
+        },
+      },
+    );
   } catch {
     return NextResponse.json({ data: [], error: "unavailable" }, { status: 502 });
   }

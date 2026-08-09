@@ -22,8 +22,11 @@ export type ContinueHeroSnapshot = {
 const STORAGE_KEY = "hana:progress";
 export const CONTINUE_HERO_STORAGE_KEY = "hana:continue-hero";
 export const CONTINUE_HERO_EVENT = "hana:continue-hero-updated";
+export const PROGRESS_EVENT = "hana:progress-updated";
 
 let cachedHeroSnapshot: ContinueHeroSnapshot | null | undefined;
+let cachedContinueLimit = 0;
+let cachedContinueList: ProgressEntry[] | null = null;
 
 function readAll(): Record<string, ProgressEntry> {
   if (typeof window === "undefined") return {};
@@ -39,6 +42,8 @@ function writeAll(map: Record<string, ProgressEntry>): void {
   if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
+    cachedContinueList = null;
+    window.dispatchEvent(new CustomEvent(PROGRESS_EVENT));
   } catch {
     // storage full or blocked — ignore
   }
@@ -59,9 +64,13 @@ export function getAllProgress(): Record<string, ProgressEntry> {
 }
 
 export function getContinueList(limit = 18): ProgressEntry[] {
-  return Object.values(readAll())
-    .sort((a, b) => b.updatedAt - a.updatedAt)
-    .slice(0, limit);
+  if (!cachedContinueList || cachedContinueLimit !== limit) {
+    cachedContinueList = Object.values(readAll())
+      .sort((a, b) => b.updatedAt - a.updatedAt)
+      .slice(0, limit);
+    cachedContinueLimit = limit;
+  }
+  return cachedContinueList;
 }
 
 export function saveContinueHero(snapshot: ContinueHeroSnapshot): void {

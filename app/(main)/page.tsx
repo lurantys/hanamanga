@@ -6,7 +6,7 @@ import { MangaRow } from "@/components/MangaRow";
 import { getTrending, getPopular, getTopRated, getByGenre } from "@/lib/read";
 import type { Manga } from "@/lib/mangadex";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 300;
 
 function RowUnavailable({ title }: { title: string }) {
   return (

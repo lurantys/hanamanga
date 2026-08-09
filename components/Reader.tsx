@@ -1303,7 +1303,7 @@ export function Reader({
                   onChange={(event) =>
                     updateSettings({ brightness: Number(event.target.value) })
                   }
-                  className="w-full accent-emerald-500"
+                  className="w-full accent-red-500"
                   aria-label="Brightness"
                 />
               </section>

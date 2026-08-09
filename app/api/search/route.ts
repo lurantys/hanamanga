@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
-import { fetchSearch } from "@/lib/mangadex";
+import { searchCatalog } from "@/lib/catalog";
 
 export const dynamic = "force-dynamic";
 
 const cachedSearch = unstable_cache(
-  async (query: string) => (await fetchSearch(query, 12)).data,
+  async (query: string) => (await searchCatalog(query, 12)).data,
   ["api-search"],
   { revalidate: 300 },
 );

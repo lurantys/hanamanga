@@ -5,6 +5,7 @@ import { Carousel } from "./Carousel";
 import { MangaCard } from "./MangaCard";
 import { getLibrarySnapshot, subscribeLibrary } from "@/lib/library";
 import { getReadSnapshot } from "@/lib/read-state";
+import { loadUserManga } from "@/lib/userManga";
 import type { Chapter, Manga } from "@/lib/mangadex";
 
 const EMPTY_LIBRARY = {} as Record<string, never>;
@@ -21,49 +22,52 @@ export function NewChaptersRow() {
   const [state, setState] = useState<"loading" | "done" | "empty">("loading");
 
   useEffect(() => {
-    const entries = Object.values(library);
-    if (!entries.length) {
-      setState("empty");
-      return;
-    }
-
-    const read = getReadSnapshot();
-    const recent = entries.slice(0, 12);
-
     let active = true;
     setState("loading");
-    Promise.all(
-      recent.map(async (entry) => {
-        const readSet = read[entry.manga.id];
-        try {
-          const res = await fetch(
-            `/api/feed?mangaId=${encodeURIComponent(entry.manga.id)}&limit=1`,
-          );
-          if (!res.ok) return null;
-          const json = await res.json();
-          const latest: Chapter | undefined = json?.data?.[0];
-          if (!latest) return null;
-          if (readSet && readSet[latest.id]) return null;
-          return { manga: entry.manga, latest };
-        } catch {
-          return null;
-        }
-      }),
-    )
-      .then((results) => {
+    loadUserManga()
+      .then((userManga) => {
         if (!active) return;
-        const list = results.filter((value): value is Update => value !== null);
-        if (!list.length) {
+        if (!userManga.length) {
           setState("empty");
           return;
         }
-        list.sort(
-          (a, b) =>
-            Date.parse(b.latest.publishedAt ?? "") -
-            Date.parse(a.latest.publishedAt ?? ""),
-        );
-        setUpdates(list);
-        setState("done");
+        const read = getReadSnapshot();
+        const recent = userManga.slice(0, 12);
+        Promise.all(
+          recent.map(async (manga) => {
+            const readSet = read[manga.id];
+            try {
+              const res = await fetch(
+                `/api/feed?mangaId=${encodeURIComponent(manga.id)}&limit=1`,
+              );
+              if (!res.ok) return null;
+              const json = await res.json();
+              const latest: Chapter | undefined = json?.data?.[0];
+              if (!latest) return null;
+              if (readSet && readSet[latest.id]) return null;
+              return { manga, latest };
+            } catch {
+              return null;
+            }
+          }),
+        ).then((results) => {
+          if (!active) return;
+          const list = results.filter((value): value is Update => value !== null);
+          if (!list.length) {
+            setState("empty");
+            return;
+          }
+          list.sort(
+            (a, b) =>
+              Date.parse(b.latest.publishedAt ?? "") -
+              Date.parse(a.latest.publishedAt ?? ""),
+          );
+          setUpdates(list);
+          setState("done");
+        });
+      })
+      .catch(() => {
+        if (active) setState("empty");
       });
 
     return () => {

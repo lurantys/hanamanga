@@ -4,7 +4,7 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import { Carousel } from "./Carousel";
 import { MangaCard } from "./MangaCard";
 import { getLibrarySnapshot, subscribeLibrary } from "@/lib/library";
-import { getContinueList } from "@/lib/progress";
+import { loadUserManga } from "@/lib/userManga";
 import type { Manga } from "@/lib/mangadex";
 
 const EMPTY_LIBRARY = {} as Record<string, never>;
@@ -19,50 +19,46 @@ export function RecommendedRow() {
   const [state, setState] = useState<"loading" | "done" | "empty">("loading");
 
   useEffect(() => {
-    const entries = Object.values(library);
-    if (!entries.length) {
-      setState("empty");
-      return;
-    }
-
-    const counts = new Map<string, number>();
-    const exclude = new Set<string>();
-    for (const entry of entries) {
-      exclude.add(entry.manga.id);
-      for (const genre of entry.manga.genres ?? []) {
-        if (genre) counts.set(genre, (counts.get(genre) ?? 0) + 1);
-      }
-    }
-    for (const item of getContinueList(50)) exclude.add(item.mangaId);
-
-    const tags = [...counts.entries()]
-      .sort((a, b) => b[1] - a[1])
-      .slice(0, 6)
-      .map(([genre]) => genre);
-
-    if (!tags.length) {
-      setState("empty");
-      return;
-    }
-
     let active = true;
     setState("loading");
-    const params = new URLSearchParams({
-      tags: tags.join(","),
-      exclude: [...exclude].join(","),
-      limit: "18",
-    });
-    fetch(`/api/recommend?${params.toString()}`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((json) => {
+    loadUserManga()
+      .then((userManga) => {
         if (!active) return;
-        const data: Manga[] = json?.data ?? [];
-        if (!data.length) {
+        const exclude = new Set(userManga.map((item) => item.id));
+        const counts = new Map<string, number>();
+        for (const item of userManga) {
+          for (const genre of item.genres ?? []) {
+            if (genre) counts.set(genre, (counts.get(genre) ?? 0) + 1);
+          }
+        }
+        const tags = [...counts.entries()]
+          .sort((a, b) => b[1] - a[1])
+          .slice(0, 6)
+          .map(([genre]) => genre);
+        if (!tags.length) {
           setState("empty");
           return;
         }
-        setManga(data);
-        setState("done");
+        const params = new URLSearchParams({
+          tags: tags.join(","),
+          exclude: [...exclude].join(","),
+          limit: "18",
+        });
+        return fetch(`/api/recommend?${params.toString()}`)
+          .then((res) => (res.ok ? res.json() : null))
+          .then((json) => {
+            if (!active) return;
+            const data: Manga[] = json?.data ?? [];
+            if (!data.length) {
+              setState("empty");
+              return;
+            }
+            setManga(data);
+            setState("done");
+          })
+          .catch(() => {
+            if (active) setState("empty");
+          });
       })
       .catch(() => {
         if (active) setState("empty");

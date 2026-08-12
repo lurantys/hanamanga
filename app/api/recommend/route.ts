@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
-import { fetchMangaList } from "@/lib/mangadex";
-import { tagIdFor } from "@/lib/genres";
+import { fetchMangaList, getTagId } from "@/lib/mangadex";
 
 export const dynamic = "force-dynamic";
 
@@ -18,9 +17,11 @@ export async function GET(request: Request) {
   );
   const limit = Math.min(Number(searchParams.get("limit")) || 18, 40);
 
-  const ids = tags
-    .map((name) => tagIdFor(name))
-    .filter((id): id is string => Boolean(id));
+  if (!tags.length) return NextResponse.json({ data: [] });
+
+  const ids = (
+    await Promise.all(tags.map((name) => getTagId(name)))
+  ).filter((id): id is string => Boolean(id));
   if (!ids.length) return NextResponse.json({ data: [] });
 
   try {

@@ -204,6 +204,29 @@ function pickDescription(description: Record<string, string>): string {
   );
 }
 
+let tagNameToIdCache: Record<string, string> | null = null;
+
+async function buildTagNameToId(): Promise<Record<string, string>> {
+  try {
+    const json = await mdFetch<{
+      data: { id: string; attributes: { name: Record<string, string> } }[];
+    }>("/manga/tag", {});
+    const map: Record<string, string> = {};
+    for (const tag of json.data ?? []) {
+      const en = tag.attributes?.name?.en;
+      if (en) map[en.toLowerCase()] = tag.id;
+    }
+    return map;
+  } catch {
+    return {};
+  }
+}
+
+export async function getTagId(name: string): Promise<string | undefined> {
+  if (!tagNameToIdCache) tagNameToIdCache = await buildTagNameToId();
+  return tagNameToIdCache[name.toLowerCase()];
+}
+
 function normalizeManga(api: ApiManga): Manga {
   const attrs = api.attributes;
   const cover = api.relationships?.find(

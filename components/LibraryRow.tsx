@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useSyncExternalStore } from "react";
+import { Carousel } from "./Carousel";
 import { MangaCard } from "./MangaCard";
 import {
   getLibrarySnapshot,
@@ -25,23 +26,21 @@ export function LibraryRow() {
   if (entries.length === 0) return null;
 
   return (
-    <section aria-label="Your Library">
-      <div className="mb-3 flex items-center justify-between px-4 md:px-10">
-        <h2 className="text-lg font-bold tracking-tight text-zinc-100">
-          Your Library
-        </h2>
+    <Carousel
+      title="Your Library"
+      ariaLabel="Your Library"
+      headerRight={
         <Link
           href="/library"
           className="text-xs font-semibold text-zinc-400 transition-colors hover:text-white"
         >
           View all
         </Link>
-      </div>
-      <div className="scrollbar-hide flex touch-pan-x gap-3 overflow-x-auto px-4 py-2 md:px-10">
-        {entries.map((entry) => (
-          <MangaCard key={entry.manga.id} manga={entry.manga} />
-        ))}
-      </div>
-    </section>
+      }
+    >
+      {entries.map((entry) => (
+        <MangaCard key={entry.manga.id} manga={entry.manga} />
+      ))}
+    </Carousel>
   );
 }

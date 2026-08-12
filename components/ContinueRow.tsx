@@ -3,6 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState, useSyncExternalStore } from "react";
+import { Carousel } from "./Carousel";
 import {
   CONTINUE_HERO_EVENT,
   PROGRESS_EVENT,
@@ -55,60 +56,55 @@ export function ContinueRow() {
   if (!entries.length) return null;
 
   return (
-    <section aria-label="Continue Reading">
-      <h2 className="mb-3 px-4 text-lg font-bold tracking-tight text-zinc-100 md:px-10">
-        Continue Reading
-      </h2>
-      <div className="scrollbar-hide flex touch-pan-x gap-3 overflow-x-auto px-4 py-2 md:px-10">
-        {entries.map((entry) => {
-          const manga = mangaById[entry.mangaId];
-          const title = manga?.title ?? entry.mangaTitle;
-          const pct = Math.round(
-            (entry.mangaFraction ?? entry.scrollFraction) * 100,
-          );
-          return (
-            <Link
-              key={entry.mangaId}
-              href={`/read/${entry.mangaId}/${entry.chapterId}`}
-              aria-label={`${title} — ${entry.chapterLabel}, ${pct}% of the manga read. Continue reading.`}
-              className="group w-36 shrink-0 rounded-lg text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 md:w-44"
-            >
-              <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-zinc-800 transition-transform duration-200 group-hover:scale-[1.03] group-active:scale-[1.03]">
-                {manga?.coverUrl ? (
-                  <Image
-                    src={manga.coverUrl}
-                    alt=""
-                    fill
-                    sizes="(max-width: 768px) 144px, 176px"
-                    className="object-cover"
-                  />
-                ) : (
-                  <span className="flex h-full w-full items-center justify-center p-3 text-center text-sm text-zinc-500">
-                    {title}
-                  </span>
-                )}
-                <span className="absolute right-1.5 top-1.5 rounded bg-zinc-950/80 px-1.5 py-0.5 text-[10px] font-semibold text-white">
-                  {pct}%
-                </span>
-                <div className="absolute inset-x-0 bottom-0 h-1 bg-white/10">
-                  <div
-                    className="h-full bg-red-500"
-                    style={{ width: `${pct}%` }}
-                  />
-                </div>
-              </div>
-              <div className="mt-2 px-0.5">
-                <p className="line-clamp-1 text-sm font-semibold text-zinc-200">
+    <Carousel title="Continue Reading" ariaLabel="Continue Reading">
+      {entries.map((entry) => {
+        const manga = mangaById[entry.mangaId];
+        const title = manga?.title ?? entry.mangaTitle;
+        const pct = Math.round(
+          (entry.mangaFraction ?? entry.scrollFraction) * 100,
+        );
+        return (
+          <Link
+            key={entry.mangaId}
+            href={`/read/${entry.mangaId}/${entry.chapterId}`}
+            aria-label={`${title} — ${entry.chapterLabel}, ${pct}% of the manga read. Continue reading.`}
+            className="group w-36 shrink-0 rounded-lg text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 md:w-44"
+          >
+            <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-zinc-800 transition-transform duration-200 group-hover:scale-[1.03] group-active:scale-[1.03]">
+              {manga?.coverUrl ? (
+                <Image
+                  src={manga.coverUrl}
+                  alt=""
+                  fill
+                  sizes="(max-width: 768px) 144px, 176px"
+                  className="object-cover"
+                />
+              ) : (
+                <span className="flex h-full w-full items-center justify-center p-3 text-center text-sm text-zinc-500">
                   {title}
-                </p>
-                <p className="mt-0.5 line-clamp-1 text-xs text-zinc-500">
-                  {entry.chapterLabel}
-                </p>
+                </span>
+              )}
+              <span className="absolute right-1.5 top-1.5 rounded bg-zinc-950/80 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                {pct}%
+              </span>
+              <div className="absolute inset-x-0 bottom-0 h-1 bg-white/10">
+                <div
+                  className="h-full bg-red-500"
+                  style={{ width: `${pct}%` }}
+                />
               </div>
-            </Link>
-          );
-        })}
-      </div>
-    </section>
+            </div>
+            <div className="mt-2 px-0.5">
+              <p className="line-clamp-1 text-sm font-semibold text-zinc-200">
+                {title}
+              </p>
+              <p className="mt-0.5 line-clamp-1 text-xs text-zinc-500">
+                {entry.chapterLabel}
+              </p>
+            </div>
+          </Link>
+        );
+      })}
+    </Carousel>
   );
 }

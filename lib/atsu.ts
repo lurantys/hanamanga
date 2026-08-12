@@ -1,3 +1,5 @@
+import { titleHits } from "./title";
+
 const ATSU_API = "https://atsu.moe";
 export const ATSU_CDN = "https://cdn.atsu.moe";
 
@@ -294,38 +296,6 @@ function expectedLinks(links: LinkMap): Record<string, string> {
   return expected;
 }
 
-function normalizeTitle(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s]/gu, "")
-    .replace(/\s+/g, " ")
-    .replace(/^the\s+/, "")
-    .trim();
-}
-
-/** Confirm a search candidate plausibly matches the queried title. */
-function titleHits(query: string, candidate: AtsuCandidate): boolean {
-  const q = normalizeTitle(query);
-  if (!q) return false;
-
-  const targets = [candidate.title, candidate.englishTitle]
-    .filter((t): t is string => Boolean(t))
-    .map(normalizeTitle)
-    .filter(Boolean);
-
-  if (targets.some((target) => target === q)) return true;
-
-  const qTokens = new Set(q.split(" ").filter((t) => t.length > 2));
-  if (!qTokens.size) return false;
-
-  for (const target of targets) {
-    const tTokens = new Set(target.split(" ").filter((t) => t.length > 2));
-    if ([...qTokens].every((token) => tTokens.has(token))) return true;
-    if ([...tTokens].every((token) => qTokens.has(token))) return true;
-  }
-  return false;
-}
-
 /**
  * Find the Atsumaru (atsu.moe) record for a MangaDex title.
  *
@@ -369,12 +339,12 @@ export async function findAtsuManga(opts: {
         );
       });
       if (matched) return { manga, matchedByLink: true };
-    } else if (titleHits(opts.title, candidate)) {
+    } else if (titleHits(opts.title, [candidate.title, candidate.englishTitle])) {
       return { manga, matchedByLink: false };
     }
   }
 
-  if (!hasLinks || !titleHits(opts.title, candidates[0])) return null;
+  if (!hasLinks || !titleHits(opts.title, [candidates[0].title, candidates[0].englishTitle])) return null;
   try {
     return { manga: await fetchAtsuManga(candidates[0].id), matchedByLink: false };
   } catch {

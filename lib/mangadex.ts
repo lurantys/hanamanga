@@ -368,10 +368,14 @@ function searchMatchScore(manga: Manga, needle: string): number {
   return best;
 }
 
-export async function fetchSearch(title: string, limit = 24): Promise<MangaListResult> {
+export async function fetchSearch(
+  title: string,
+  limit = 24,
+  prefetch = Math.max(limit, 60),
+): Promise<MangaListResult> {
   const query = title.trim();
   const { data, total } = await fetchMangaList({
-    limit: 100,
+    limit: prefetch,
     title: query,
     order: { relevance: "desc" },
   });

@@ -9,8 +9,6 @@ import { LibraryButton } from "@/components/LibraryButton";
 import { PlayButton } from "@/components/PlayButton";
 import { StarRating } from "@/components/StarRating";
 import {
-  fetchAggregate,
-  fetchFeed,
   statusLabel,
   truncate,
   MangaDexError,
@@ -18,17 +16,14 @@ import {
 } from "@/lib/mangadex";
 import {
   chaptersOfScanlator,
-  fetchAtsuChapters,
-  fetchAtsuManga,
-  findAtsuManga,
   primaryScanlator,
   type AtsuChapter,
-  type AtsuManga,
   type AtsuMatch,
 } from "@/lib/atsu";
 import { fetchCatalogManga } from "@/lib/catalog";
+import { getAtsuMatch, getKatanaLookup, getMdAggregate, getMdFeed } from "@/lib/read";
 import { parseMangaId } from "@/lib/source";
-import { fetchKatanaCatalogChapters } from "@/lib/mangakatana";
+import { toCatalogChapter } from "@/lib/mangakatana";
 
 type MangaPageProps = {
   params: Promise<{ id: string }>;
@@ -60,15 +55,11 @@ export async function generateMetadata({
 
 export default async function MangaPage({ params }: MangaPageProps) {
   const { id } = await params;
-  const { source, ref } = parseMangaId(id);
+  const { ref } = parseMangaId(id);
 
   let manga;
-  let atsuManga: AtsuManga | null = null;
   try {
     manga = await fetchCatalogManga(id);
-    if (source === "atsu") {
-      atsuManga = await fetchAtsuManga(ref);
-    }
   } catch (error) {
     if (error instanceof MangaDexError && error.status === 404) notFound();
     throw error;
@@ -76,38 +67,27 @@ export default async function MangaPage({ params }: MangaPageProps) {
 
   let atsuMatch: AtsuMatch | null = null;
   let atsuChapters: AtsuChapter[] = [];
-  if (atsuManga) {
-    atsuMatch = { manga: atsuManga, matchedByLink: true };
-    try {
-      atsuChapters = await fetchAtsuChapters(atsuManga.id);
-    } catch {
-      atsuChapters = atsuManga.chapters;
-    }
-  } else {
-    try {
-      atsuMatch = await findAtsuManga({ title: manga.title, links: manga.links });
-      if (atsuMatch) {
-        atsuChapters = await fetchAtsuChapters(atsuMatch.manga.id);
-      }
-    } catch {
-      atsuMatch = null;
-    }
+  const atsuMatchData = await getAtsuMatch(id);
+  if (atsuMatchData) {
+    atsuMatch = atsuMatchData.match;
+    atsuChapters = atsuMatchData.chapters;
   }
 
   let katanaChapters: Chapter[] = [];
-  let feed: Awaited<ReturnType<typeof fetchFeed>> | null = null;
-  let aggregate: Awaited<ReturnType<typeof fetchAggregate>> | null = null;
+  let feed: Awaited<ReturnType<typeof getMdFeed>> | null = null;
+  let aggregate: Awaited<ReturnType<typeof getMdAggregate>> | null = null;
   if (!atsuMatch) {
     try {
-      katanaChapters = await fetchKatanaCatalogChapters(manga.title);
+      const lookup = await getKatanaLookup(manga.title);
+      katanaChapters = lookup.chapters.map(toCatalogChapter);
     } catch {
       katanaChapters = [];
     }
     if (katanaChapters.length === 0) {
       try {
         [feed, aggregate] = await Promise.all([
-          fetchFeed(id),
-          fetchAggregate(id),
+          getMdFeed(ref),
+          getMdAggregate(ref),
         ]);
       } catch (error) {
         if (error instanceof MangaDexError && error.status === 404) notFound();

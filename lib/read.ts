@@ -1,10 +1,12 @@
 import { cache } from "react";
 import { unstable_cache } from "next/cache";
 import {
+  fetchAggregate,
   fetchFeed,
   fetchMangaById,
   fetchMangaList,
   fetchTrending,
+  type Chapter,
   type Manga,
   type MangaListResult,
 } from "./mangadex";
@@ -15,12 +17,21 @@ import {
   fetchAtsuManga,
   findAtsuManga,
   primaryScanlator,
+  type AtsuChapter,
+  type AtsuMatch,
 } from "./atsu";
 import { getAtsuRow } from "./catalog";
 import { parseMangaId } from "./source";
-import { fetchKatanaFirstChapter } from "./mangakatana";
+import {
+  fetchKatanaChapters,
+  fetchKatanaFirstChapter,
+  findKatanaManga,
+  type KatanaChapter,
+  type KatanaManga,
+} from "./mangakatana";
 
 const HOME_ROWS_REVALIDATE = 300;
+const SOURCE_REVALIDATE = 3600;
 
 const cachedTrending = unstable_cache(
   async (limit = 18): Promise<MangaListResult> => fetchTrending(limit),
@@ -69,33 +80,92 @@ export function pickHero(manga: Manga[]): Manga | null {
   return manga[Math.floor(Math.random() * manga.length)] ?? null;
 }
 
+export type AtsuMatchData = {
+  match: AtsuMatch;
+  chapters: AtsuChapter[];
+};
+
+const cachedAtsuMatch = unstable_cache(
+  async (mangaId: string): Promise<AtsuMatchData | null> => {
+    const { source, ref } = parseMangaId(mangaId);
+    if (source === "atsu") {
+      const manga = await fetchAtsuManga(ref);
+      const chapters = await fetchAtsuChapters(ref).catch(() => manga.chapters);
+      return { match: { manga, matchedByLink: true }, chapters };
+    }
+    try {
+      const manga = await fetchMangaById(ref, { withStats: false });
+      const match = await findAtsuManga({ title: manga.title, links: manga.links });
+      if (!match) return null;
+      const chapters = await fetchAtsuChapters(match.manga.id);
+      return { match, chapters };
+    } catch {
+      return null;
+    }
+  },
+  ["resolve-atsu-match"],
+  { revalidate: SOURCE_REVALIDATE },
+);
+
+export const getAtsuMatch = cache((mangaId: string) => cachedAtsuMatch(mangaId));
+
+export type KatanaLookup = {
+  manga: KatanaManga | null;
+  chapters: KatanaChapter[];
+};
+
+const cachedKatanaLookup = unstable_cache(
+  async (title: string): Promise<KatanaLookup> => {
+    const manga = await findKatanaManga(title);
+    if (!manga) return { manga: null, chapters: [] };
+    const chapters = await fetchKatanaChapters(manga);
+    return { manga, chapters };
+  },
+  ["resolve-katana-lookup"],
+  { revalidate: SOURCE_REVALIDATE },
+);
+
+export const getKatanaLookup = cache((title: string) => cachedKatanaLookup(title));
+
+const cachedMdFeed = unstable_cache(
+  async (ref: string): Promise<{ data: Chapter[]; total: number }> =>
+    fetchFeed(ref),
+  ["resolve-md-feed"],
+  { revalidate: 600 },
+);
+
+export const getMdFeed = cache((ref: string) => cachedMdFeed(ref));
+
+const cachedMdAggregate = unstable_cache(
+  async (ref: string): Promise<Awaited<ReturnType<typeof fetchAggregate>>> =>
+    fetchAggregate(ref),
+  ["resolve-md-aggregate"],
+  { revalidate: SOURCE_REVALIDATE },
+);
+
+export const getMdAggregate = cache((ref: string) =>
+  cachedMdAggregate(ref),
+);
+
 export async function resolveFirstChapter(
   mangaId: string,
 ): Promise<string | null> {
   try {
-    const { source, ref } = parseMangaId(mangaId);
-    if (source === "atsu") {
-      const manga = await fetchAtsuManga(ref);
-      const scanlator = primaryScanlator(manga.scanlators, manga.chapters);
-      const ordered = chaptersOfScanlator(manga.chapters, scanlator?.id ?? "");
-      const first = ordered[0] ?? manga.chapters[0];
-      return first?.id ?? null;
-    }
-    const manga = await fetchMangaById(ref, { withStats: false });
-    const atsuMatch = await findAtsuManga({
-      title: manga.title,
-      links: manga.links,
-    });
-    if (atsuMatch) {
-      const chapters = await fetchAtsuChapters(atsuMatch.manga.id);
-      const scanlator = primaryScanlator(atsuMatch.manga.scanlators, chapters);
-      const ordered = chaptersOfScanlator(chapters, scanlator?.id ?? "");
-      const first = ordered[0] ?? chapters[0];
+    const atsu = await getAtsuMatch(mangaId);
+    if (atsu) {
+      const scanlator = primaryScanlator(
+        atsu.match.manga.scanlators,
+        atsu.chapters,
+      );
+      const ordered = chaptersOfScanlator(atsu.chapters, scanlator?.id ?? "");
+      const first = ordered[0] ?? atsu.chapters[0];
       if (first) return first.id;
     }
+    const { ref } = parseMangaId(mangaId);
+    const manga = await fetchMangaById(ref, { withStats: false });
     const katanaFirst = await fetchKatanaFirstChapter(manga.title);
     if (katanaFirst) return katanaFirst;
-    const feed = await fetchFeed(mangaId);
+    const feed = await fetchFeed(ref);
     const first = feed.data.find((chapter) => !chapter.externalUrl);
     if (first) return first.id;
     return null;

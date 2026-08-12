@@ -1,66 +1,45 @@
 import { useSyncExternalStore } from "react";
+import { createStorageStore, type StorageStore } from "./storage";
 
 export const READ_STORAGE_KEY = "hana:read-chapters";
 export const READ_EVENT = "hana:read-chapters-updated";
 
 type ReadMap = Record<string, Record<string, number>>;
 
-let cached: ReadMap | undefined;
+const store: StorageStore<ReadMap> = createStorageStore<ReadMap>(
+  READ_STORAGE_KEY,
+  READ_EVENT,
+  {},
+);
+
 const setCache = new Map<string, ReadonlySet<string>>();
 
 const EMPTY_READ_SET: ReadonlySet<string> = new Set();
 
-function read(): ReadMap {
-  if (typeof window === "undefined") return {};
-  if (cached !== undefined) return cached;
-  try {
-    const raw = window.localStorage.getItem(READ_STORAGE_KEY);
-    cached = raw ? (JSON.parse(raw) as ReadMap) : {};
-  } catch {
-    cached = {};
-  }
-  return cached;
-}
-
-function write(map: ReadMap): void {
-  if (typeof window === "undefined") return;
-  cached = map;
-  setCache.clear();
-  try {
-    window.localStorage.setItem(READ_STORAGE_KEY, JSON.stringify(map));
-  } catch {
-    // storage full or blocked — ignore
-  }
-  window.dispatchEvent(new CustomEvent(READ_EVENT));
-}
-
-function invalidate(): void {
-  cached = undefined;
-  setCache.clear();
-}
-
 export function markChapterRead(mangaId: string, chapterId: string): void {
-  const map = read();
+  const map = store.getSnapshot();
   const manga = map[mangaId] ?? {};
   if (manga[chapterId]) return;
-  write({ ...map, [mangaId]: { ...manga, [chapterId]: Date.now() } });
+  setCache.clear();
+  store.setSnapshot({ ...map, [mangaId]: { ...manga, [chapterId]: Date.now() } });
 }
 
 export function markChapterUnread(mangaId: string, chapterId: string): void {
-  const map = read();
+  const map = store.getSnapshot();
   const manga = map[mangaId];
   if (!manga?.[chapterId]) return;
   const next = { ...manga };
   delete next[chapterId];
-  write({ ...map, [mangaId]: next });
+  setCache.clear();
+  store.setSnapshot({ ...map, [mangaId]: next });
 }
 
 export function isChapterRead(mangaId: string, chapterId: string): boolean {
-  return Boolean(read()[mangaId]?.[chapterId]);
+  return Boolean(store.getSnapshot()[mangaId]?.[chapterId]);
 }
 
 export function getReadChapters(mangaId: string): Record<string, number> {
-  return read()[mangaId] ?? {};
+  return store.getSnapshot()[mangaId] ?? {};
 }
 
 export function getReadChaptersSet(mangaId: string): ReadonlySet<string> {
@@ -72,7 +51,7 @@ export function getReadChaptersSet(mangaId: string): ReadonlySet<string> {
 }
 
 export function getReadSnapshot(): ReadMap {
-  return read();
+  return store.getSnapshot();
 }
 
 /** Mark the target chapter and everything before it as read (chapters in reading order). */
@@ -88,28 +67,19 @@ export function markAllBeforeRead(
 }
 
 export function markAllRead(mangaId: string, chapterIds: string[]): void {
-  const map = read();
+  const map = store.getSnapshot();
   const existing = map[mangaId] ?? {};
   const next = { ...existing };
   const now = Date.now();
   for (const id of chapterIds) {
     if (!next[id]) next[id] = now;
   }
-  write({ ...map, [mangaId]: next });
+  setCache.clear();
+  store.setSnapshot({ ...map, [mangaId]: next });
 }
 
 export function subscribeReadState(onChange: () => void): () => void {
-  if (typeof window === "undefined") return () => {};
-  const onStorage = (event: StorageEvent) => {
-    if (event.key === READ_STORAGE_KEY) invalidate();
-    onChange();
-  };
-  window.addEventListener("storage", onStorage);
-  window.addEventListener(READ_EVENT, onChange);
-  return () => {
-    window.removeEventListener("storage", onStorage);
-    window.removeEventListener(READ_EVENT, onChange);
-  };
+  return store.subscribe(onChange);
 }
 
 export function useReadChapters(mangaId: string): ReadonlySet<string> {

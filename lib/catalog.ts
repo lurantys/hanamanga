@@ -13,6 +13,7 @@ import {
   type AtsuCandidate,
 } from "./atsu";
 import { parseMangaId, toMangaId } from "./source";
+import { normalizeTitleKey, titleHits } from "./title";
 
 type AtsuLike = {
   id: string;
@@ -31,38 +32,6 @@ type AtsuLike = {
   mangaUpdatesId?: string | null;
 };
 
-function normalizeKey(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s]/gu, "")
-    .replace(/\s+/g, " ")
-    .replace(/^the\s+/, "")
-    .trim();
-}
-
-function titleHits(query: string, candidate: AtsuCandidate): boolean {
-  const q = normalizeKey(query);
-  if (!q) return false;
-  const targets = [
-    candidate.title,
-    candidate.englishTitle,
-    ...(candidate.otherNames ?? []),
-  ]
-    .filter((value): value is string => Boolean(value))
-    .map(normalizeKey)
-    .filter(Boolean);
-  if (targets.some((target) => target === q)) return true;
-
-  const qTokens = new Set(q.split(" ").filter((token) => token.length > 2));
-  if (!qTokens.size) return false;
-  for (const target of targets) {
-    const tTokens = new Set(target.split(" ").filter((token) => token.length > 2));
-    if ([...qTokens].every((token) => tTokens.has(token))) return true;
-    if ([...tTokens].every((token) => qTokens.has(token))) return true;
-  }
-  return false;
-}
-
 export function atsuToManga(atsu: AtsuLike): Manga {
   const links: Record<string, string> = {};
   if (atsu.anilistId) links.al = String(atsu.anilistId);
@@ -74,7 +43,7 @@ export function atsuToManga(atsu: AtsuLike): Manga {
   const title = atsu.title ?? atsu.englishTitle ?? "Untitled";
   const altTitles = [atsu.englishTitle, ...(atsu.otherNames ?? [])].filter(
     (value): value is string =>
-      typeof value === "string" && normalizeKey(value) !== normalizeKey(title),
+      typeof value === "string" && normalizeTitleKey(value) !== normalizeTitleKey(title),
   );
 
   return {
@@ -105,15 +74,25 @@ export async function searchCatalog(
   const data: Manga[] = [];
 
   for (const manga of md.data) {
-    const key = normalizeKey(manga.title);
+    const key = normalizeTitleKey(manga.title);
     if (!key || seen.has(key)) continue;
     seen.add(key);
     data.push(manga);
   }
 
   for (const candidate of atsu) {
-    if (!titleHits(query, candidate)) continue;
-    const key = normalizeKey(candidate.title ?? candidate.englishTitle ?? "");
+    if (
+      !titleHits(query, [
+        candidate.title,
+        candidate.englishTitle,
+        ...(candidate.otherNames ?? []),
+      ])
+    ) {
+      continue;
+    }
+    const key = normalizeTitleKey(
+      candidate.title ?? candidate.englishTitle ?? "",
+    );
     if (!key || seen.has(key)) continue;
     seen.add(key);
     data.push(atsuToManga(candidate));

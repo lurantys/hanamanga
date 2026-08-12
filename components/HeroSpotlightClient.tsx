@@ -34,7 +34,7 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
   const snapshot = useSyncExternalStore(subscribe, readContinueHero, () => null);
   const [imageLoaded, setImageLoaded] = useState(false);
 
-  const hero: Manga = snapshot?.manga ?? initial;
+  const hero = snapshot?.manga ?? initial;
   const imageSrc: string | null = hero.coverUrl ?? null;
 
   const ready = !imageSrc || imageLoaded;

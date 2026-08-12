@@ -1,5 +1,3 @@
-import type { Manga } from "./mangadex";
-
 export type ProgressEntry = {
   mangaId: string;
   chapterId: string;
@@ -10,8 +8,20 @@ export type ProgressEntry = {
   updatedAt: number;
 };
 
+export type ContinueHeroManga = {
+  id: string;
+  title: string;
+  coverUrl?: string | null;
+  bannerUrl?: string | null;
+  rating?: number;
+  description?: string;
+  status?: string;
+  year?: number;
+  follows?: number;
+};
+
 export type ContinueHeroSnapshot = {
-  manga: Manga;
+  manga: ContinueHeroManga;
   chapterId: string;
   chapterLabel: string;
   scrollFraction: number;

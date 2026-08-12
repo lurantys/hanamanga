@@ -4,22 +4,20 @@ import { Reader } from "@/components/Reader";
 import {
   chapterPageUrl,
   fetchChapterReader,
-  fetchFeed,
   truncate,
   MangaDexError,
   UPLOADS,
   type Chapter,
 } from "@/lib/mangadex";
-import {
-  buildAtsuReader,
-  fetchAtsuChapters,
-  fetchAtsuManga,
-  findAtsuManga,
-  type AtsuReader,
-} from "@/lib/atsu";
+import { buildAtsuReader, type AtsuReader } from "@/lib/atsu";
 import { fetchCatalogManga } from "@/lib/catalog";
+import { getAtsuMatch, getKatanaLookup, getMdFeed } from "@/lib/read";
 import { parseMangaId } from "@/lib/source";
-import { fetchKatanaReader } from "@/lib/mangakatana";
+import {
+  fetchKatanaPages,
+  resolveLegacyChapter,
+  type KatanaReader,
+} from "@/lib/mangakatana";
 
 type ReadPageProps = {
   params: Promise<{ mangaId: string; chapterId: string }>;
@@ -66,45 +64,24 @@ export default async function ReadPage({ params }: ReadPageProps) {
   }
 
   let atsuReader: AtsuReader | null = null;
+  const atsuMatchData = await getAtsuMatch(mangaId);
+  const atsuMatch = atsuMatchData?.match ?? null;
+  const atsuChapters = atsuMatchData?.chapters ?? [];
 
-  if (source === "atsu") {
+  if (atsuMatch) {
     try {
-      const atsuManga = await fetchAtsuManga(ref);
-      const atsuChapters = await fetchAtsuChapters(ref).catch(
-        () => atsuManga.chapters,
-      );
       atsuReader = await buildAtsuReader({
         mangaId,
-        atsuMangaId: ref,
+        atsuMangaId: atsuMatch.manga.id,
         atsuChapters,
         chapterId,
       });
     } catch {
       atsuReader = null;
     }
-    if (!atsuReader) notFound();
-  } else {
-    let atsuMatch = null;
-    try {
-      atsuMatch = await findAtsuManga({ title: manga.title, links: manga.links });
-    } catch {
-      atsuMatch = null;
-    }
-
-    if (atsuMatch) {
-      try {
-        const atsuChapters = await fetchAtsuChapters(atsuMatch.manga.id);
-        atsuReader = await buildAtsuReader({
-          mangaId,
-          atsuMangaId: atsuMatch.manga.id,
-          atsuChapters,
-          chapterId,
-        });
-      } catch {
-        atsuReader = null;
-      }
-    }
   }
+
+  if (source === "atsu" && !atsuReader) notFound();
 
   if (atsuReader) {
     return (
@@ -123,13 +100,44 @@ export default async function ReadPage({ params }: ReadPageProps) {
     );
   }
 
-  let katanaReader: Awaited<ReturnType<typeof fetchKatanaReader>> = null;
+  let katanaReader: KatanaReader | null = null;
   try {
-    katanaReader = await fetchKatanaReader({
-      mangaTitle: manga.title,
-      chapterId,
-      mangaId,
-    });
+    const lookup = await getKatanaLookup(manga.title);
+    if (lookup.manga && lookup.chapters.length > 0) {
+      let current =
+        lookup.chapters.find((chapter) => chapter.id === chapterId) ?? null;
+      if (!current) {
+        current = await resolveLegacyChapter(
+          lookup.chapters,
+          mangaId,
+          chapterId,
+        );
+      }
+      if (current) {
+        const pages = await fetchKatanaPages(lookup.manga, current).catch(
+          () => [] as string[],
+        );
+        if (pages.length > 0) {
+          const index = lookup.chapters.indexOf(current);
+          const prev = index > 0 ? lookup.chapters[index - 1] : null;
+          const next =
+            index < lookup.chapters.length - 1
+              ? lookup.chapters[index + 1]
+              : null;
+          katanaReader = {
+            chapterLabel: current.label,
+            chapterNumber: current.number,
+            chapters: lookup.chapters.map((chapter) => ({
+              id: chapter.id,
+              label: chapter.label,
+            })),
+            pages: pages.map((image) => ({ id: image, image })),
+            prevHref: prev ? `/read/${mangaId}/${prev.id}` : null,
+            nextHref: next ? `/read/${mangaId}/${next.id}` : null,
+          };
+        }
+      }
+    }
   } catch {
     // MangaKatana unavailable — fall through to MangaDex.
   }
@@ -156,7 +164,7 @@ export default async function ReadPage({ params }: ReadPageProps) {
   let reader;
   try {
     [feed, reader] = await Promise.all([
-      fetchFeed(mangaId),
+      getMdFeed(ref),
       fetchChapterReader(chapterId),
     ]);
   } catch (error) {

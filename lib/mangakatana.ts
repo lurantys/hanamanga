@@ -1,4 +1,5 @@
 import { fetchFeed, type Chapter } from "./mangadex";
+import { normalizeTitleKey, titleHits } from "./title";
 
 const BASE = "https://mangakatana.com";
 const USER_AGENT =
@@ -84,29 +85,6 @@ function parseMangaUrl(href: string): { slug: string; id: number } | null {
   return { slug: match[1], id: Number(match[2]) };
 }
 
-function normalizeTitle(value: string): string {
-  return value
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s]/gu, "")
-    .replace(/\s+/g, " ")
-    .replace(/^the\s+/, "")
-    .trim();
-}
-
-function titleHits(query: string, candidate: KatanaManga): boolean {
-  const q = normalizeTitle(query);
-  if (!q) return false;
-  const target = normalizeTitle(candidate.title);
-  if (!target) return false;
-  if (target === q) return true;
-  const qTokens = new Set(q.split(" ").filter((token) => token.length > 2));
-  if (!qTokens.size) return false;
-  const tTokens = new Set(target.split(" ").filter((token) => token.length > 2));
-  if ([...qTokens].every((token) => tTokens.has(token))) return true;
-  if ([...tTokens].every((token) => qTokens.has(token))) return true;
-  return false;
-}
-
 export async function searchKatanaManga(title: string): Promise<KatanaManga[]> {
   const html = await katanaGet(
     `${BASE}/?search=${encodeURIComponent(title.trim())}`,
@@ -137,7 +115,7 @@ export async function findKatanaManga(
   title: string,
 ): Promise<KatanaManga | null> {
   const results = await searchKatanaManga(title);
-  return results.find((candidate) => titleHits(title, candidate)) ?? null;
+  return results.find((candidate) => titleHits(title, [candidate.title])) ?? null;
 }
 
 function katanaChapterTitle(label: string, number: number | null): string | null {
@@ -194,10 +172,16 @@ function extractImageUrls(html: string): string[] {
 }
 
 function decodeAtcq(raw: string): string[] {
-  const first = Buffer.from(raw.trim(), "base64").toString("latin1");
-  const reversed = first.split("").reverse().join("");
-  const second = Buffer.from(reversed, "base64").toString("utf8");
-  return (JSON.parse(second) as string[]).slice(2);
+  try {
+    const first = Buffer.from(raw.trim(), "base64").toString("latin1");
+    const reversed = first.split("").reverse().join("");
+    const second = Buffer.from(reversed, "base64").toString("utf8");
+    const parsed = JSON.parse(second) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed.filter((entry): entry is string => typeof entry === "string").slice(2);
+  } catch {
+    return [];
+  }
 }
 
 export async function fetchKatanaPages(
@@ -244,10 +228,11 @@ export function matchKatanaChapter(
     }
   }
   if (title) {
-    const norm = normalizeTitle(title);
+    const norm = normalizeTitleKey(title);
     if (norm) {
       const byTitle = chapters.find(
-        (chapter) => chapter.title && normalizeTitle(chapter.title) === norm,
+        (chapter) =>
+          chapter.title && normalizeTitleKey(chapter.title) === norm,
       );
       if (byTitle) return byTitle;
     }
@@ -255,7 +240,7 @@ export function matchKatanaChapter(
   return null;
 }
 
-async function resolveLegacyChapter(
+export async function resolveLegacyChapter(
   chapters: KatanaChapter[],
   mangaId: string,
   chapterId: string,

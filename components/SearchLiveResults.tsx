@@ -31,26 +31,28 @@ export function SearchLiveResults({ query, onPick }: SearchLiveResultsProps) {
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    let active = true;
-    fetch(`/api/search?q=${encodeURIComponent(query)}`)
+    if (!query.trim()) return;
+    const controller = new AbortController();
+    fetch(`/api/search?q=${encodeURIComponent(query)}`, {
+      signal: controller.signal,
+    })
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
-        if (!active) return;
+        if (controller.signal.aborted) return;
         if (!json?.data) {
           setFailed(true);
           setData([]);
           return;
         }
+        setFailed(false);
         setData(json.data);
       })
-      .catch(() => {
-        if (!active) return;
+      .catch((error) => {
+        if (error?.name === "AbortError" || controller.signal.aborted) return;
         setFailed(true);
         setData([]);
       });
-    return () => {
-      active = false;
-    };
+    return () => controller.abort();
   }, [query]);
 
   if (data === null) {

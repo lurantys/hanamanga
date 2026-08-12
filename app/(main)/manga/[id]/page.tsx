@@ -100,9 +100,18 @@ export default async function MangaPage({ params }: MangaPageProps) {
   const fallbackChapters = katanaChapters.length
     ? katanaChapters
     : (feed?.data ?? []);
-  const fallbackFirstChapter =
-    fallbackChapters.find((chapter) => !chapter.externalUrl) ?? null;
+  const readableChapter = fallbackChapters.find(
+    (chapter) => !chapter.externalUrl,
+  );
+  const externalChapter = fallbackChapters.find(
+    (chapter) => chapter.externalUrl,
+  );
+  const fallbackFirstChapter = readableChapter ?? externalChapter ?? null;
   const readTarget = atsuMatch ? firstChapter : fallbackFirstChapter;
+  const readTargetExternalUrl =
+    !atsuMatch && fallbackFirstChapter?.externalUrl
+      ? fallbackFirstChapter.externalUrl
+      : null;
 
   const rating = manga.rating ?? 0;
   const match = Math.round(rating * 10);
@@ -208,22 +217,38 @@ export default async function MangaPage({ params }: MangaPageProps) {
               />
             )}
 
-            <div className="flex flex-wrap gap-3 pt-1">
-              {readTarget ? (
-                <Link
-                  href={`/read/${id}/${readTarget.id}`}
-                  className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-6 py-2.5 text-sm font-bold text-zinc-950 transition-colors hover:bg-white/80"
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>
-                    <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
-                  </svg>
-                  Read Now
-                </Link>
-              ) : (
-                <PlayButton manga={manga} variant="read" />
-              )}
-              <LibraryButton manga={manga} />
-            </div>
+             <div className="flex flex-wrap gap-3 pt-1">
+               {readTarget ? (
+                 readTargetExternalUrl ? (
+                   <a
+                     href={readTargetExternalUrl}
+                     target="_blank"
+                     rel="noopener noreferrer"
+                     className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-6 py-2.5 text-sm font-bold text-zinc-950 transition-colors hover:bg-white/80"
+                   >
+                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>
+                       <path d="M15 3h6v6" />
+                       <path d="M10 14 21 3" />
+                       <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                     </svg>
+                     Read on External
+                   </a>
+                 ) : (
+                   <Link
+                     href={`/read/${id}/${readTarget.id}`}
+                     className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-6 py-2.5 text-sm font-bold text-zinc-950 transition-colors hover:bg-white/80"
+                   >
+                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>
+                       <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
+                     </svg>
+                     Read Now
+                   </Link>
+                 )
+               ) : (
+                 <PlayButton manga={manga} variant="read" />
+               )}
+               <LibraryButton manga={manga} />
+             </div>
           </div>
         </div>
 

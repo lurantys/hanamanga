@@ -81,8 +81,8 @@ export async function buildReaderProps(
         atsuChapters,
         chapterId,
       });
-      if (atsuReader) {
-        return {
+       if (atsuReader && atsuReader.pages.length > 0) {
+         return {
           mangaId,
           mangaTitle: manga.title,
           mangaHref: `/manga/${mangaId}`,

@@ -1,5 +1,9 @@
 <div align="center">
 
+<a href="https://hanamanga.vercel.app/">
+    <img src="./public/logo-v2.png" alt="Hana logo" title="Hana logo" width="80"/>
+</a>
+
 # Hana
 
 ### A modern web manga reader

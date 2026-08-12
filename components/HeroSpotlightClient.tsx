@@ -60,7 +60,7 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
   }, []);
 
   const rating = hero.rating ?? 0;
-  const match = Math.round(rating * 10);
+  const match = `${rating.toFixed(1)} / 10`;
   const description = truncate(hero.description, 400);
   const pct = snapshot
     ? Math.round((snapshot.mangaFraction ?? snapshot.scrollFraction) * 100)
@@ -157,7 +157,7 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
                 <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4" aria-hidden>
                   <path d="M12 2l2.4 7.2H22l-6 4.6 2.3 7.2-6.3-4.5-6.3 4.5L8 13.8 2 9.2h7.6Z" />
                 </svg>
-                {match}% Match
+                {match}
               </span>
               <span className="rounded-md border border-zinc-500/60 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-zinc-200">
                 {statusLabel(hero.status)}

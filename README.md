@@ -9,6 +9,7 @@ Discover, read, and track manga, manhwa, manhua, and webtoons — beautifully, o
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js&logoColor=white)](https://nextjs.org)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-38BDF8?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
+[![Live](https://img.shields.io/badge/Live-hanamanga.vercel.app-0877d2?logo=vercel&logoColor=white)](https://hanamanga.vercel.app/)
 [![Last commit](https://img.shields.io/github/last-commit/lurantys/hanamanga)](https://github.com/lurantys/hanamanga)
 
 </div>
@@ -31,23 +32,22 @@ Discover, read, and track manga, manhwa, manhua, and webtoons — beautifully, o
 
 * [Next.js](https://nextjs.org) (App Router) + React 19 + TypeScript
 * [Tailwind CSS](https://tailwindcss.com) for styling
-* Deploys to [Vercel](https://vercel.com)
+* Live on [Vercel](https://hanamanga.vercel.app/)
 
-## Getting Started
+## Try it live
+
+Hana is deployed and running at **[hanamanga.vercel.app](https://hanamanga.vercel.app/)** — no setup required.
+
+## Development
+
+To run a local copy:
 
 ```bash
 npm install
 npm run dev
 ```
 
-Then open [http://localhost:3000](http://localhost:3000) in your browser.
-
-To build and run in production:
-
-```bash
-npm run build
-npm run start
-```
+Then open [http://localhost:3000](http://localhost:3000). Build and serve in production with `npm run build && npm run start`.
 
 ## Contributing
 

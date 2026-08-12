@@ -1,36 +1,62 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+<div align="center">
+
+# Hana
+
+### A modern web manga reader
+
+Discover, read, and track manga, manhwa, manhua, and webtoons — beautifully, on any device.
+
+[![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js&logoColor=white)](https://nextjs.org)
+[![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev)
+[![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-38BDF8?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
+[![Last commit](https://img.shields.io/github/last-commit/lurantys/hanamanga)](https://github.com/lurantys/hanamanga)
+
+</div>
+
+## Features
+
+<div align="left">
+
+* **Discover & browse** — trending, popular, and genre carousels, plus search and filtered browsing.
+* **Personalized home feed** — *Recommended for You* and *New Chapters* built from your library and reading history.
+* **Flexible reader** — paged and webtoon modes, zoom and fit controls, and an immersive mode.
+* **Library & Continue Reading** — pick up right where you left off; your progress stays on your device.
+* **Rich detail pages** — chapters, ratings, genres, and related titles.
+* **Source-aware** — pulls from MangaDex, Atsu, and MangaKatana; chapters hosted externally open in their source.
+* **Fast & responsive** — server-rendered with Next.js, tuned for both desktop and mobile.
+
+</div>
+
+## Tech Stack
+
+* [Next.js](https://nextjs.org) (App Router) + React 19 + TypeScript
+* [Tailwind CSS](https://tailwindcss.com) for styling
+* Deploys to [Vercel](https://vercel.com)
 
 ## Getting Started
 
-First, run the development server:
-
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Then open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+To build and run in production:
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+```bash
+npm run build
+npm run start
+```
 
-## Learn More
+## Contributing
 
-To learn more about Next.js, take a look at the following resources:
+Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Disclaimer
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+Hana is an unofficial reader. It does not host any content — all manga, chapters, and images are served by third-party sources (MangaDex, Atsu, MangaKatana). The developers are not affiliated with any content provider.
 
-## Deploy on Vercel
+## License
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+This project is currently **unlicensed / proprietary**. All rights reserved. You may view the source, but reuse, redistribution, or modification is not permitted without explicit permission from the author.

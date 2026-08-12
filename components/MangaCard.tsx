@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { StarRating } from "./StarRating";
@@ -14,6 +15,7 @@ export function MangaCard({ manga, className = "" }: MangaCardProps) {
   const genres = (manga.genres ?? []).slice(0, 2);
   const rating = manga.rating ?? 0;
   const match = Math.round(rating * 10);
+  const [loaded, setLoaded] = useState(false);
 
   return (
     <Link
@@ -27,17 +29,29 @@ export function MangaCard({ manga, className = "" }: MangaCardProps) {
     >
       <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-zinc-800 transition-transform duration-200 group-hover:scale-[1.03] group-active:scale-[1.03]">
         {manga.coverUrl ? (
-          <Image
-            src={manga.coverUrl}
-            alt={manga.title}
-            fill
-            sizes="(max-width: 768px) 144px, 176px"
-            className="object-cover"
-          />
+          <>
+            {!loaded && (
+              <div
+                className="absolute inset-0 animate-pulse bg-zinc-800"
+                aria-hidden
+              />
+            )}
+            <Image
+              src={manga.coverUrl}
+              alt={manga.title}
+              fill
+              sizes="(max-width: 768px) 144px, 176px"
+              onLoad={() => setLoaded(true)}
+              className={`object-cover transition-opacity duration-300 ${
+                loaded ? "opacity-100" : "opacity-0"
+              }`}
+            />
+          </>
         ) : (
-          <span className="flex h-full w-full items-center justify-center p-3 text-center text-sm text-zinc-500">
-            {manga.title}
-          </span>
+          <div
+            className="absolute inset-0 animate-pulse bg-zinc-800"
+            aria-hidden
+          />
         )}
 
         <span

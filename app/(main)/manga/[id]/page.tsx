@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Suspense } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -7,6 +8,7 @@ import { MangaChapterList } from "@/components/MangaChapterList";
 import { ExpandableDescription } from "@/components/ExpandableDescription";
 import { LibraryButton } from "@/components/LibraryButton";
 import { PlayButton } from "@/components/PlayButton";
+import { SimilarManga } from "@/components/SimilarManga";
 import { StarRating } from "@/components/StarRating";
 import {
   statusLabel,
@@ -268,6 +270,30 @@ export default async function MangaPage({ params }: MangaPageProps) {
             />
           )}
         </section>
+
+        {manga.genres.length > 0 && (
+          <div className="mt-12">
+            <Suspense
+              fallback={
+                <section aria-hidden>
+                  <h2 className="mb-3 px-5 text-xl font-bold tracking-tight text-white md:px-10">
+                    More like this
+                  </h2>
+                  <div className="flex gap-3 overflow-hidden px-5 md:px-10">
+                    {Array.from({ length: 6 }).map((_, index) => (
+                      <div
+                        key={index}
+                        className="aspect-[2/3] w-36 shrink-0 animate-pulse rounded-lg bg-zinc-800 md:w-44"
+                      />
+                    ))}
+                  </div>
+                </section>
+              }
+            >
+              <SimilarManga manga={manga} />
+            </Suspense>
+          </div>
+        )}
       </div>
     </main>
   );

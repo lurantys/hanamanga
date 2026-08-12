@@ -12,7 +12,7 @@ export function MangaRow({ title, manga }: MangaRowProps) {
       <h2 className="mb-3 px-4 text-lg font-bold tracking-tight text-zinc-100 md:px-10">
         {title}
       </h2>
-      <div className="scrollbar-hide flex gap-3 overflow-x-auto px-4 py-2 md:px-10">
+      <div className="scrollbar-hide flex touch-pan-x gap-3 overflow-x-auto px-4 py-2 md:px-10">
         {manga.map((item) => (
           <MangaCard key={item.id} manga={item} />
         ))}

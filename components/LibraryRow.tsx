@@ -37,7 +37,7 @@ export function LibraryRow() {
           View all
         </Link>
       </div>
-      <div className="scrollbar-hide flex gap-3 overflow-x-auto px-4 py-2 md:px-10">
+      <div className="scrollbar-hide flex touch-pan-x gap-3 overflow-x-auto px-4 py-2 md:px-10">
         {entries.map((entry) => (
           <MangaCard key={entry.manga.id} manga={entry.manga} />
         ))}

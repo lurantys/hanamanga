@@ -439,6 +439,7 @@ export function Reader({
     if (mode !== "webtoon") return;
     let saveTimer = 0;
     function onScroll() {
+      showControls();
       const doc = document.documentElement;
       const max = doc.scrollHeight - doc.clientHeight;
       const value = max > 0 ? Math.min(1, Math.max(0, doc.scrollTop / max)) : 0;
@@ -647,6 +648,18 @@ export function Reader({
 
   const toggleUi = useCallback(() => setUiHidden((value) => !value), []);
 
+  const toggleControls = useCallback(() => {
+    if (!isMobile) return;
+    const next = !controlsVisibleRef.current;
+    if (next) {
+      window.clearTimeout(controlsTimerRef.current);
+      controlsTimerRef.current = window.setTimeout(() => setControls(false), 3500);
+    } else {
+      window.clearTimeout(controlsTimerRef.current);
+    }
+    setControls(next);
+  }, [isMobile, setControls]);
+
   const pageNext = useCallback(() => {
     if (pagedIndex < pages.length - 1) {
       setPagedIndex(pagedIndex + 1);
@@ -803,9 +816,9 @@ export function Reader({
         const x = event.clientX;
         if (x < width / 3 || x > (width * 2) / 3) return;
       }
-      toggleUi();
+      toggleControls();
     },
-    [settings.tapZones, toggleUi],
+    [settings.tapZones, toggleControls],
   );
 
   useEffect(() => {
@@ -1112,7 +1125,7 @@ export function Reader({
           <div
             ref={contentRef}
             className="mx-auto mt-5 flex max-w-4xl flex-col gap-2 px-3 sm:px-4"
-            onClick={toggleUi}
+            onClick={toggleControls}
             style={{
               transform: `scale(${settings.zoom})`,
               transformOrigin: "top center",

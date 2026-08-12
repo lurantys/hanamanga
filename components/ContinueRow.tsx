@@ -59,7 +59,7 @@ export function ContinueRow() {
       <h2 className="mb-3 px-4 text-lg font-bold tracking-tight text-zinc-100 md:px-10">
         Continue Reading
       </h2>
-      <div className="scrollbar-hide flex gap-3 overflow-x-auto px-4 py-2 md:px-10">
+      <div className="scrollbar-hide flex touch-pan-x gap-3 overflow-x-auto px-4 py-2 md:px-10">
         {entries.map((entry) => {
           const manga = mangaById[entry.mangaId];
           const title = manga?.title ?? entry.mangaTitle;

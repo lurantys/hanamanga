@@ -4,19 +4,26 @@ import { searchCatalog } from "@/lib/catalog";
 
 export const dynamic = "force-dynamic";
 
+const POOL = 60;
+const PAGE_LIMIT = 24;
+
 const cachedSearch = unstable_cache(
-  async (query: string) => (await searchCatalog(query, 12)).data,
+  async (query: string) => (await searchCatalog(query, POOL)).data,
   ["api-search"],
   { revalidate: 300 },
 );
 
 export async function GET(request: Request) {
-  const q = new URL(request.url).searchParams.get("q")?.trim() ?? "";
-  if (!q) return NextResponse.json({ data: [] });
+  const sp = new URL(request.url).searchParams;
+  const q = sp.get("q")?.trim() ?? "";
+  const page = Math.max(1, Number(sp.get("page")) || 1);
+  if (!q) return NextResponse.json({ data: [], total: 0 });
   try {
-    const data = await cachedSearch(q);
+    const pool = await cachedSearch(q);
+    const start = (page - 1) * PAGE_LIMIT;
+    const data = pool.slice(start, start + PAGE_LIMIT);
     return NextResponse.json(
-      { data },
+      { data, total: pool.length, page },
       {
         headers: {
           "Cache-Control": "public, max-age=300, stale-while-revalidate=600",
@@ -24,6 +31,9 @@ export async function GET(request: Request) {
       },
     );
   } catch {
-    return NextResponse.json({ data: [], error: "unavailable" }, { status: 502 });
+    return NextResponse.json(
+      { data: [], total: 0, error: "unavailable" },
+      { status: 502 },
+    );
   }
 }

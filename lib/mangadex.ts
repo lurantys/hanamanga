@@ -261,6 +261,8 @@ export type MangaListOptions = {
   includedTags?: string[];
   availableLanguages?: string[];
   ids?: string[];
+  status?: string[];
+  contentRating?: string[];
 };
 
 export async function fetchMangaList(
@@ -270,7 +272,7 @@ export async function fetchMangaList(
     limit: options.limit ?? 24,
     offset: options.offset ?? 0,
     "includes[]": ["cover_art"],
-    "contentRating[]": CONTENT_RATINGS,
+    "contentRating[]": options.contentRating ?? CONTENT_RATINGS,
     "availableTranslatedLanguage[]": options.availableLanguages ?? ["en"],
   };
 
@@ -283,6 +285,9 @@ export async function fetchMangaList(
   }
   if (options.includedTags?.length) {
     params["includedTags[]"] = options.includedTags;
+  }
+  if (options.status?.length) {
+    params["status[]"] = options.status;
   }
 
   const json = await mdFetch<{

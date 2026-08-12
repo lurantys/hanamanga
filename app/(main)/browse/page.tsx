@@ -1,30 +1,24 @@
-import { Suspense } from "react";
 import type { Metadata } from "next";
 import { BrowseFilters } from "@/components/BrowseFilters";
 import { BrowseGrid } from "@/components/BrowseGrid";
-import { isSortKey, type SortKey } from "@/lib/genres";
+import {
+  isRatingKey,
+  isSortKey,
+  isStatusKey,
+  RATING_VALUES,
+  SORT_ORDER,
+  tagIdFor,
+  type SortKey,
+} from "@/lib/genres";
+import { fetchMangaList, type Manga } from "@/lib/mangadex";
 
 export const metadata: Metadata = {
   title: "Browse — Hana",
   description:
-    "Browse the manga catalog — sort by popularity, trending, or rating and filter by genre.",
+    "Browse the manga catalog — sort by popularity, trending, or rating and filter by genre, status, and content rating.",
 };
 
-function BrowseSkeleton() {
-  return (
-    <>
-      <div className="mb-4 h-5 w-48 animate-pulse rounded-full bg-zinc-800" />
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-        {Array.from({ length: 24 }).map((_, index) => (
-          <div
-            key={index}
-            className="aspect-[2/3] w-full animate-pulse rounded-lg bg-zinc-800"
-          />
-        ))}
-      </div>
-    </>
-  );
-}
+const PER_PAGE = 24;
 
 export default async function BrowsePage({
   searchParams,
@@ -34,11 +28,36 @@ export default async function BrowsePage({
   const params = await searchParams;
   const sortParam = Array.isArray(params.sort) ? params.sort[0] : params.sort;
   const genreParam = Array.isArray(params.genre) ? params.genre[0] : params.genre;
-  const pageParam = Array.isArray(params.page) ? params.page[0] : params.page;
+  const statusParam = Array.isArray(params.status) ? params.status[0] : params.status;
+  const ratingParam = Array.isArray(params.rating) ? params.rating[0] : params.rating;
 
   const sort: SortKey = isSortKey(sortParam) ? sortParam : "popular";
   const genre = genreParam?.trim() || undefined;
-  const page = Math.max(1, Number(pageParam) || 1);
+  const status = isStatusKey(statusParam ?? "") ? (statusParam ?? "") : "";
+  const rating = isRatingKey(ratingParam ?? "") ? (ratingParam ?? "") : "";
+
+  const tagId = genre ? tagIdFor(genre) : undefined;
+  const contentRating = rating ? RATING_VALUES[rating] : undefined;
+
+  let initialResults: Manga[] = [];
+  let total = 0;
+  let errored = false;
+  try {
+    const result = await fetchMangaList({
+      limit: PER_PAGE,
+      offset: 0,
+      order: SORT_ORDER[sort],
+      includedTags: tagId ? [tagId] : undefined,
+      status: status ? [status] : undefined,
+      contentRating,
+    });
+    initialResults = result.data;
+    total = result.total;
+  } catch {
+    errored = true;
+  }
+
+  const browseKey = `${sort}-${genre ?? ""}-${status}-${rating}`;
 
   return (
     <main className="bg-zinc-950 pb-24">
@@ -52,11 +71,19 @@ export default async function BrowsePage({
           </p>
         </header>
 
-        <BrowseFilters sort={sort} genre={genre} page={page} />
+        <BrowseFilters sort={sort} genre={genre} status={status} rating={rating} />
 
-        <Suspense fallback={<BrowseSkeleton />}>
-          <BrowseGrid sort={sort} genre={genre} page={page} />
-        </Suspense>
+        <BrowseGrid
+          key={browseKey}
+          sort={sort}
+          genre={genre}
+          status={status}
+          rating={rating}
+          initialResults={initialResults}
+          total={total}
+          initialPage={1}
+          errored={errored}
+        />
       </div>
     </main>
   );

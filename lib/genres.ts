@@ -42,6 +42,35 @@ export function isSortKey(value: string | undefined): value is SortKey {
   return SORTS.some((option) => option.key === value);
 }
 
+export const STATUS_OPTIONS: { key: string; label: string }[] = [
+  { key: "", label: "Any status" },
+  { key: "ongoing", label: "Ongoing" },
+  { key: "completed", label: "Completed" },
+  { key: "hiatus", label: "Hiatus" },
+  { key: "cancelled", label: "Cancelled" },
+];
+
+export function isStatusKey(value: string | undefined): boolean {
+  return value === "" || STATUS_OPTIONS.some((option) => option.key === value);
+}
+
+export const RATING_OPTIONS: { key: string; label: string }[] = [
+  { key: "", label: "All ratings" },
+  { key: "safe", label: "Safe" },
+  { key: "suggestive", label: "Suggestive" },
+  { key: "erotica", label: "Erotica" },
+];
+
+export const RATING_VALUES: Record<string, string[]> = {
+  safe: ["safe"],
+  suggestive: ["safe", "suggestive"],
+  erotica: ["safe", "suggestive", "erotica"],
+};
+
+export function isRatingKey(value: string | undefined): boolean {
+  return value === "" || RATING_OPTIONS.some((option) => option.key === value);
+}
+
 export function sortLabel(key: string | undefined): string {
   return SORTS.find((option) => option.key === key)?.label ?? SORTS[0].label;
 }

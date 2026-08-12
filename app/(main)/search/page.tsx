@@ -1,19 +1,15 @@
-import { Suspense } from "react";
+import type { Metadata } from "next";
 import Link from "next/link";
 import { SearchResults } from "@/components/SearchResults";
+import { searchCatalog } from "@/lib/catalog";
+import type { Manga } from "@/lib/mangadex";
 
-function ResultsSkeleton() {
-  return (
-    <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
-      {Array.from({ length: 12 }).map((_, index) => (
-        <div
-          key={index}
-          className="aspect-[2/3] w-full animate-pulse rounded-lg bg-zinc-800"
-        />
-      ))}
-    </div>
-  );
-}
+export const metadata: Metadata = {
+  title: "Search — Hana",
+};
+
+const POOL = 60;
+const FIRST_PAGE = 24;
 
 export default async function SearchPage({
   searchParams,
@@ -24,21 +20,10 @@ export default async function SearchPage({
   const rawQuery = Array.isArray(params.q) ? params.q[0] : params.q;
   const query = rawQuery?.trim() ?? "";
 
-  return (
-    <main className="bg-zinc-950 pb-24">
-      <div className="px-5 pt-28 md:px-10">
-        {query ? (
-          <>
-            <h1 className="mb-1 text-2xl font-extrabold tracking-tight text-white md:text-3xl">
-              Search Results
-            </h1>
-            <Suspense fallback={<ResultsSkeleton />}>
-              <div className="mt-4">
-                <SearchResults query={query} />
-              </div>
-            </Suspense>
-          </>
-        ) : (
+  if (!query) {
+    return (
+      <main className="bg-zinc-950 pb-24">
+        <div className="px-5 pt-28 md:px-10">
           <div className="flex flex-col items-center gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/60 px-6 py-16 text-center">
             <span className="text-5xl" aria-hidden>
               🔍
@@ -55,7 +40,35 @@ export default async function SearchPage({
               Back to Catalog
             </Link>
           </div>
-        )}
+        </div>
+      </main>
+    );
+  }
+
+  let initialData: Manga[] = [];
+  let total = 0;
+  let errored = false;
+  try {
+    const pool = await searchCatalog(query, POOL);
+    initialData = pool.data.slice(0, FIRST_PAGE);
+    total = pool.data.length;
+  } catch {
+    errored = true;
+  }
+
+  return (
+    <main className="bg-zinc-950 pb-24">
+      <div className="px-5 pt-28 md:px-10">
+        <h1 className="mb-1 text-2xl font-extrabold tracking-tight text-white md:text-3xl">
+          Search Results
+        </h1>
+        <SearchResults
+          key={query}
+          query={query}
+          initialData={initialData}
+          total={total}
+          errored={errored}
+        />
       </div>
     </main>
   );

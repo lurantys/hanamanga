@@ -7,6 +7,7 @@ import {
   useRef,
   useState,
   useSyncExternalStore,
+  type CSSProperties,
   type MouseEvent as ReactMouseEvent,
   type TouchEvent as ReactTouchEvent,
 } from "react";
@@ -25,31 +26,7 @@ import {
   markChapterRead,
   useReadChapters,
 } from "@/lib/read-state";
-
-type ReaderPage = {
-  id: string;
-  image: string;
-  width?: number;
-  height?: number;
-};
-
-type ReaderChapter = {
-  id: string;
-  label: string;
-};
-
-type ReaderProps = {
-  mangaId: string;
-  mangaTitle: string;
-  mangaHref: string;
-  chapterLabel: string;
-  chapterNumber?: number | null;
-  currentChapterId: string;
-  chapters: ReaderChapter[];
-  pages: ReaderPage[];
-  prevHref?: string | null;
-  nextHref?: string | null;
-};
+import type { ReaderProps } from "@/lib/reader-data";
 
 function ChevronLeft({ className = "h-4 w-4" }: { className?: string }) {
   return (
@@ -259,6 +236,53 @@ function SectionLabel({ children }: { children: string }) {
   );
 }
 
+function ReaderImage({
+  src,
+  alt,
+  className,
+  style,
+  width,
+  height,
+  loading = "lazy",
+  placeholderClassName = "min-h-[50vh]",
+}: {
+  src: string;
+  alt: string;
+  className?: string;
+  style?: CSSProperties;
+  width?: number;
+  height?: number;
+  loading?: "lazy" | "eager";
+  placeholderClassName?: string;
+}) {
+  const [loaded, setLoaded] = useState(false);
+  return (
+    <div className="relative">
+      {!loaded && (
+        <div
+          className={`absolute inset-0 ${placeholderClassName} animate-pulse rounded-lg bg-zinc-900`}
+          aria-hidden
+        />
+      )}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={src}
+        alt={alt}
+        width={width}
+        height={height}
+        loading={loading}
+        decoding="async"
+        onLoad={() => setLoaded(true)}
+        onError={() => setLoaded(true)}
+        className={`${className ?? ""} transition-opacity duration-300 ${
+          loaded ? "opacity-100" : "opacity-0"
+        }`}
+        style={style}
+      />
+    </div>
+  );
+}
+
 export function Reader({
   mangaId,
   mangaTitle,
@@ -290,6 +314,8 @@ export function Reader({
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [controlsVisible, setControlsVisible] = useState(true);
   const [isMobile, setIsMobile] = useState(false);
+  const [uiHidden, setUiHidden] = useState(false);
+  const [preloadUrls, setPreloadUrls] = useState<string[]>([]);
   const readChapters = useReadChapters(mangaId);
   const [prevChapter, setPrevChapter] = useState<{
     mangaId: string;
@@ -619,18 +645,7 @@ export function Reader({
     }
   }, [isMobile, setControls]);
 
-  const toggleControls = useCallback(() => {
-    if (isMobile) {
-      const next = !controlsVisibleRef.current;
-      if (next) {
-        window.clearTimeout(controlsTimerRef.current);
-        controlsTimerRef.current = window.setTimeout(() => setControls(false), 3500);
-      } else {
-        window.clearTimeout(controlsTimerRef.current);
-      }
-      setControls(next);
-    }
-  }, [isMobile, setControls]);
+  const toggleUi = useCallback(() => setUiHidden((value) => !value), []);
 
   const pageNext = useCallback(() => {
     if (pagedIndex < pages.length - 1) {
@@ -687,6 +702,18 @@ export function Reader({
 
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
+      if (event.key === "Escape") {
+        if (settingsOpen) {
+          setSettingsOpen(false);
+          return;
+        }
+        if (open) {
+          setOpen(false);
+          return;
+        }
+        toggleUi();
+        return;
+      }
       if (settingsOpen || open) return;
       if (mode === "paged") {
         if (event.key === "ArrowLeft") {
@@ -718,6 +745,7 @@ export function Reader({
     pagePrev,
     settingsOpen,
     open,
+    toggleUi,
   ]);
 
   useEffect(() => {
@@ -769,14 +797,15 @@ export function Reader({
 
   const onViewportClick = useCallback(
     (event: ReactMouseEvent<HTMLDivElement>) => {
+      if ((event.target as HTMLElement).closest("button")) return;
       if (settings.tapZones) {
         const width = event.currentTarget.clientWidth;
         const x = event.clientX;
         if (x < width / 3 || x > (width * 2) / 3) return;
       }
-      toggleControls();
+      toggleUi();
     },
-    [settings.tapZones, toggleControls],
+    [settings.tapZones, toggleUi],
   );
 
   useEffect(() => {
@@ -806,10 +835,46 @@ export function Reader({
     return `/read/${mangaId}/${chapters[index + 2].id}`;
   }, [chapters, currentChapterId, mangaId]);
 
+  const nextChapterId = useMemo(() => {
+    if (!nextHref) return null;
+    const parts = nextHref.split("/");
+    return parts[parts.length - 1] ?? null;
+  }, [nextHref]);
+
   useEffect(() => {
     if (nextHref) router.prefetch(nextHref);
     if (displayProgress > 0.6 && nextNextHref) router.prefetch(nextNextHref);
   }, [router, nextHref, nextNextHref, displayProgress]);
+
+  useEffect(() => {
+    if (!nextHref || !nextChapterId || preloadUrls.length > 0) return;
+    const nearEnd =
+      mode === "webtoon"
+        ? displayProgress > 0.85
+        : pagedIndex >= pages.length - 2;
+    if (!nearEnd) return;
+    let cancelled = false;
+    fetch(
+      `/api/preload-chapter?mangaId=${encodeURIComponent(mangaId)}&chapterId=${encodeURIComponent(nextChapterId)}`,
+    )
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (!cancelled && data?.pages?.length) setPreloadUrls(data.pages);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    mangaId,
+    nextHref,
+    nextChapterId,
+    mode,
+    displayProgress,
+    pagedIndex,
+    pages.length,
+    preloadUrls.length,
+  ]);
 
   const fitStyle =
     settings.fit === "height"
@@ -903,7 +968,11 @@ export function Reader({
 
   return (
     <div className="min-h-screen bg-zinc-950 pb-24">
-      <header className="sticky top-0 z-20 border-b border-white/10 bg-zinc-950/80 backdrop-blur-xl">
+      {preloadUrls.map((url) => (
+        <link key={url} rel="preload" as="image" href={url} />
+      ))}
+
+      <header className={`sticky top-0 z-20 border-b border-white/10 bg-zinc-950/80 backdrop-blur-xl transition-all duration-300 ${uiHidden ? "pointer-events-none -translate-y-full opacity-0" : ""}`}>
         <div aria-hidden className="absolute inset-x-0 top-0 h-[3px] bg-white/5">
           <div
             className="h-full bg-red-500 transition-[width] duration-150 ease-out"
@@ -1043,32 +1112,31 @@ export function Reader({
           <div
             ref={contentRef}
             className="mx-auto mt-5 flex max-w-4xl flex-col gap-2 px-3 sm:px-4"
-            onClick={toggleControls}
+            onClick={toggleUi}
             style={{
               transform: `scale(${settings.zoom})`,
               transformOrigin: "top center",
               filter: imageFilterCss,
             }}
           >
-            {pages.map((page, index) => (
-              <div
-                key={page.id}
-                ref={(el) => {
-                  pageRefs.current[index] = el;
-                }}
-              >
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={page.image}
-                  alt={`${chapterPrefix ? `${chapterPrefix} · ` : ""}Page ${index + 1}`}
-                  width={page.width ?? undefined}
-                  height={page.height ?? undefined}
-                  loading={index === 0 ? "eager" : "lazy"}
-                  decoding="async"
-                  className="h-auto w-full rounded-lg shadow-2xl shadow-zinc-950/60 ring-1 ring-white/5"
-                />
-              </div>
-            ))}
+              {pages.map((page, index) => (
+                <div
+                  key={page.id}
+                  ref={(el) => {
+                    pageRefs.current[index] = el;
+                  }}
+                >
+                  <ReaderImage
+                    src={page.image}
+                    alt={`${chapterPrefix ? `${chapterPrefix} · ` : ""}Page ${index + 1}`}
+                    width={page.width ?? undefined}
+                    height={page.height ?? undefined}
+                    loading={index === 0 ? "eager" : "lazy"}
+                    className="h-auto w-full rounded-lg shadow-2xl shadow-zinc-950/60 ring-1 ring-white/5"
+                    placeholderClassName="min-h-[60vh]"
+                  />
+                </div>
+              ))}
           </div>
 
           <nav className="mx-auto mt-10 flex max-w-4xl flex-wrap items-center justify-center gap-3 px-4">
@@ -1109,13 +1177,13 @@ export function Reader({
         >
           <div className="flex min-h-full items-center justify-center px-4 pb-16 pt-20">
             <div style={{ transform: `scale(${settings.zoom})`, filter: imageFilterCss }}>
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={pages[pagedIndex]?.image}
+              <ReaderImage
+                key={pages[pagedIndex]?.id}
+                src={pages[pagedIndex]?.image ?? ""}
                 alt={`${chapterPrefix ? `${chapterPrefix} · ` : ""}Page ${pagedIndex + 1}`}
                 width={pages[pagedIndex]?.width}
                 height={pages[pagedIndex]?.height}
-                decoding="async"
+                loading="eager"
                 className="rounded-lg object-contain shadow-2xl shadow-zinc-950/60 ring-1 ring-white/5"
                 style={fitStyle}
               />
@@ -1159,12 +1227,12 @@ export function Reader({
 
       <nav
         aria-label="Reader controls"
-        className="fixed right-3 top-1/2 z-30 hidden -translate-y-1/2 flex-col items-center gap-1.5 rounded-full border border-zinc-700/50 bg-zinc-950/70 py-2 shadow-[0_8px_40px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.06)] ring-1 ring-inset ring-white/10 backdrop-blur-xl sm:right-5 sm:flex"
+        className={`fixed right-3 top-1/2 z-30 hidden -translate-y-1/2 flex-col items-center gap-1.5 rounded-full border border-zinc-700/50 bg-zinc-950/70 py-2 shadow-[0_8px_40px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.06)] ring-1 ring-inset ring-white/10 backdrop-blur-xl transition-opacity duration-300 sm:right-5 sm:flex ${uiHidden ? "pointer-events-none opacity-0" : "opacity-100"}`}
       >
         {renderControls(railButton)}
       </nav>
 
-      {!open && !settingsOpen && advanceCount === null && (
+      {!open && !settingsOpen && advanceCount === null && !uiHidden && (
         <nav
           aria-label="Reader controls"
           className={`fixed inset-x-0 bottom-0 z-40 flex justify-center px-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-4 transition-all duration-300 sm:hidden ${

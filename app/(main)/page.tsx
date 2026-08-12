@@ -2,12 +2,11 @@ import { Suspense } from "react";
 import { HeroSpotlight } from "@/components/HeroSpotlight";
 import { ContinueRow } from "@/components/ContinueRow";
 import { LibraryRow } from "@/components/LibraryRow";
+import { RecommendedRow } from "@/components/RecommendedRow";
+import { NewChaptersRow } from "@/components/NewChaptersRow";
 import { MangaRow } from "@/components/MangaRow";
 import {
   getTrending,
-  getPopular,
-  getTopRated,
-  getByGenre,
   getWebtoons,
   getManhua,
 } from "@/lib/read";
@@ -46,52 +45,6 @@ async function TrendingRow() {
       <MangaRow title="Trending Now" manga={manga} />
     </div>
   );
-}
-
-async function PopularRow() {
-  let manga: Manga[] = [];
-  try {
-    const result = await getPopular(18);
-    manga = result.data;
-  } catch {
-    // fall back to the unavailable state below
-  }
-  if (manga.length === 0) {
-    return <RowUnavailable title="All Time Popular" />;
-  }
-  return <MangaRow title="All Time Popular" manga={manga} />;
-}
-
-async function TopRatedRow() {
-  let manga: Manga[] = [];
-  try {
-    const result = await getTopRated(18);
-    manga = result.data;
-  } catch {
-    // fall back to the unavailable state below
-  }
-  if (manga.length === 0) {
-    return <RowUnavailable title="Top Rated Manga" />;
-  }
-  return (
-    <div id="top-rated" className="scroll-mt-16">
-      <MangaRow title="Top Rated Manga" manga={manga} />
-    </div>
-  );
-}
-
-async function ActionRow() {
-  let manga: Manga[] = [];
-  try {
-    const result = await getByGenre("Action", 18);
-    manga = result.data;
-  } catch {
-    // fall back to the unavailable state below
-  }
-  if (manga.length === 0) {
-    return <RowUnavailable title="High-Octane Action" />;
-  }
-  return <MangaRow title="High-Octane Action" manga={manga} />;
 }
 
 async function WebtoonsRow() {
@@ -166,20 +119,11 @@ export default function Home() {
           <TrendingRow />
         </Suspense>
 
+        <RecommendedRow />
+        <NewChaptersRow />
+
         <Suspense fallback={<RowSkeleton title="Webtoons & Manhwa" />}>
           <WebtoonsRow />
-        </Suspense>
-
-        <Suspense fallback={<RowSkeleton title="All Time Popular" />}>
-          <PopularRow />
-        </Suspense>
-
-        <Suspense fallback={<RowSkeleton title="Top Rated Manga" />}>
-          <TopRatedRow />
-        </Suspense>
-
-        <Suspense fallback={<RowSkeleton title="High-Octane Action" />}>
-          <ActionRow />
         </Suspense>
 
         <Suspense fallback={<RowSkeleton title="Manhua" />}>

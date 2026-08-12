@@ -3,7 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AtsuChapterList } from "@/components/AtsuChapterList";
-import { ChapterReadCheck } from "@/components/ChapterReadCheck";
+import { MangaChapterList } from "@/components/MangaChapterList";
 import { ExpandableDescription } from "@/components/ExpandableDescription";
 import { LibraryButton } from "@/components/LibraryButton";
 import { PlayButton } from "@/components/PlayButton";
@@ -28,13 +28,6 @@ import { toCatalogChapter } from "@/lib/mangakatana";
 type MangaPageProps = {
   params: Promise<{ id: string }>;
 };
-
-function chapterLabel(chapter: Chapter): string {
-  if (chapter.title && chapter.chapter) return `${chapter.chapter}: ${chapter.title}`;
-  if (chapter.chapter) return `Chapter ${chapter.chapter}`;
-  if (chapter.title) return chapter.title;
-  return "Chapter";
-}
 
 export async function generateMetadata({
   params,
@@ -269,60 +262,10 @@ export default async function MangaPage({ params }: MangaPageProps) {
               </p>
             </div>
           ) : (
-            <div className="flex flex-col gap-8">
-              {volumes.map(([volume, chapters]) => (
-                <div key={volume ?? "no-volume"}>
-                  <h3 className="mb-3 text-sm font-bold uppercase tracking-widest text-zinc-400">
-                    {volume ? `Volume ${volume}` : "Unvolumed"}
-                  </h3>
-                  <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-                    {chapters.map((chapter) => (
-                      <div
-                        key={chapter.id}
-                        className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-zinc-900/60 px-4 py-3 backdrop-blur-xl transition-colors hover:border-white/25"
-                      >
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold text-zinc-200">
-                            {chapterLabel(chapter)}
-                          </p>
-                          <p className="text-xs text-zinc-500">
-                            {chapter.pages > 0
-                              ? `${chapter.pages} ${chapter.pages === 1 ? "page" : "pages"}`
-                              : null}
-                            {chapter.publishedAt
-                              ? `${chapter.pages > 0 ? " · " : ""}${new Date(chapter.publishedAt).toLocaleDateString()}`
-                              : ""}
-                          </p>
-                        </div>
-                        <div className="flex shrink-0 items-center gap-2">
-                          <ChapterReadCheck
-                            mangaId={id}
-                            chapterId={chapter.id}
-                          />
-                          {chapter.externalUrl ? (
-                            <a
-                              href={chapter.externalUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="rounded-lg border border-white/10 bg-zinc-800/60 px-3.5 py-1.5 text-xs font-semibold text-zinc-200 transition-colors hover:bg-zinc-700/60 hover:text-white"
-                            >
-                              External
-                            </a>
-                          ) : (
-                            <Link
-                              href={`/read/${id}/${chapter.id}`}
-                              className="rounded-lg border border-white/10 bg-zinc-800/60 px-3.5 py-1.5 text-xs font-semibold text-zinc-200 transition-colors hover:bg-zinc-700/60 hover:text-white"
-                            >
-                              Read
-                            </Link>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ))}
-            </div>
+            <MangaChapterList
+              mangaId={id}
+              volumes={volumes.map(([volume, chapters]) => ({ volume, chapters }))}
+            />
           )}
         </section>
       </div>

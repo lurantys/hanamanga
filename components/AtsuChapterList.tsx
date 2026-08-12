@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import type { AtsuChapter, AtsuScanlator } from "@/lib/atsu";
 import { atsuChapterLabel } from "@/lib/atsu";
@@ -13,6 +13,8 @@ type AtsuChapterListProps = {
   defaultScanlatorId?: string | null;
 };
 
+const BATCH = 100;
+
 export function AtsuChapterList({
   mangaId,
   scanlators,
@@ -23,7 +25,15 @@ export function AtsuChapterList({
     defaultScanlatorId ?? scanlators[0]?.id ?? "",
   );
   const [query, setQuery] = useState("");
+  const [order, setOrder] = useState<"newest" | "oldest">("newest");
+  const [revealed, setRevealed] = useState(BATCH);
+  const [jump, setJump] = useState("");
+  const [scrollTarget, setScrollTarget] = useState<string | null>(null);
+
   const readChapters = useReadChapters(mangaId);
+  const itemRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  const loadingRef = useRef(false);
 
   const groupChapters = useMemo(
     () =>
@@ -33,13 +43,67 @@ export function AtsuChapterList({
     [chapters, selected],
   );
 
+  const orderedChapters = useMemo(
+    () => (order === "newest" ? [...groupChapters].reverse() : groupChapters),
+    [groupChapters, order],
+  );
+
   const visibleChapters = useMemo(() => {
-    if (!query.trim()) return groupChapters;
     const needle = query.trim().toLowerCase();
-    return groupChapters.filter((chapter) =>
-      atsuChapterLabel(chapter).toLowerCase().includes(needle),
+    const base = needle
+      ? orderedChapters.filter((chapter) =>
+          atsuChapterLabel(chapter).toLowerCase().includes(needle),
+        )
+      : orderedChapters;
+    return query.trim() ? base : base.slice(0, revealed);
+  }, [orderedChapters, query, revealed]);
+
+  const hasMore = !query.trim() && revealed < orderedChapters.length;
+
+  const loadMore = () => {
+    if (loadingRef.current) return;
+    loadingRef.current = true;
+    setRevealed((value) => value + BATCH);
+    loadingRef.current = false;
+  };
+
+  useEffect(() => {
+    const el = sentinelRef.current;
+    if (!el || !hasMore) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0]?.isIntersecting) loadMore();
+      },
+      { rootMargin: "600px" },
     );
-  }, [groupChapters, query]);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, [hasMore, orderedChapters.length, revealed]);
+
+  useEffect(() => {
+    if (!scrollTarget) return;
+    const el = itemRefs.current[scrollTarget];
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
+  }, [scrollTarget, orderedChapters]);
+
+  const goToChapter = () => {
+    const target = Number(jump.trim());
+    if (!Number.isFinite(target)) return;
+    const index = orderedChapters.findIndex(
+      (chapter) => chapter.number === target,
+    );
+    if (index === -1) return;
+    if (index + 1 > revealed) setRevealed(index + 1);
+    setScrollTarget(orderedChapters[index].id);
+  };
+
+  const startFromBeginning = () => {
+    const firstId = orderedChapters[0]?.id;
+    if (!firstId) return;
+    setOrder("oldest");
+    setRevealed(BATCH);
+    setScrollTarget(firstId);
+  };
 
   const hasMultipleScanlators = scanlators.length > 1;
   const readCount = groupChapters.filter((chapter) =>
@@ -111,6 +175,55 @@ export function AtsuChapterList({
         </div>
       </div>
 
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex rounded-full border border-white/10 bg-zinc-900/60 p-1">
+          {(["newest", "oldest"] as const).map((value) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setOrder(value)}
+              className={`rounded-full px-4 py-1.5 text-sm font-medium transition active:scale-[0.97] ${
+                order === value
+                  ? "bg-zinc-100 text-zinc-950"
+                  : "text-zinc-300 hover:bg-zinc-800 hover:text-white"
+              }`}
+            >
+              {value === "newest" ? "Newest" : "Oldest"}
+            </button>
+          ))}
+        </div>
+
+        <div className="flex items-center gap-2">
+          <input
+            type="number"
+            min={1}
+            value={jump}
+            onChange={(event) => setJump(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") goToChapter();
+            }}
+            placeholder="Ch. #"
+            aria-label="Jump to chapter number"
+            className="w-24 rounded-lg border border-white/10 bg-zinc-900/60 py-2 pl-3 pr-2 text-sm text-zinc-100 outline-none transition-colors placeholder:text-zinc-500 focus:border-emerald-400/50"
+          />
+          <button
+            type="button"
+            onClick={goToChapter}
+            className="rounded-lg border border-white/10 bg-zinc-800/60 px-3 py-2 text-xs font-semibold text-zinc-200 transition-colors hover:border-emerald-400/40 hover:text-white"
+          >
+            Go
+          </button>
+        </div>
+
+        <button
+          type="button"
+          onClick={startFromBeginning}
+          className="rounded-lg border border-white/10 bg-zinc-800/60 px-3 py-2 text-xs font-semibold text-zinc-200 transition-colors hover:border-emerald-400/40 hover:text-white"
+        >
+          Start from beginning
+        </button>
+      </div>
+
       {groupChapters.length > 0 && readCount > 0 && (
         <p className="text-xs text-zinc-500">
           {readCount.toLocaleString()} of {groupChapters.length.toLocaleString()}{" "}
@@ -133,6 +246,9 @@ export function AtsuChapterList({
             return (
               <Link
                 key={chapter.id}
+                ref={(el) => {
+                  itemRefs.current[chapter.id] = el;
+                }}
                 href={`/read/${mangaId}/${chapter.id}`}
                 className={`group flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-zinc-900/60 px-4 py-3 backdrop-blur-xl transition-colors ${
                   isRead
@@ -165,7 +281,8 @@ export function AtsuChapterList({
                     </span>
                   </p>
                   <p className="text-xs text-zinc-500">
-                    {chapter.pageCount} {chapter.pageCount === 1 ? "page" : "pages"}
+                    {chapter.pageCount}{" "}
+                    {chapter.pageCount === 1 ? "page" : "pages"}
                     {chapter.createdAt
                       ? ` · ${new Date(chapter.createdAt).toLocaleDateString()}`
                       : ""}
@@ -177,6 +294,15 @@ export function AtsuChapterList({
               </Link>
             );
           })}
+        </div>
+      )}
+
+      {hasMore && (
+        <div ref={sentinelRef} className="flex items-center justify-center py-4">
+          <span
+            className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-600 border-t-zinc-200"
+            aria-hidden
+          />
         </div>
       )}
     </div>

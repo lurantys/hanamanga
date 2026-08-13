@@ -19,14 +19,16 @@ export function NewChaptersRow() {
     () => EMPTY_LIBRARY,
   );
   const [updates, setUpdates] = useState<Update[]>([]);
-  const [state, setState] = useState<"loading" | "done" | "empty">("loading");
+  const [prevLibrary, setPrevLibrary] = useState(library);
+
+  if (prevLibrary !== library) {
+    setPrevLibrary(library);
+    setUpdates([]);
+  }
 
   useEffect(() => {
     const continueEntries = getContinueList(50);
-    if (!continueEntries.length) {
-      setState("empty");
-      return;
-    }
+    if (!continueEntries.length) return;
 
     const baseline = new Map<string, number>();
     for (const entry of continueEntries) {
@@ -36,7 +38,6 @@ export function NewChaptersRow() {
     const ids = continueEntries.map((entry) => entry.mangaId);
 
     let active = true;
-    setState("loading");
     fetch(`/api/manga?ids=${ids.join(",")}`)
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
@@ -77,28 +78,22 @@ export function NewChaptersRow() {
       .then((results) => {
         if (!active || !results) return;
         const list = results.filter((value): value is Update => value !== null);
-        if (!list.length) {
-          setState("empty");
-          return;
-        }
+        if (!list.length) return;
         list.sort(
           (a, b) =>
             Date.parse(b.latest.publishedAt ?? "") -
             Date.parse(a.latest.publishedAt ?? ""),
         );
         setUpdates(list);
-        setState("done");
       })
-      .catch(() => {
-        if (active) setState("empty");
-      });
+      .catch(() => {});
 
     return () => {
       active = false;
     };
   }, [library]);
 
-  if (state === "empty") return null;
+  if (updates.length === 0) return null;
 
   return (
     <Carousel title="New Chapters" ariaLabel="New chapters">

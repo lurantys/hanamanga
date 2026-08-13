@@ -90,6 +90,7 @@ async function atsuFetch<T>(
       headers: {
         "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) Hana/1.0",
       },
+      signal: AbortSignal.timeout(8_000),
     });
     if (!res.ok) {
       throw new Error(`Atsumaru request failed: ${res.status} ${res.statusText}`);

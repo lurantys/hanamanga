@@ -25,7 +25,13 @@ export async function GET(request: Request) {
   try {
     const { mangadex, atsu } = splitMangaIds(ids);
     const [mdData, atsuData] = await Promise.all([
-      mangadex.length ? cachedMangaByIds(mangadex) : Promise.resolve([]),
+      (async () => {
+        const results: Manga[] = [];
+        for (let i = 0; i < mangadex.length; i += 100) {
+          results.push(...(await cachedMangaByIds(mangadex.slice(i, i + 100))));
+        }
+        return results;
+      })(),
       Promise.all(
         atsu.map(async (ref) => {
           try {

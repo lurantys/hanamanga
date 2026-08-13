@@ -28,7 +28,7 @@ export async function GET(request: Request) {
     const { data } = await fetchMangaList({
       includedTags: ids,
       order: { followedCount: "desc" },
-      limit: limit + exclude.size + 12,
+      limit: Math.min(limit + exclude.size + 12, 100),
     });
     const filtered = data.filter((manga) => !exclude.has(manga.id)).slice(0, limit);
     return NextResponse.json(

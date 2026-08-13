@@ -98,7 +98,7 @@ export function AtsuChapterList({
   };
 
   const startFromBeginning = () => {
-    const firstId = orderedChapters[0]?.id;
+    const firstId = groupChapters[0]?.id;
     if (!firstId) return;
     setOrder("oldest");
     setRevealed(BATCH);

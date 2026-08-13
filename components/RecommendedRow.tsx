@@ -16,11 +16,15 @@ export function RecommendedRow() {
     () => EMPTY_LIBRARY,
   );
   const [manga, setManga] = useState<Manga[]>([]);
-  const [state, setState] = useState<"loading" | "done" | "empty">("loading");
+  const [prevLibrary, setPrevLibrary] = useState(library);
+
+  if (prevLibrary !== library) {
+    setPrevLibrary(library);
+    setManga([]);
+  }
 
   useEffect(() => {
     let active = true;
-    setState("loading");
     loadUserManga()
       .then((userManga) => {
         if (!active) return;
@@ -35,10 +39,7 @@ export function RecommendedRow() {
           .sort((a, b) => b[1] - a[1])
           .slice(0, 6)
           .map(([genre]) => genre);
-        if (!tags.length) {
-          setState("empty");
-          return;
-        }
+        if (!tags.length) return;
         const params = new URLSearchParams({
           tags: tags.join(","),
           exclude: [...exclude].join(","),
@@ -49,27 +50,18 @@ export function RecommendedRow() {
           .then((json) => {
             if (!active) return;
             const data: Manga[] = json?.data ?? [];
-            if (!data.length) {
-              setState("empty");
-              return;
-            }
-            setManga(data);
-            setState("done");
+            if (data.length) setManga(data);
           })
-          .catch(() => {
-            if (active) setState("empty");
-          });
+          .catch(() => {});
       })
-      .catch(() => {
-        if (active) setState("empty");
-      });
+      .catch(() => {});
 
     return () => {
       active = false;
     };
   }, [library]);
 
-  if (state === "empty") return null;
+  if (manga.length === 0) return null;
 
   return (
     <Carousel title="Recommended for You" ariaLabel="Recommended for you">

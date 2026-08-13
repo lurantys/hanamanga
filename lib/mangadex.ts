@@ -443,10 +443,11 @@ export async function fetchFeed(
 ): Promise<{ data: Chapter[]; total: number }> {
   const params: Record<string, string | string[] | number> = {
     "translatedLanguage[]": ["en"],
-    "order[volume]": order.volume ?? "asc",
-    "order[chapter]": order.chapter ?? "asc",
     limit,
   };
+  for (const [key, value] of Object.entries(order)) {
+    params[`order[${key}]`] = value;
+  }
   const json = await mdFetch<{ data: ApiChapter[]; total: number }>(
     `/manga/${mangaId}/feed`,
     params,

@@ -64,12 +64,16 @@ export function WipModal({ open, media, onClose }: WipModalProps) {
             🚧
           </div>
           <div className="space-y-2">
-            <h3 className="text-2xl font-bold tracking-tight text-white">Manga Reader Under Construction</h3>
+            <h3 className="text-2xl font-bold tracking-tight text-white">
+              No chapters available
+            </h3>
             {title && (
-              <p className="text-sm font-medium text-emerald-400">Now queued: {title}</p>
+              <p className="text-sm font-medium text-emerald-400">Queued: {title}</p>
             )}
             <p className="mx-auto max-w-xs text-sm leading-relaxed text-zinc-400">
-              Reading capabilities are coming soon! Sit tight while we build the reader.
+              We couldn&apos;t find readable chapters for this title on any
+              connected source. It may not have an English release yet — try
+              another series.
             </p>
           </div>
           <div className="flex flex-wrap justify-center gap-3 pt-2">

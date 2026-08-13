@@ -435,6 +435,19 @@ export function Reader({
     }, 1000);
   }, [router, stopAdvance]);
 
+  const setControls = useCallback((visible: boolean) => {
+    controlsVisibleRef.current = visible;
+    setControlsVisible(visible);
+  }, []);
+
+  const showControls = useCallback(() => {
+    if (isMobile) {
+      setControls(true);
+      window.clearTimeout(controlsTimerRef.current);
+      controlsTimerRef.current = window.setTimeout(() => setControls(false), 3500);
+    }
+  }, [isMobile, setControls]);
+
   useEffect(() => {
     if (mode !== "webtoon") return;
     let saveTimer = 0;
@@ -499,6 +512,7 @@ export function Reader({
     chapters,
     scheduleAdvance,
     stopAdvance,
+    showControls,
     mode,
     settings.autoAdvance,
   ]);
@@ -632,19 +646,6 @@ export function Reader({
     },
     [mode, currentPage, pagedIndex, updateSettings],
   );
-
-  const setControls = useCallback((visible: boolean) => {
-    controlsVisibleRef.current = visible;
-    setControlsVisible(visible);
-  }, []);
-
-  const showControls = useCallback(() => {
-    if (isMobile) {
-      setControls(true);
-      window.clearTimeout(controlsTimerRef.current);
-      controlsTimerRef.current = window.setTimeout(() => setControls(false), 3500);
-    }
-  }, [isMobile, setControls]);
 
   const toggleUi = useCallback(() => setUiHidden((value) => !value), []);
 

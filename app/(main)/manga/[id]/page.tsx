@@ -7,6 +7,7 @@ import { MangaChapterList } from "@/components/MangaChapterList";
 import { ExpandableDescription } from "@/components/ExpandableDescription";
 import { LibraryButton } from "@/components/LibraryButton";
 import { PlayButton } from "@/components/PlayButton";
+import { ReadNowButton } from "@/components/ReadNowButton";
 import { StarRating } from "@/components/StarRating";
 import {
   statusLabel,
@@ -119,6 +120,8 @@ export default async function MangaPage({ params }: MangaPageProps) {
 
   const rating = manga.rating ?? 0;
   const match = rating.toFixed(1);
+  const showRating =
+    Boolean(manga.description) && rating > 0 && match !== "0.0";
 
   const volumesByKey = new Map<string | null, Chapter[]>();
   for (const chapter of fallbackChapters) {
@@ -171,7 +174,7 @@ export default async function MangaPage({ params }: MangaPageProps) {
           <div className="flex-1 space-y-4 pb-2">
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
               <span className="inline-flex items-center gap-2 rounded-md bg-emerald-500/15 px-2.5 py-1 text-sm font-bold text-emerald-400">
-                {manga.rating ? `${match} / 10` : "New"}
+                {showRating ? `${match} / 10` : "New"}
               </span>
               <span className="rounded-md border border-zinc-500/60 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-zinc-200">
                 {statusLabel(manga.status)}
@@ -204,7 +207,7 @@ export default async function MangaPage({ params }: MangaPageProps) {
               </div>
             )}
 
-            {manga.rating ? (
+            {showRating ? (
               <div className="flex items-center gap-1.5">
                 <StarRating sizeClass="h-4 w-4" />
                 <span className="text-sm font-semibold text-zinc-300">
@@ -237,6 +240,13 @@ export default async function MangaPage({ params }: MangaPageProps) {
                      </svg>
                      Read on External
                    </a>
+                 ) : atsuMatch ? (
+                   <ReadNowButton
+                     mangaId={id}
+                     scanlators={atsuMatch.manga.scanlators}
+                     chapters={atsuChapters}
+                     defaultScanlatorId={primaryScanlatorId}
+                   />
                  ) : (
                    <Link
                      href={`/read/${id}/${readTarget.id}`}

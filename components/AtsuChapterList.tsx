@@ -5,6 +5,7 @@ import Link from "next/link";
 import type { AtsuChapter, AtsuScanlator } from "@/lib/atsu";
 import { atsuChapterLabel } from "@/lib/atsu";
 import { markAllRead, useReadChapters } from "@/lib/read-state";
+import { setPreferredScanlator, usePreferredScanlator } from "@/lib/scanlator-preference";
 
 type AtsuChapterListProps = {
   mangaId: string;
@@ -21,9 +22,10 @@ export function AtsuChapterList({
   chapters,
   defaultScanlatorId,
 }: AtsuChapterListProps) {
-  const [selected, setSelected] = useState(
-    defaultScanlatorId ?? scanlators[0]?.id ?? "",
-  );
+  const preferred = usePreferredScanlator(mangaId);
+  const selected = scanlators.some((scanlator) => scanlator.id === preferred)
+    ? preferred
+    : (defaultScanlatorId ?? scanlators[0]?.id ?? "");
   const [query, setQuery] = useState("");
   const [order, setOrder] = useState<"newest" | "oldest">("newest");
   const [revealed, setRevealed] = useState(BATCH);
@@ -119,7 +121,7 @@ export function AtsuChapterList({
               <button
                 key={scanlator.id}
                 type="button"
-                onClick={() => setSelected(scanlator.id)}
+                onClick={() => setPreferredScanlator(mangaId, scanlator.id)}
                 className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
                   selected === scanlator.id
                     ? "border-emerald-400/60 bg-emerald-500/15 text-emerald-300"

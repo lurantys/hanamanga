@@ -8,9 +8,10 @@ import {
 } from "@/lib/mangadex";
 import { buildAtsuReader } from "@/lib/atsu";
 import { fetchCatalogManga } from "@/lib/catalog";
-import { getAtsuMatch, getKatanaLookup, getMdFeed } from "@/lib/read";
+import { getAtsuMatch, getKatanaLookup, getMdFeed, getWeebLookup } from "@/lib/read";
 import { parseMangaId } from "@/lib/source";
 import { fetchKatanaPages, resolveLegacyChapter } from "@/lib/mangakatana";
+import { fetchWeebPages, resolveWeebLegacyChapter } from "@/lib/weebcentral";
 
 export type ReaderPage = {
   id: string;
@@ -62,14 +63,16 @@ export async function buildReaderProps(
   const { source, ref } = parseMangaId(mangaId);
 
   let manga;
+  let atsuMatchData: Awaited<ReturnType<typeof getAtsuMatch>>;
   try {
-    manga = await fetchCatalogManga(mangaId, { withStats: false });
+    [manga, atsuMatchData] = await Promise.all([
+      fetchCatalogManga(mangaId, { withStats: false }),
+      getAtsuMatch(mangaId),
+    ]);
   } catch (error) {
     if (error instanceof MangaDexError && error.status === 404) notFound();
     throw error;
   }
-
-  const atsuMatchData = await getAtsuMatch(mangaId);
   const atsuMatch = atsuMatchData?.match ?? null;
   const atsuChapters = atsuMatchData?.chapters ?? [];
 
@@ -101,6 +104,71 @@ export async function buildReaderProps(
   }
 
   if (source === "atsu") notFound();
+
+  let weebReader: {
+    chapterLabel: string;
+    chapterNumber: number | null;
+    chapters: ReaderChapter[];
+    pages: ReaderPage[];
+    prevHref: string | null;
+    nextHref: string | null;
+  } | null = null;
+
+  try {
+    const lookup = await getWeebLookup(manga.title);
+    if (lookup.manga && lookup.chapters.length > 0) {
+      let current =
+        lookup.chapters.find((chapter) => chapter.id === chapterId) ?? null;
+      if (!current) {
+        current = await resolveWeebLegacyChapter(
+          lookup.chapters,
+          ref,
+          chapterId,
+        );
+      }
+      if (current) {
+        const pages = await fetchWeebPages(current.url).catch(
+          () => [] as string[],
+        );
+        if (pages.length > 0) {
+          const index = lookup.chapters.indexOf(current);
+          const prev = index > 0 ? lookup.chapters[index - 1] : null;
+          const next =
+            index < lookup.chapters.length - 1
+              ? lookup.chapters[index + 1]
+              : null;
+          weebReader = {
+            chapterLabel: current.label,
+            chapterNumber: current.number,
+            chapters: lookup.chapters.map((chapter) => ({
+              id: chapter.id,
+              label: chapter.label,
+            })),
+            pages: pages.map((image) => ({ id: image, image })),
+            prevHref: prev ? `/read/${mangaId}/${prev.id}` : null,
+            nextHref: next ? `/read/${mangaId}/${next.id}` : null,
+          };
+        }
+      }
+    }
+  } catch {
+    // WeebCentral unavailable — fall through to MangaKatana.
+  }
+
+  if (weebReader) {
+    return {
+      mangaId,
+      mangaTitle: manga.title,
+      mangaHref: `/manga/${mangaId}`,
+      chapterLabel: weebReader.chapterLabel,
+      chapterNumber: weebReader.chapterNumber,
+      currentChapterId: chapterId,
+      chapters: weebReader.chapters,
+      pages: weebReader.pages,
+      prevHref: weebReader.prevHref,
+      nextHref: weebReader.nextHref,
+    };
+  }
 
   let katanaReader: {
     chapterLabel: string;

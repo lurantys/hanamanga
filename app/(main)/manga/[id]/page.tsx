@@ -21,9 +21,10 @@ import {
   type AtsuMatch,
 } from "@/lib/atsu";
 import { fetchCatalogManga } from "@/lib/catalog";
-import { getAtsuMatch, getKatanaLookup, getMdAggregate, getMdFeed } from "@/lib/read";
+import { getAtsuMatch, getKatanaLookup, getMdAggregate, getMdFeed, getWeebLookup } from "@/lib/read";
 import { parseMangaId } from "@/lib/source";
 import { toCatalogChapter } from "@/lib/mangakatana";
+import { toWeebCatalogChapter } from "@/lib/weebcentral";
 
 type MangaPageProps = {
   params: Promise<{ id: string }>;
@@ -66,17 +67,18 @@ export default async function MangaPage({ params }: MangaPageProps) {
     atsuChapters = atsuMatchData.chapters;
   }
 
+  let weebChapters: Chapter[] = [];
   let katanaChapters: Chapter[] = [];
   let feed: Awaited<ReturnType<typeof getMdFeed>> | null = null;
   let aggregate: Awaited<ReturnType<typeof getMdAggregate>> | null = null;
   if (!atsuMatch) {
-    try {
-      const lookup = await getKatanaLookup(manga.title);
-      katanaChapters = lookup.chapters.map(toCatalogChapter);
-    } catch {
-      katanaChapters = [];
-    }
-    if (katanaChapters.length === 0) {
+    const [weebResult, katanaResult] = await Promise.all([
+      getWeebLookup(manga.title).catch(() => null),
+      getKatanaLookup(manga.title).catch(() => null),
+    ]);
+    weebChapters = weebResult?.chapters.map(toWeebCatalogChapter) ?? [];
+    katanaChapters = katanaResult?.chapters.map(toCatalogChapter) ?? [];
+    if (weebChapters.length === 0 && katanaChapters.length === 0) {
       try {
         [feed, aggregate] = await Promise.all([
           getMdFeed(ref),
@@ -97,9 +99,11 @@ export default async function MangaPage({ params }: MangaPageProps) {
     ? chaptersOfScanlator(atsuChapters, primaryScanlatorId ?? "")
     : [];
   const firstChapter = atsuReadingOrder[0] ?? atsuChapters[0] ?? null;
-  const fallbackChapters = katanaChapters.length
-    ? katanaChapters
-    : (feed?.data ?? []);
+  const fallbackChapters = weebChapters.length
+    ? weebChapters
+    : katanaChapters.length
+      ? katanaChapters
+      : (feed?.data ?? []);
   const readableChapter = fallbackChapters.find(
     (chapter) => !chapter.externalUrl,
   );
@@ -260,6 +264,10 @@ export default async function MangaPage({ params }: MangaPageProps) {
             <p className="mb-5 text-sm text-zinc-500">
               {atsuReadingOrder.length.toLocaleString()} chapters in English
               {atsuMatch.matchedByLink ? " · matched to your title" : ""}
+            </p>
+          ) : weebChapters.length ? (
+            <p className="mb-5 text-sm text-zinc-500">
+              {weebChapters.length.toLocaleString()} chapters
             </p>
           ) : katanaChapters.length ? (
             <p className="mb-5 text-sm text-zinc-500">

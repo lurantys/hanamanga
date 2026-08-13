@@ -29,6 +29,12 @@ import {
   type KatanaChapter,
   type KatanaManga,
 } from "./mangakatana";
+import {
+  fetchWeebFirstChapter,
+  getWeebLookupData,
+  type WeebChapter,
+  type WeebManga,
+} from "./weebcentral";
 
 const HOME_ROWS_REVALIDATE = 300;
 const SOURCE_REVALIDATE = 3600;
@@ -127,6 +133,22 @@ const cachedKatanaLookup = unstable_cache(
 
 export const getKatanaLookup = cache((title: string) => cachedKatanaLookup(title));
 
+export type WeebLookup = {
+  manga: WeebManga | null;
+  chapters: WeebChapter[];
+};
+
+const cachedWeebLookup = unstable_cache(
+  async (title: string): Promise<WeebLookup> => {
+    const lookup = await getWeebLookupData(title);
+    return { manga: lookup.manga, chapters: lookup.chapters };
+  },
+  ["resolve-weeb-lookup"],
+  { revalidate: SOURCE_REVALIDATE },
+);
+
+export const getWeebLookup = cache((title: string) => cachedWeebLookup(title));
+
 const cachedMdFeed = unstable_cache(
   async (ref: string): Promise<{ data: Chapter[]; total: number }> =>
     fetchFeed(ref),
@@ -163,6 +185,8 @@ export async function resolveFirstChapter(
     }
     const { ref } = parseMangaId(mangaId);
     const manga = await fetchMangaById(ref, { withStats: false });
+    const weebFirst = await fetchWeebFirstChapter(manga.title);
+    if (weebFirst) return weebFirst;
     const katanaFirst = await fetchKatanaFirstChapter(manga.title);
     if (katanaFirst) return katanaFirst;
     const feed = await fetchFeed(ref);

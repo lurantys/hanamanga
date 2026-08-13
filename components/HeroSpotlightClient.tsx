@@ -42,7 +42,9 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
   useEffect(() => {
     const entry = getContinueList(1)[0];
     if (!entry) return;
-    fetch(`/api/manga?ids=${encodeURIComponent(entry.mangaId)}&banners=1`)
+    fetch(`/api/manga?ids=${encodeURIComponent(entry.mangaId)}&banners=1`, {
+      cache: "no-store",
+    })
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
         const manga = json?.data?.[0];

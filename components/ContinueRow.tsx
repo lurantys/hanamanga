@@ -38,7 +38,7 @@ export function ContinueRow() {
     if (!entries.length) return;
     const ids = entries.map((entry) => entry.mangaId).join(",");
     let active = true;
-    fetch(`/api/manga?ids=${encodeURIComponent(ids)}`)
+    fetch(`/api/manga?ids=${encodeURIComponent(ids)}`, { cache: "no-store" })
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
         if (!active || !json?.data) return;

@@ -139,15 +139,18 @@ export type WeebLookup = {
 };
 
 const cachedWeebLookup = unstable_cache(
-  async (title: string): Promise<WeebLookup> => {
-    const lookup = await getWeebLookupData(title);
+  async (title: string, altTitles: string[]): Promise<WeebLookup> => {
+    const lookup = await getWeebLookupData([title, ...altTitles]);
     return { manga: lookup.manga, chapters: lookup.chapters };
   },
   ["resolve-weeb-lookup"],
   { revalidate: SOURCE_REVALIDATE },
 );
 
-export const getWeebLookup = cache((title: string) => cachedWeebLookup(title));
+export const getWeebLookup = cache(
+  (manga: { title: string; altTitles?: string[] }) =>
+    cachedWeebLookup(manga.title, manga.altTitles ?? []),
+);
 
 const cachedMdFeed = unstable_cache(
   async (ref: string): Promise<{ data: Chapter[]; total: number }> =>
@@ -185,7 +188,10 @@ export async function resolveFirstChapter(
     }
     const { ref } = parseMangaId(mangaId);
     const manga = await fetchMangaById(ref, { withStats: false });
-    const weebFirst = await fetchWeebFirstChapter(manga.title);
+    const weebFirst = await fetchWeebFirstChapter([
+      manga.title,
+      ...(manga.altTitles ?? []),
+    ]);
     if (weebFirst) return weebFirst;
     const katanaFirst = await fetchKatanaFirstChapter(manga.title);
     if (katanaFirst) return katanaFirst;

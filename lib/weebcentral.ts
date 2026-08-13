@@ -10,6 +10,27 @@ const cacheStore = new Map<string, { expires: number; promise: Promise<unknown> 
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+const LOOKUP_PACE_MS = 1500;
+
+function hasNonLatin(value: string): boolean {
+  return /[\u3040-\u30ff\u3400-\u4dbf\u4e00-\u9fff\uac00-\ud7af]/.test(value);
+}
+
+function titleVariants(titles: string[]): string[] {
+  const seen = new Set<string>();
+  const variants: string[] = [];
+  for (const raw of titles) {
+    const title = raw?.trim();
+    if (!title || hasNonLatin(title)) continue;
+    const key = normalizeTitleKey(title);
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    variants.push(title);
+    if (variants.length >= 4) break;
+  }
+  return variants;
+}
+
 export class WeebCentralError extends Error {
   status: number;
 
@@ -101,18 +122,22 @@ export async function searchWeebManga(title: string): Promise<WeebManga[]> {
   return results;
 }
 
-export async function findWeebManga(title: string): Promise<WeebManga | null> {
-  const results = await searchWeebManga(title);
-  if (!results.length) return null;
-  const key = normalizeTitleKey(title);
-  const exact = results.find(
-    (candidate) => normalizeTitleKey(candidate.title) === key,
-  );
-  return (
-    exact ??
-    results.find((candidate) => titleHits(title, [candidate.title])) ??
-    null
-  );
+export async function findWeebManga(titles: string[]): Promise<WeebManga | null> {
+  const variants = titleVariants(titles);
+  for (let i = 0; i < variants.length; i++) {
+    if (i > 0) await sleep(LOOKUP_PACE_MS);
+    const results = await searchWeebManga(variants[i]);
+    if (!results.length) continue;
+    const key = normalizeTitleKey(variants[i]);
+    const exact = results.find(
+      (candidate) => normalizeTitleKey(candidate.title) === key,
+    );
+    const matched =
+      exact ??
+      results.find((candidate) => titleHits(variants[i], [candidate.title]));
+    if (matched) return matched;
+  }
+  return null;
 }
 
 function weebChapterNumber(label: string): number | null {
@@ -225,19 +250,17 @@ export async function resolveWeebLegacyChapter(
 }
 
 export async function fetchWeebFirstChapter(
-  mangaTitle: string,
+  mangaTitles: string[],
 ): Promise<string | null> {
-  const { chapters } = await getWeebLookupData(mangaTitle);
+  const { chapters } = await getWeebLookupData(mangaTitles);
   return chapters[0]?.id ?? null;
 }
 
-const LOOKUP_PACE_MS = 1500;
-
-export async function getWeebLookupData(title: string): Promise<{
+export async function getWeebLookupData(titles: string[]): Promise<{
   manga: WeebManga | null;
   chapters: WeebChapter[];
 }> {
-  const manga = await findWeebManga(title);
+  const manga = await findWeebManga(titles);
   if (!manga) return { manga: null, chapters: [] };
   await sleep(LOOKUP_PACE_MS);
   const chapters = await fetchWeebChapters(manga);
@@ -258,9 +281,9 @@ export function toWeebCatalogChapter(chapter: WeebChapter): Chapter {
 }
 
 export async function fetchWeebCatalogChapters(
-  mangaTitle: string,
+  mangaTitles: string[],
 ): Promise<Chapter[]> {
-  const manga = await findWeebManga(mangaTitle);
+  const manga = await findWeebManga(mangaTitles);
   if (!manga) return [];
   const chapters = await fetchWeebChapters(manga);
   return chapters.map(toWeebCatalogChapter);

@@ -115,7 +115,7 @@ export async function buildReaderProps(
   } | null = null;
 
   try {
-    const lookup = await getWeebLookup(manga.title);
+    const lookup = await getWeebLookup(manga);
     if (lookup.manga && lookup.chapters.length > 0) {
       let current =
         lookup.chapters.find((chapter) => chapter.id === chapterId) ?? null;

@@ -73,7 +73,7 @@ export default async function MangaPage({ params }: MangaPageProps) {
   let aggregate: Awaited<ReturnType<typeof getMdAggregate>> | null = null;
   if (!atsuMatch) {
     const [weebResult, katanaResult] = await Promise.all([
-      getWeebLookup(manga.title).catch(() => null),
+      getWeebLookup(manga).catch(() => null),
       getKatanaLookup(manga.title).catch(() => null),
     ]);
     weebChapters = weebResult?.chapters.map(toWeebCatalogChapter) ?? [];

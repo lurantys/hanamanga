@@ -28,6 +28,7 @@ export type ReaderChapter = {
 export type ReaderProps = {
   mangaId: string;
   mangaTitle: string;
+  mangaCoverUrl?: string | null;
   mangaHref: string;
   chapterLabel: string;
   chapterNumber?: number | null;
@@ -88,6 +89,7 @@ export async function buildReaderProps(
          return {
           mangaId,
           mangaTitle: manga.title,
+          mangaCoverUrl: manga.coverUrl ?? null,
           mangaHref: `/manga/${mangaId}`,
           chapterLabel: atsuReader.chapterLabel,
           chapterNumber: atsuReader.chapterNumber,
@@ -159,6 +161,7 @@ export async function buildReaderProps(
     return {
       mangaId,
       mangaTitle: manga.title,
+      mangaCoverUrl: manga.coverUrl ?? null,
       mangaHref: `/manga/${mangaId}`,
       chapterLabel: weebReader.chapterLabel,
       chapterNumber: weebReader.chapterNumber,
@@ -224,6 +227,7 @@ export async function buildReaderProps(
     return {
       mangaId,
       mangaTitle: manga.title,
+      mangaCoverUrl: manga.coverUrl ?? null,
       mangaHref: `/manga/${mangaId}`,
       chapterLabel: katanaReader.chapterLabel,
       chapterNumber: katanaReader.chapterNumber,
@@ -262,6 +266,7 @@ export async function buildReaderProps(
   return {
     mangaId,
     mangaTitle: manga.title,
+    mangaCoverUrl: manga.coverUrl ?? null,
     mangaHref: `/manga/${mangaId}`,
     chapterLabel: mdChapterLabel(mdChapter),
     chapterNumber: mdChapterNumber(mdChapter),

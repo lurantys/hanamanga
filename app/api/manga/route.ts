@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { unstable_cache } from "next/cache";
 import { fetchMangaList, type Manga } from "@/lib/mangadex";
 import { atsuToManga } from "@/lib/catalog";
 import { fetchAtsuManga } from "@/lib/atsu";
@@ -7,12 +6,6 @@ import { splitMangaIds } from "@/lib/source";
 import { bannerForManga } from "@/lib/banner";
 
 export const dynamic = "force-dynamic";
-
-const cachedMangaByIds = unstable_cache(
-  async (ids: string[]) => (await fetchMangaList({ ids })).data,
-  ["api-manga-ids"],
-  { revalidate: 300 },
-);
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -28,7 +21,12 @@ export async function GET(request: Request) {
       (async () => {
         const results: Manga[] = [];
         for (let i = 0; i < mangadex.length; i += 100) {
-          results.push(...(await cachedMangaByIds(mangadex.slice(i, i + 100))));
+          results.push(
+            ...(await fetchMangaList({
+              ids: mangadex.slice(i, i + 100),
+              limit: 100,
+            })).data,
+          );
         }
         return results;
       })(),

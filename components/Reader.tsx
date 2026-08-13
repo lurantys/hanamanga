@@ -286,6 +286,7 @@ function ReaderImage({
 export function Reader({
   mangaId,
   mangaTitle,
+  mangaCoverUrl,
   mangaHref,
   chapterLabel,
   chapterNumber,
@@ -472,6 +473,7 @@ export function Reader({
           chapterId: currentChapterId,
           chapterLabel,
           mangaTitle,
+          coverUrl: mangaCoverUrl,
           scrollFraction: value,
           mangaFraction,
           updatedAt: Date.now(),
@@ -481,7 +483,7 @@ export function Reader({
           manga: {
             id: mangaId,
             title: mangaTitle,
-            coverUrl: null,
+            coverUrl: mangaCoverUrl,
             bannerUrl: null,
           },
           chapterId: currentChapterId,
@@ -509,6 +511,7 @@ export function Reader({
     currentChapterId,
     chapterLabel,
     mangaTitle,
+    mangaCoverUrl,
     chapters,
     scheduleAdvance,
     stopAdvance,
@@ -532,6 +535,7 @@ export function Reader({
       chapterId: currentChapterId,
       chapterLabel,
       mangaTitle,
+      coverUrl: mangaCoverUrl,
       scrollFraction: fraction,
       mangaFraction,
       updatedAt: Date.now(),
@@ -541,7 +545,7 @@ export function Reader({
       manga: {
         id: mangaId,
         title: mangaTitle,
-        coverUrl: null,
+        coverUrl: mangaCoverUrl,
         bannerUrl: null,
       },
       chapterId: currentChapterId,
@@ -561,6 +565,7 @@ export function Reader({
     currentChapterId,
     chapterLabel,
     mangaTitle,
+    mangaCoverUrl,
     chapters,
   ]);
 

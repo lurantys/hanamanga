@@ -3,6 +3,7 @@ export type ProgressEntry = {
   chapterId: string;
   chapterLabel: string;
   mangaTitle: string;
+  coverUrl?: string | null;
   scrollFraction: number;
   mangaFraction?: number;
   updatedAt: number;

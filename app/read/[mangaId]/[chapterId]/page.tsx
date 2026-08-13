@@ -30,6 +30,7 @@ export default async function ReadPage({ params }: ReadPageProps) {
     <Reader
       mangaId={props.mangaId}
       mangaTitle={props.mangaTitle}
+      mangaCoverUrl={props.mangaCoverUrl}
       mangaHref={props.mangaHref}
       chapterLabel={props.chapterLabel}
       chapterNumber={props.chapterNumber}

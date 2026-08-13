@@ -295,9 +295,13 @@ export async function fetchMangaList(
     limit: options.limit ?? 24,
     offset: options.offset ?? 0,
     "includes[]": ["cover_art"],
-    "contentRating[]": options.contentRating ?? CONTENT_RATINGS,
-    "availableTranslatedLanguage[]": options.availableLanguages ?? ["en"],
   };
+
+  if (!options.ids?.length) {
+    params["contentRating[]"] = options.contentRating ?? CONTENT_RATINGS;
+    params["availableTranslatedLanguage[]"] =
+      options.availableLanguages ?? ["en"];
+  }
 
   if (options.title) params.title = options.title;
   if (options.ids?.length) params["ids[]"] = options.ids;

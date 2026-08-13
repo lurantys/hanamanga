@@ -60,7 +60,9 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
   }, []);
 
   const rating = hero.rating ?? 0;
-  const match = `${rating.toFixed(1)} / 10`;
+  const match = rating.toFixed(1);
+  const showRating =
+    Boolean(hero.description) && rating > 0 && match !== "0.0";
   const description = truncate(hero.description, 400);
   const pct = snapshot
     ? Math.round((snapshot.mangaFraction ?? snapshot.scrollFraction) * 100)
@@ -153,12 +155,14 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
           )}
           <div className="flex min-w-0 flex-1 flex-col gap-3 md:gap-4">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 md:gap-x-4 md:gap-y-2">
-              <span className="inline-flex items-center gap-2 rounded-md bg-emerald-500/15 px-2.5 py-1 text-sm font-bold text-emerald-400">
-                <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4" aria-hidden>
-                  <path d="M12 2l2.4 7.2H22l-6 4.6 2.3 7.2-6.3-4.5-6.3 4.5L8 13.8 2 9.2h7.6Z" />
-                </svg>
-                {match}
-              </span>
+              {showRating ? (
+                <span className="inline-flex items-center gap-2 rounded-md bg-emerald-500/15 px-2.5 py-1 text-sm font-bold text-emerald-400">
+                  <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4" aria-hidden>
+                    <path d="M12 2l2.4 7.2H22l-6 4.6 2.3 7.2-6.3-4.5-6.3 4.5L8 13.8 2 9.2h7.6Z" />
+                  </svg>
+                  {match} / 10
+                </span>
+              ) : null}
               <span className="rounded-md border border-zinc-500/60 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-zinc-200">
                 {statusLabel(hero.status)}
               </span>

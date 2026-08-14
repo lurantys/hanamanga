@@ -20,7 +20,7 @@ export function markChapterRead(mangaId: string, chapterId: string): void {
   const map = store.getSnapshot();
   const manga = map[mangaId] ?? {};
   if (manga[chapterId]) return;
-  setCache.clear();
+  setCache.delete(mangaId);
   store.setSnapshot({ ...map, [mangaId]: { ...manga, [chapterId]: Date.now() } });
 }
 
@@ -30,7 +30,7 @@ export function markChapterUnread(mangaId: string, chapterId: string): void {
   if (!manga?.[chapterId]) return;
   const next = { ...manga };
   delete next[chapterId];
-  setCache.clear();
+  setCache.delete(mangaId);
   store.setSnapshot({ ...map, [mangaId]: next });
 }
 
@@ -74,7 +74,7 @@ export function markAllRead(mangaId: string, chapterIds: string[]): void {
   for (const id of chapterIds) {
     if (!next[id]) next[id] = now;
   }
-  setCache.clear();
+  setCache.delete(mangaId);
   store.setSnapshot({ ...map, [mangaId]: next });
 }
 

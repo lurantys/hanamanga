@@ -42,9 +42,13 @@ export async function generateMetadata({
     if (error instanceof MangaDexError && error.status === 404) notFound();
     throw error;
   }
+  const status = statusLabel(manga.status);
+  const metaBits = [status, ...(manga.genres ?? []).slice(0, 3)].filter(Boolean);
   return {
     title: `${manga.title} — Hana`,
-    description: manga.description ? truncate(manga.description, 160) : undefined,
+    description: manga.description
+      ? truncate(manga.description, 160)
+      : `Read ${manga.title} on Hana.${metaBits.length ? ` ${metaBits.join(", ")}.` : ""} Track your library and pick up right where you left off.`,
   };
 }
 

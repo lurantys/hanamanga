@@ -14,23 +14,30 @@ type OgMangaCard = {
   cover: string | null;
 };
 
+/**
+ * ImageResponse cannot rasterize AVIF, so derive the equivalent JPEG that
+ * Atsumaru keeps next to every AVIF poster (e.g. `x-large.avif` -> `x.jpg`).
+ */
+function rasterizableCoverUrl(url: string): string | null {
+  if (!/\.avif$/i.test(url)) return url;
+  return url.replace(/-large\.avif$/i, ".jpg").replace(/\.avif$/i, ".jpg");
+}
+
+async function fetchCoverDataUrl(url: string): Promise<string | null> {
+  const res = await fetch(url, { signal: AbortSignal.timeout(10_000) });
+  if (!res.ok) return null;
+  const mime = (res.headers.get("content-type") ?? "image/jpeg").split(";")[0];
+  if (mime.includes("avif")) return null;
+  const bytes = Buffer.from(await res.arrayBuffer());
+  return `data:${mime};base64,${bytes.toString("base64")}`;
+}
+
 const cachedMangaCard = unstable_cache(
   async (id: string): Promise<OgMangaCard> => {
     const manga = await fetchCatalogManga(id, { withStats: false });
     let cover: string | null = null;
-    const coverUrl = manga.coverUrl;
-    if (coverUrl && !/\.avif$/i.test(coverUrl)) {
-      const res = await fetch(coverUrl, {
-        signal: AbortSignal.timeout(10_000),
-      });
-      if (res.ok) {
-        const mime = (res.headers.get("content-type") ?? "image/jpeg").split(";")[0];
-        if (!mime.includes("avif")) {
-          const bytes = Buffer.from(await res.arrayBuffer());
-          cover = `data:${mime};base64,${bytes.toString("base64")}`;
-        }
-      }
-    }
+    const coverUrl = manga.coverUrl ? rasterizableCoverUrl(manga.coverUrl) : null;
+    if (coverUrl) cover = await fetchCoverDataUrl(coverUrl);
     const genres = manga.genres.slice(0, 3);
     const status = statusLabel(manga.status);
     const subtitle = [status, ...genres].filter(Boolean).join(" · ");
@@ -84,7 +91,16 @@ export default async function Image({
                 opacity: 0.32,
               }}
             />
-          ) : null}
+          ) : (
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                background:
+                  "radial-gradient(ellipse 80% 60% at 15% 0%, rgba(239,68,68,0.16), transparent 60%), radial-gradient(ellipse 60% 50% at 85% 100%, rgba(255,255,255,0.06), transparent 60%)",
+              }}
+            />
+          )}
           <div
             style={{
               position: "absolute",
@@ -99,7 +115,7 @@ export default async function Image({
               flexDirection: "row",
               alignItems: "center",
               justifyContent: "center",
-              gap: 56,
+              gap: card.cover ? 56 : 0,
               width: "100%",
               height: "100%",
               padding: "64px 88px",
@@ -126,7 +142,8 @@ export default async function Image({
                 justifyContent: "center",
                 alignItems: "flex-start",
                 gap: 18,
-                maxWidth: 560,
+                maxWidth: card.cover ? 560 : 720,
+                textAlign: card.cover ? "left" : "center",
               }}
             >
               <div
@@ -146,7 +163,7 @@ export default async function Image({
                   fontSize: titleSize(card.title),
                   fontWeight: 800,
                   lineHeight: 1.08,
-                  maxWidth: 560,
+                  maxWidth: 720,
                 }}
               >
                 {card.title}
@@ -157,7 +174,7 @@ export default async function Image({
                     color: "#a1a1aa",
                     fontSize: 26,
                     fontWeight: 500,
-                    maxWidth: 560,
+                    maxWidth: 720,
                   }}
                 >
                   {card.subtitle}
@@ -170,7 +187,7 @@ export default async function Image({
                     fontSize: 22,
                     fontWeight: 400,
                     lineHeight: 1.5,
-                    maxWidth: 560,
+                    maxWidth: 720,
                     maxHeight: 66,
                     overflow: "hidden",
                   }}

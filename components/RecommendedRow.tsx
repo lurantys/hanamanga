@@ -4,10 +4,22 @@ import { useEffect, useState, useSyncExternalStore } from "react";
 import { Carousel } from "./Carousel";
 import { MangaCard } from "./MangaCard";
 import { getLibrarySnapshot, subscribeLibrary } from "@/lib/library";
+import { getAllProgress } from "@/lib/progress";
 import { loadUserManga } from "@/lib/userManga";
 import type { Manga } from "@/lib/mangadex";
 
 const EMPTY_LIBRARY = {} as Record<string, never>;
+
+const DAY = 86_400_000;
+
+function recencyWeight(updatedAt?: number): number {
+  if (!updatedAt) return 0.5;
+  const age = Date.now() - updatedAt;
+  if (age <= 7 * DAY) return 1;
+  if (age <= 30 * DAY) return 0.8;
+  if (age <= 90 * DAY) return 0.55;
+  return 0.3;
+}
 
 export function RecommendedRow() {
   const library = useSyncExternalStore(
@@ -29,16 +41,32 @@ export function RecommendedRow() {
       .then((userManga) => {
         if (!active) return;
         const exclude = new Set(userManga.map((item) => item.id));
-        const counts = new Map<string, number>();
+        const progress = getAllProgress();
+        const genreWeights = new Map<string, number>();
+
         for (const item of userManga) {
+          const entry = progress[item.id];
+          const depth =
+            entry
+              ? 0.4 +
+                0.6 *
+                  (entry.mangaFraction ?? entry.scrollFraction ?? 0)
+              : 0.25;
+          const recency = recencyWeight(entry?.updatedAt);
+          const weight = depth * recency;
           for (const genre of item.genres ?? []) {
-            if (genre) counts.set(genre, (counts.get(genre) ?? 0) + 1);
+            if (!genre) continue;
+            genreWeights.set(
+              genre,
+              (genreWeights.get(genre) ?? 0) + weight,
+            );
           }
         }
-        const tags = [...counts.entries()]
+
+        const tags = [...genreWeights.entries()]
           .sort((a, b) => b[1] - a[1])
           .slice(0, 6)
-          .map(([genre]) => genre);
+          .map(([genre, weight]) => `${genre}:${weight.toFixed(2)}`);
         if (!tags.length) return;
         const params = new URLSearchParams({
           tags: tags.join(","),

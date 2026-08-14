@@ -54,23 +54,23 @@ function GridCard({
         className="block rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
         aria-label={ariaLabel}
       >
-        <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-zinc-800 transition-transform duration-200 group-hover:scale-[1.03] group-active:scale-[1.03]">
+        <div className="relative aspect-[2/3] overflow-hidden rounded-md bg-zinc-800 transition-transform duration-200 group-hover:scale-[1.03] group-active:scale-[1.03]">
           {coverUrl ? (
             <Image
               src={coverUrl}
               alt=""
               fill
-              sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+              sizes="(max-width: 640px) 25vw, (max-width: 1024px) 16vw, 12vw"
               className="object-cover"
             />
           ) : (
-            <span className="flex h-full w-full items-center justify-center p-3 text-center text-sm text-zinc-500">
+            <span className="flex h-full w-full items-center justify-center p-2 text-center text-xs text-zinc-500">
               {title}
             </span>
           )}
 
           {progressPct !== null && (
-            <span className="absolute left-1.5 top-1.5 rounded bg-zinc-950/80 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+            <span className="absolute left-1 top-1 rounded bg-zinc-950/80 px-1 py-0.5 text-[10px] font-semibold text-white">
               {progressPct}%
             </span>
           )}
@@ -79,12 +79,12 @@ function GridCard({
             aria-hidden
             className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-200 group-hover:opacity-100 pointer-coarse:opacity-100"
           >
-            <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
+            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
               <svg
                 viewBox="0 0 24 24"
                 fill="white"
                 stroke="none"
-                className="ml-0.5 h-4 w-4"
+                className="ml-0.5 h-3 w-3"
               >
                 <path d="M8 5.14v13.72L19 12 8 5.14z" />
               </svg>
@@ -92,7 +92,7 @@ function GridCard({
           </span>
 
           {progressPct !== null && (
-            <div className="absolute inset-x-0 bottom-0 h-1 bg-white/10">
+            <div className="absolute inset-x-0 bottom-0 h-0.5 bg-white/10">
               <div
                 className="h-full bg-red-500"
                 style={{ width: `${progressPct}%` }}
@@ -106,7 +106,7 @@ function GridCard({
         type="button"
         onClick={onRemove}
         aria-label={`Remove ${title} from library`}
-        className="absolute right-1.5 top-1.5 z-10 flex h-7 w-7 items-center justify-center rounded-full border border-white/20 bg-zinc-950/80 text-zinc-300 opacity-0 transition-all duration-200 hover:border-red-400/50 hover:text-red-300 focus:opacity-100 group-hover:opacity-100"
+        className="absolute right-1 top-1 z-10 flex h-5 w-5 items-center justify-center rounded-full border border-white/20 bg-zinc-950/80 text-zinc-300 opacity-0 transition-all duration-200 hover:border-red-400/50 hover:text-red-300 focus:opacity-100 group-hover:opacity-100"
       >
         <svg
           viewBox="0 0 24 24"
@@ -115,18 +115,18 @@ function GridCard({
           strokeWidth="2"
           strokeLinecap="round"
           strokeLinejoin="round"
-          className="h-3.5 w-3.5"
+          className="h-2.5 w-2.5"
           aria-hidden
         >
           <path d="M5 5l14 14M19 5L5 19" />
         </svg>
       </button>
 
-      <div className="mt-2 px-0.5">
-        <p className="line-clamp-1 text-sm font-semibold text-zinc-200">
+      <div className="mt-1 px-0.5">
+        <p className="line-clamp-1 text-xs font-semibold text-zinc-200">
           {title}
         </p>
-        <p className="mt-0.5 line-clamp-1 text-xs text-zinc-500">{meta}</p>
+        <p className="mt-0.5 line-clamp-1 text-[11px] text-zinc-500">{meta}</p>
       </div>
     </div>
   );
@@ -435,7 +435,7 @@ export default function LibraryPage() {
             </button>
           </div>
         ) : view === "grid" ? (
-          <div className="grid grid-cols-2 gap-x-4 gap-y-8 sm:grid-cols-3 lg:grid-cols-4">
+          <div className="grid grid-cols-4 gap-x-3 gap-y-5 sm:grid-cols-6 lg:grid-cols-8">
             {filtered.map(({ manga, addedAt }) => {
               const mangaProgress = progress[manga.id];
               const pct = mangaProgress

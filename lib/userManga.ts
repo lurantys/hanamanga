@@ -9,9 +9,14 @@ export async function loadUserManga(): Promise<Manga[]> {
 
   for (const entry of libraryEntries) byId.set(entry.manga.id, entry.manga);
 
-  const missing = continueEntries
-    .map((entry) => entry.mangaId)
-    .filter((id) => !byId.has(id));
+  const missing = [
+    ...continueEntries
+      .map((entry) => entry.mangaId)
+      .filter((id) => !byId.has(id)),
+    ...libraryEntries
+      .filter((entry) => !(entry.manga.genres?.length))
+      .map((entry) => entry.manga.id),
+  ].filter((id) => !byId.has(id) || !(byId.get(id)?.genres?.length));
 
   if (missing.length) {
     try {

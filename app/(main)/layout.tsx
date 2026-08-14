@@ -4,6 +4,65 @@ import { Suspense } from "react";
 import { GenreMenu } from "@/components/GenreMenu";
 import { SearchBar } from "@/components/SearchBar";
 
+function Footer() {
+  return (
+    <footer className="border-t border-white/5 bg-zinc-950">
+      <div className="mx-auto max-w-5xl px-5 py-12 md:px-10">
+        <div className="flex flex-col gap-8 md:flex-row md:items-start md:justify-between">
+          <div className="max-w-md">
+            <div className="flex items-center gap-2">
+              <Image
+                src="/logo-v2.png"
+                alt="Hana"
+                width={32}
+                height={32}
+                className="h-8 w-8 rounded-lg object-contain"
+              />
+              <span className="text-lg font-bold text-zinc-50">Hana</span>
+            </div>
+            <p className="mt-3 text-sm leading-relaxed text-zinc-500">
+              Hana is a reader app only. It does not host, store, or distribute
+              any manga — all titles, chapters, and images are sourced directly
+              from third-party providers at the moment you open them.
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-2 text-sm">
+            <p className="text-xs font-semibold uppercase tracking-widest text-zinc-600">
+              Explore
+            </p>
+            <Link
+              href="/browse"
+              className="w-fit text-zinc-400 transition-colors hover:text-white"
+            >
+              Browse
+            </Link>
+            <Link
+              href="/library"
+              className="w-fit text-zinc-400 transition-colors hover:text-white"
+            >
+              Library
+            </Link>
+          </div>
+        </div>
+
+        <div className="mt-10 border-t border-white/5 pt-6">
+          <p className="text-xs leading-relaxed text-zinc-600">
+            Disclaimer: Hana is an unofficial, non-commercial reader. It does
+            not host or upload any content. All manga, chapters, and images are
+            served by their respective third-party sources (such as MangaDex),
+            and all rights remain with their creators and publishers. Hana is
+            not affiliated with any content provider.
+          </p>
+          <p className="mt-3 text-xs text-zinc-700">
+            © {new Date().getFullYear()} Hana. All rights reserved.
+          </p>
+        </div>
+      </div>
+    </footer>
+  );
+}
+
 function Header() {
   return (
     <header className="fixed inset-x-0 top-4 z-40 flex justify-center px-4">
@@ -56,6 +115,7 @@ export default function MainLayout({ children }: LayoutProps<"/">) {
     <>
       <Header />
       {children}
+      <Footer />
     </>
   );
 }

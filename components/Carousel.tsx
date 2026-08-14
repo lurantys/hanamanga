@@ -45,33 +45,27 @@ type CarouselProps = {
 
 export function Carousel({ title, ariaLabel, children, headerRight }: CarouselProps) {
   const scrollerRef = useRef<HTMLDivElement>(null);
-  const [atStart, setAtStart] = useState(true);
+  const [atStart, setAtStart] = useState(false);
   const [atEnd, setAtEnd] = useState(false);
 
-  const update = () => {
+  useEffect(() => {
     const el = scrollerRef.current;
     if (!el) return;
     const max = el.scrollWidth - el.clientWidth;
     setAtStart(el.scrollLeft <= 1);
     setAtEnd(el.scrollLeft >= max - 1);
-  };
-
-  useEffect(() => {
-    update();
-    const el = scrollerRef.current;
-    if (!el) return;
-    el.addEventListener("scroll", update, { passive: true });
-    window.addEventListener("resize", update);
-    return () => {
-      el.removeEventListener("scroll", update);
-      window.removeEventListener("resize", update);
-    };
   }, []);
 
   const scrollBy = (dir: 1 | -1) => {
     const el = scrollerRef.current;
     if (!el) return;
-    el.scrollBy({ left: dir * Math.round(el.clientWidth * 0.85), behavior: "smooth" });
+    const maxScroll = el.scrollWidth - el.clientWidth;
+    const currentScroll = el.scrollLeft;
+    const scrollAmount = Math.round(el.clientWidth * 0.85);
+    el.scrollBy({
+      left: Math.max(-currentScroll, Math.min(dir * scrollAmount, maxScroll - currentScroll)),
+      behavior: "smooth",
+    });
   };
 
   return (

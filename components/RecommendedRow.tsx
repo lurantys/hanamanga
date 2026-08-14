@@ -72,6 +72,7 @@ export function RecommendedRow() {
           tags: tags.join(","),
           exclude: [...exclude].join(","),
           limit: "18",
+          seed: String(Math.floor(Math.random() * 1_000_000)),
         });
         return fetch(`/api/recommend?${params.toString()}`)
           .then((res) => (res.ok ? res.json() : null))

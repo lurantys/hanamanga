@@ -21,17 +21,32 @@ function popularityFactor(follows?: number): number {
   return Math.log10((follows ?? 0) + 10);
 }
 
+function hashSeed(id: string): number {
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = (hash * 31 + id.charCodeAt(i)) | 0;
+  }
+  return Math.abs(hash);
+}
+
+function jitter(id: string, seed: number): number {
+  const combined = (hashSeed(id) ^ (seed * 2654435761)) >>> 0;
+  return ((combined % 1000) / 1000) * 0.08 - 0.04;
+}
+
 function recommendationScore(
   manga: Manga,
   weightByName: Map<string, number>,
   totalWeight: number,
+  seed: number,
 ): number {
   let overlap = 0;
   for (const genre of manga.genres ?? []) {
     overlap += weightByName.get(genre.toLowerCase()) ?? 0;
   }
   const overlapRatio = Math.min(1, overlap / Math.max(1, totalWeight));
-  return (0.05 + 0.95 * overlapRatio) * popularityFactor(manga.follows);
+  const base = (0.05 + 0.95 * overlapRatio) * popularityFactor(manga.follows);
+  return base * (1 + jitter(manga.id, seed));
 }
 
 export async function GET(request: Request) {
@@ -44,6 +59,7 @@ export async function GET(request: Request) {
       .filter(Boolean),
   );
   const limit = Math.min(Number(searchParams.get("limit")) || 18, 40);
+  const seed = Number(searchParams.get("seed")) || 0;
 
   if (!weighted.length) return NextResponse.json({ data: [] });
 
@@ -62,16 +78,19 @@ export async function GET(request: Request) {
 
   let candidates: Manga[] = [];
   try {
+    const offsetBase = (seed % 12) * TAG_FETCH_LIMIT;
     const pools = await Promise.all([
-      ...tagIds.slice(0, 4).map((tagId) =>
+      ...tagIds.slice(0, 4).map((tagId, index) =>
         fetchMangaList({
           limit: TAG_FETCH_LIMIT,
+          offset: offsetBase + index * TAG_FETCH_LIMIT * 2,
           order: { followedCount: "desc" },
           includedTags: [tagId],
         }).then((result) => result.data),
       ),
       fetchMangaList({
         limit: TAG_FETCH_LIMIT,
+        offset: offsetBase + 40,
         order: { followedCount: "desc" },
       }).then((result) => result.data),
     ]);
@@ -99,7 +118,7 @@ export async function GET(request: Request) {
     .filter((manga) => !exclude.has(manga.id))
     .map((manga) => ({
       manga,
-      score: recommendationScore(manga, weightByName, totalWeight),
+      score: recommendationScore(manga, weightByName, totalWeight, seed),
     }))
     .sort((a, b) => b.score - a.score)
     .slice(0, limit)
@@ -109,7 +128,7 @@ export async function GET(request: Request) {
     { data: scored },
     {
       headers: {
-        "Cache-Control": "public, max-age=300, stale-while-revalidate=600",
+        "Cache-Control": "public, max-age=60, stale-while-revalidate=120",
       },
     },
   );

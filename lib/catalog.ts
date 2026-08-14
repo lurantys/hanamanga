@@ -30,7 +30,40 @@ type AtsuLike = {
   kitsuId?: number | null;
   apId?: string | null;
   mangaUpdatesId?: string | null;
+  genres?: string[];
+  rating?: number;
 };
+
+const ADULT_GENRES = new Set([
+  "adult",
+  "smut",
+  "erotica",
+  "ecchi",
+  "hentai",
+  "pornographic",
+  "porn",
+  "sexual",
+  "nsfw",
+  "mature",
+  "lolicon",
+  "shotacon",
+  "guro",
+]);
+
+export function curatedAtsuGenres(genres: string[] | undefined): string[] {
+  if (!genres?.length) return [];
+  const seen = new Set<string>();
+  const result: string[] = [];
+  for (const genre of genres) {
+    const normalized = genre.trim();
+    if (!normalized) continue;
+    const key = normalized.toLowerCase();
+    if (ADULT_GENRES.has(key) || seen.has(key)) continue;
+    seen.add(key);
+    result.push(normalized);
+  }
+  return result;
+}
 
 export function atsuToManga(atsu: AtsuLike): Manga {
   const links: Record<string, string> = {};
@@ -51,7 +84,8 @@ export function atsuToManga(atsu: AtsuLike): Manga {
     title,
     altTitles: altTitles.length ? altTitles : undefined,
     coverUrl: atsuPosterUrl(atsu.poster ?? null),
-    genres: [],
+    genres: curatedAtsuGenres(atsu.genres),
+    rating: atsu.rating,
     status: atsu.status ?? undefined,
     year: atsu.year ?? undefined,
     availableLanguages: ["en"],

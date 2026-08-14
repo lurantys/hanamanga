@@ -14,6 +14,8 @@ export type AtsuCandidate = {
   year?: number | null;
   poster?: string | null;
   otherNames?: string[];
+  genres?: string[];
+  rating?: number;
 };
 
 export type AtsuChapter = {
@@ -44,6 +46,10 @@ export type AtsuManga = {
   scanlators: AtsuScanlator[];
   chapters: AtsuChapter[];
   totalChapterCount?: number | null;
+  genres: string[];
+  tags: string[];
+  rating?: number;
+  isAdult?: boolean;
 };
 
 export type AtsuPage = {
@@ -122,6 +128,12 @@ function atsuCandidateFromDocument(
     otherNames: Array.isArray(doc.otherNames)
       ? (doc.otherNames as string[])
       : undefined,
+    genres: Array.isArray(doc.tags)
+      ? (doc.tags as string[]).filter(
+          (tag): tag is string => typeof tag === "string" && tag.trim() !== "",
+        )
+      : undefined,
+    rating: typeof doc.mbRating === "number" ? (doc.mbRating as number) : undefined,
   };
 }
 
@@ -194,6 +206,10 @@ type MangaPageJson = {
       pageCount: number;
     }[];
     totalChapterCount?: number | null;
+    genres?: { id: string; name: string; weight?: string }[];
+    tags?: { id: string; name: string; namePath?: string; weight?: string }[];
+    avgRating?: number | null;
+    isAdult?: boolean;
   } | null;
 };
 
@@ -215,6 +231,14 @@ function normalizeAtsuManga(m: MangaPageJson["mangaPage"]): AtsuManga {
     scanlators: m.scanlators ?? [],
     chapters: m.chapters ?? [],
     totalChapterCount: m.totalChapterCount ?? null,
+    genres: (m.genres ?? [])
+      .map((genre) => genre.name)
+      .filter((name): name is string => Boolean(name?.trim())),
+    tags: (m.tags ?? [])
+      .map((tag) => tag.name)
+      .filter((name): name is string => Boolean(name?.trim())),
+    rating: typeof m.avgRating === "number" ? m.avgRating : undefined,
+    isAdult: m.isAdult ?? false,
   };
 }
 

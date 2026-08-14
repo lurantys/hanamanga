@@ -45,9 +45,6 @@ function Header() {
           <Suspense fallback={null}>
             <SearchBar />
           </Suspense>
-          <span className="hidden rounded-full border border-red-500/40 bg-red-500/10 px-3 py-1 text-xs font-semibold text-red-400 sm:inline">
-            WIP
-          </span>
         </div>
       </div>
     </header>

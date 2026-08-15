@@ -132,7 +132,14 @@ export default function AccountContent() {
         ) : null}
         {error && !importOk && (
           <p className="mt-5 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
-            Something went wrong connecting that service. Please try again.
+            {error === "mal_state_failed" || error === "anilist_state_failed"
+              ? "The connection request expired or was interrupted — please try again."
+              : error === "mal_token_failed" ||
+                  error === "anilist_token_failed"
+                ? "The service rejected the connection (bad client credentials or redirect URL mismatch). Check the app credentials on Vercel and the registered callback URL."
+                : error === "sign_in_required"
+                  ? "Please sign in first, then connect the service."
+                  : `Something went wrong connecting that service (${error}). Please try again.`}
           </p>
         )}
 

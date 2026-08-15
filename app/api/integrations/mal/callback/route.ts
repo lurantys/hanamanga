@@ -49,6 +49,10 @@ export async function GET(request: NextRequest) {
     expires_in?: number;
   };
   if (!tokenRes.ok || !tokenJson.access_token) {
+    console.error("MAL token exchange failed", {
+      status: tokenRes.status,
+      body: tokenJson,
+    });
     return NextResponse.redirect(`${SITE_URL}/account?error=mal_token_failed`);
   }
 

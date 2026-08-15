@@ -41,6 +41,10 @@ export async function GET(request: NextRequest) {
     expires_in?: number;
   };
   if (!tokenRes.ok || !tokenJson.access_token) {
+    console.error("AniList token exchange failed", {
+      status: tokenRes.status,
+      body: tokenJson,
+    });
     return NextResponse.redirect(`${SITE_URL}/account?error=anilist_token_failed`);
   }
 

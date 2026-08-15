@@ -13,7 +13,6 @@ import { StarRating } from "@/components/StarRating";
 import {
   statusLabel,
   truncate,
-  MangaDexError,
   type Chapter,
 } from "@/lib/mangadex";
 import {
@@ -22,8 +21,8 @@ import {
   type AtsuChapter,
   type AtsuMatch,
 } from "@/lib/atsu";
-import { fetchCatalogManga } from "@/lib/catalog";
-import { getAtsuMatch, getKatanaLookup, getMdAggregate, getMdFeed, getWeebLookup } from "@/lib/read";
+import { fetchCatalogManga, isNotFoundError } from "@/lib/catalog";
+import { getAtsuMatch, getKatanaLookup, getMdAggregate, getMdFeed, getWeebLookup, mdRefForManga } from "@/lib/read";
 import { parseMangaId } from "@/lib/source";
 import { toCatalogChapter } from "@/lib/mangakatana";
 import { toWeebCatalogChapter } from "@/lib/weebcentral";
@@ -40,7 +39,7 @@ export async function generateMetadata({
   try {
     manga = await fetchCatalogManga(id);
   } catch (error) {
-    if (error instanceof MangaDexError && error.status === 404) notFound();
+    if (isNotFoundError(error)) notFound();
     throw error;
   }
   const status = statusLabel(manga.status);
@@ -55,13 +54,13 @@ export async function generateMetadata({
 
 export default async function MangaPage({ params }: MangaPageProps) {
   const { id } = await params;
-  const { ref } = parseMangaId(id);
+  const { source, ref } = parseMangaId(id);
 
   let manga;
   try {
     manga = await fetchCatalogManga(id);
   } catch (error) {
-    if (error instanceof MangaDexError && error.status === 404) notFound();
+    if (isNotFoundError(error)) notFound();
     throw error;
   }
 
@@ -86,12 +85,19 @@ export default async function MangaPage({ params }: MangaPageProps) {
     katanaChapters = katanaResult?.chapters.map(toCatalogChapter) ?? [];
     if (weebChapters.length === 0 && katanaChapters.length === 0) {
       try {
-        [feed, aggregate] = await Promise.all([
-          getMdFeed(ref),
-          getMdAggregate(ref),
-        ]);
+        const mdRef =
+          source === "mangadex" ? ref : await mdRefForManga(manga);
+        if (mdRef) {
+          [feed, aggregate] = await Promise.all([
+            getMdFeed(mdRef),
+            getMdAggregate(mdRef),
+          ]);
+        } else {
+          feed = null;
+          aggregate = null;
+        }
       } catch (error) {
-        if (error instanceof MangaDexError && error.status === 404) notFound();
+        if (isNotFoundError(error)) notFound();
         feed = null;
         aggregate = null;
       }

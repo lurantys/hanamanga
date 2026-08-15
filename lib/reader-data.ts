@@ -2,13 +2,18 @@ import { notFound, redirect } from "next/navigation";
 import {
   chapterPageUrl,
   fetchChapterReader,
-  MangaDexError,
   UPLOADS,
   type Chapter,
 } from "@/lib/mangadex";
 import { buildAtsuReader } from "@/lib/atsu";
-import { fetchCatalogManga } from "@/lib/catalog";
-import { getAtsuMatch, getKatanaLookup, getMdFeed, getWeebLookup } from "@/lib/read";
+import { fetchCatalogManga, isNotFoundError } from "@/lib/catalog";
+import {
+  getAtsuMatch,
+  getKatanaLookup,
+  getMdFeed,
+  getWeebLookup,
+  mdRefForManga,
+} from "@/lib/read";
 import { parseMangaId } from "@/lib/source";
 import { fetchKatanaPages, resolveLegacyChapter } from "@/lib/mangakatana";
 import { fetchWeebPages, resolveWeebLegacyChapter } from "@/lib/weebcentral";
@@ -71,7 +76,7 @@ export async function buildReaderProps(
       getAtsuMatch(mangaId),
     ]);
   } catch (error) {
-    if (error instanceof MangaDexError && error.status === 404) notFound();
+    if (isNotFoundError(error)) notFound();
     throw error;
   }
   const atsuMatch = atsuMatchData?.match ?? null;
@@ -107,6 +112,8 @@ export async function buildReaderProps(
 
   if (source === "atsu") notFound();
 
+  const mdRef = source === "mangadex" ? ref : await mdRefForManga(manga);
+
   let weebReader: {
     chapterLabel: string;
     chapterNumber: number | null;
@@ -124,7 +131,7 @@ export async function buildReaderProps(
       if (!current) {
         current = await resolveWeebLegacyChapter(
           lookup.chapters,
-          ref,
+          mdRef ?? ref,
           chapterId,
         );
       }
@@ -239,15 +246,16 @@ export async function buildReaderProps(
     };
   }
 
+  if (!mdRef) notFound();
   let feed;
   let reader;
   try {
     [feed, reader] = await Promise.all([
-      getMdFeed(ref),
+      getMdFeed(mdRef),
       fetchChapterReader(chapterId),
     ]);
   } catch (error) {
-    if (error instanceof MangaDexError && error.status === 404) notFound();
+    if (isNotFoundError(error)) notFound();
     throw error;
   }
 

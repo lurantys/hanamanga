@@ -2,9 +2,11 @@ import { unstable_cache } from "next/cache";
 import {
   fetchMangaById,
   fetchSearch,
+  MangaDexError,
   type Manga,
   type MangaListResult,
 } from "./mangadex";
+import { AniListError, fetchAniListById, searchAniList } from "./anilist";
 import {
   atsuPosterUrl,
   fetchAtsuManga,
@@ -95,20 +97,28 @@ export function atsuToManga(atsu: AtsuLike): Manga {
 
 const EMPTY_SEARCH: MangaListResult = { data: [], total: 0, offset: 0, limit: 24 };
 
+export function isNotFoundError(error: unknown): boolean {
+  return (
+    (error instanceof MangaDexError || error instanceof AniListError) &&
+    error.status === 404
+  );
+}
+
 export async function searchCatalog(
   query: string,
   limit = 24,
 ): Promise<MangaListResult> {
-  const [md, atsu] = await Promise.all([
-    fetchSearch(query, limit).catch(() => EMPTY_SEARCH),
+  const [al, atsu] = await Promise.all([
+    searchAniList(query, limit)
+      .catch(() => fetchSearch(query, limit).catch(() => EMPTY_SEARCH)),
     searchAtsu(query, 12).catch(() => [] as AtsuCandidate[]),
   ]);
 
   const seen = new Set<string>();
   const data: Manga[] = [];
 
-  for (const manga of md.data) {
-    const key = normalizeTitleKey(manga.title);
+  for (const manga of al.data) {
+    const key = manga.links?.al ? `al:${manga.links.al}` : normalizeTitleKey(manga.title);
     if (!key || seen.has(key)) continue;
     seen.add(key);
     data.push(manga);
@@ -124,12 +134,13 @@ export async function searchCatalog(
     ) {
       continue;
     }
-    const key = normalizeTitleKey(
-      candidate.title ?? candidate.englishTitle ?? "",
-    );
+    const manga = atsuToManga(candidate);
+    const key = manga.links?.al
+      ? `al:${manga.links.al}`
+      : normalizeTitleKey(manga.title);
     if (!key || seen.has(key)) continue;
     seen.add(key);
-    data.push(atsuToManga(candidate));
+    data.push(manga);
   }
 
   return { data, total: data.length, offset: 0, limit };
@@ -142,6 +153,9 @@ export async function fetchCatalogManga(
   const { source, ref } = parseMangaId(id);
   if (source === "atsu") {
     return atsuToManga(await fetchAtsuManga(ref));
+  }
+  if (source === "al") {
+    return fetchAniListById(ref);
   }
   return fetchMangaById(ref, { withStats: options.withStats });
 }

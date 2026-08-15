@@ -1,7 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { SITE_URL } from "@/lib/site";
-import { matchToMangaDex, type ImportItem } from "@/lib/integrations";
+import type { Manga } from "@/lib/mangadex";
+import { anilistToManga, ANILIST_MEDIA_FIELDS, type AniListMedia } from "@/lib/anilist";
 
 const CLIENT_ID = process.env.ANILIST_CLIENT_ID;
 const CLIENT_SECRET = process.env.ANILIST_CLIENT_SECRET;
@@ -85,12 +86,7 @@ type AniListMediaList = {
         entries?: {
           status?: string;
           progress?: number;
-          media?: {
-            title?: { romaji?: string; english?: string };
-            synonyms?: string[];
-            format?: string;
-            isAdult?: boolean;
-          };
+          media?: AniListMedia | null;
         }[];
       }[];
     };
@@ -105,10 +101,7 @@ const QUERY = /* GraphQL */ `
           status
           progress
           media {
-            title { romaji english }
-            synonyms
-            format
-            isAdult
+            ${ANILIST_MEDIA_FIELDS}
           }
         }
       }
@@ -118,7 +111,7 @@ const QUERY = /* GraphQL */ `
 
 async function fetchAniListList(
   accessToken: string,
-): Promise<{ ok: boolean; items: ImportItem[]; error?: string }> {
+): Promise<{ ok: boolean; items: Manga[]; error?: string }> {
   const res = await fetch(ANILIST_API, {
     method: "POST",
     headers: {
@@ -139,17 +132,9 @@ async function fetchAniListList(
     json.data.MediaListCollection.lists?.flatMap((list) => list.entries ?? []) ??
     [];
   const items = entries
-    .filter((entry) => !entry.media?.isAdult)
-    .map((entry) => ({
-      title: entry.media?.title?.english ?? entry.media?.title?.romaji ?? "",
-      altTitles: [
-        ...(entry.media?.title?.romaji ? [entry.media.title.romaji] : []),
-        ...(entry.media?.title?.english ? [entry.media.title.english] : []),
-        ...(entry.media?.synonyms ?? []),
-      ],
-      progress: entry.progress,
-      status: entry.status,
-    }));
+    .filter((entry): entry is { media: AniListMedia } => Boolean(entry.media))
+    .filter((entry) => !entry.media.isAdult)
+    .map((entry) => anilistToManga(entry.media));
   return { ok: true, items };
 }
 
@@ -171,9 +156,7 @@ async function importAniList(
   const now = Date.now();
 
   let matched = 0;
-  for (const item of list.items) {
-    const manga = await matchToMangaDex(item);
-    if (!manga) continue;
+  for (const manga of list.items) {
     matched++;
     rows.push({
       user_id: userId,

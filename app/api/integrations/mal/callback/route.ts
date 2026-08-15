@@ -1,7 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { SITE_URL } from "@/lib/site";
-import { matchToMangaDex, type ImportItem } from "@/lib/integrations";
+import type { ImportItem } from "@/lib/integrations";
+import { fetchAniListByMalIds } from "@/lib/anilist";
+import type { Manga } from "@/lib/mangadex";
 
 const CLIENT_ID = process.env.MAL_CLIENT_ID;
 const CLIENT_SECRET = process.env.MAL_CLIENT_SECRET;
@@ -134,6 +136,7 @@ async function fetchMALList(
         altTitles,
         progress: entry.node?.my_list_status?.num_chapters_read,
         status: entry.node?.my_list_status?.status,
+        externalId: entry.node?.id,
       });
     }
     next = json.paging?.next ?? null;
@@ -158,9 +161,19 @@ async function importMAL(
   }[] = [];
   const now = Date.now();
 
+  const malIds = list.items
+    .map((item) => item.externalId)
+    .filter((id): id is number => typeof id === "number");
+  const byMalId = new Map<number, Manga>();
+  for (const manga of await fetchAniListByMalIds(malIds)) {
+    const malId = manga.links?.mal ? Number(manga.links.mal) : NaN;
+    if (Number.isFinite(malId)) byMalId.set(malId, manga);
+  }
+
   let matched = 0;
   for (const item of list.items) {
-    const manga = await matchToMangaDex(item);
+    const manga =
+      item.externalId !== undefined ? byMalId.get(item.externalId) : null;
     if (!manga) continue;
     matched++;
     rows.push({

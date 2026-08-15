@@ -10,6 +10,7 @@ import {
   tagIdFor,
   type SortKey,
 } from "@/lib/genres";
+import { fetchAniListList } from "@/lib/anilist";
 import { fetchMangaList, type Manga } from "@/lib/mangadex";
 
 export const metadata: Metadata = {
@@ -36,21 +37,31 @@ export default async function BrowsePage({
   const status = isStatusKey(statusParam ?? "") ? (statusParam ?? "") : "";
   const rating = isRatingKey(ratingParam ?? "") ? (ratingParam ?? "") : "";
 
-  const tagId = genre ? tagIdFor(genre) : undefined;
-  const contentRating = rating ? RATING_VALUES[rating] : undefined;
-
   let initialResults: Manga[] = [];
   let total = 0;
   let errored = false;
   try {
-    const result = await fetchMangaList({
-      limit: PER_PAGE,
-      offset: 0,
-      order: SORT_ORDER[sort],
-      includedTags: tagId ? [tagId] : undefined,
-      status: status ? [status] : undefined,
-      contentRating,
-    });
+    let result;
+    try {
+      result = await fetchAniListList({
+        limit: PER_PAGE,
+        offset: 0,
+        sort,
+        genre: genre || undefined,
+        status: status || undefined,
+        rating: rating || undefined,
+      });
+    } catch {
+      const tagId = genre ? tagIdFor(genre) : undefined;
+      result = await fetchMangaList({
+        limit: PER_PAGE,
+        offset: 0,
+        order: SORT_ORDER[sort],
+        includedTags: tagId ? [tagId] : undefined,
+        status: status ? [status] : undefined,
+        contentRating: rating ? RATING_VALUES[rating] : undefined,
+      });
+    }
     initialResults = result.data;
     total = result.total;
   } catch {

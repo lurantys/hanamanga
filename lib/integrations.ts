@@ -4,6 +4,7 @@ import { normalizeTitleKey, titleHits } from "./title";export type ImportItem = 
   altTitles?: string[];
   progress?: number;
   status?: string;
+  externalId?: number;
 };
 
 /**

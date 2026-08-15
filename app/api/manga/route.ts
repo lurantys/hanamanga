@@ -3,7 +3,9 @@ import { fetchMangaList, type Manga } from "@/lib/mangadex";
 import { atsuToManga } from "@/lib/catalog";
 import { fetchAtsuManga } from "@/lib/atsu";
 import { splitMangaIds } from "@/lib/source";
+import { fetchAniListByIds } from "@/lib/anilist";
 import { bannerForManga } from "@/lib/banner";
+import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
@@ -16,8 +18,8 @@ export async function GET(request: Request) {
   const withBanners = searchParams.get("banners") === "1";
   if (!ids.length) return NextResponse.json({ data: [] });
   try {
-    const { mangadex, atsu } = splitMangaIds(ids);
-    const [mdData, atsuData] = await Promise.all([
+    const { mangadex, atsu, al } = splitMangaIds(ids);
+    const [mdData, atsuData, alData] = await Promise.all([
       (async () => {
         const results: Manga[] = [];
         for (let i = 0; i < mangadex.length; i += 100) {
@@ -39,11 +41,31 @@ export async function GET(request: Request) {
           }
         }),
       ),
+      fetchAniListByIds(al).catch(() => [] as Manga[]),
     ]);
-    const data = [...mdData, ...atsuData.filter((manga): manga is Manga => manga !== null)];
+    const foundAl = new Set(alData.map((manga) => manga.id));
+    const missingAl = al.filter((ref) => !foundAl.has(`al:${ref}`));
+    if (missingAl.length) {
+      const supabase = await createClient();
+      const { data: rows } = await supabase
+        .from("hana_library")
+        .select("manga_id, manga")
+        .in("manga_id", missingAl.map((ref) => `al:${ref}`));
+      for (const row of rows ?? []) {
+        const blob = row.manga as Manga | null;
+        if (!blob || typeof blob !== "object") continue;
+        alData.push({ ...blob, id: row.manga_id });
+      }
+    }
+    const data = [
+      ...mdData,
+      ...alData,
+      ...atsuData.filter((manga): manga is Manga => manga !== null),
+    ];
     if (withBanners) {
       await Promise.all(
         data.map(async (manga) => {
+          if (manga.bannerUrl) return;
           manga.bannerUrl = await bannerForManga({
             title: manga.title,
             anilistId: manga.links?.al,

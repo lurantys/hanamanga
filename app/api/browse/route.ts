@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { fetchAniListList } from "@/lib/anilist";
 import { fetchMangaList } from "@/lib/mangadex";
 import {
   isRatingKey,
@@ -26,18 +27,29 @@ export async function GET(request: Request) {
   const page = Math.max(1, Number(sp.get("page")) || 1);
   const offset = (page - 1) * PER_PAGE;
 
-  const tagId = genre ? tagIdFor(genre) : undefined;
-  const contentRating = rating ? RATING_VALUES[rating] : undefined;
-
   try {
-    const { data, total } = await fetchMangaList({
-      limit: PER_PAGE,
-      offset,
-      order: SORT_ORDER[sort],
-      includedTags: tagId ? [tagId] : undefined,
-      status: status ? [status] : undefined,
-      contentRating,
-    });
+    let result;
+    try {
+      result = await fetchAniListList({
+        limit: PER_PAGE,
+        offset,
+        sort,
+        genre: genre || undefined,
+        status: status || undefined,
+        rating: rating || undefined,
+      });
+    } catch {
+      const tagId = genre ? tagIdFor(genre) : undefined;
+      result = await fetchMangaList({
+        limit: PER_PAGE,
+        offset,
+        order: SORT_ORDER[sort],
+        includedTags: tagId ? [tagId] : undefined,
+        status: status ? [status] : undefined,
+        contentRating: rating ? RATING_VALUES[rating] : undefined,
+      });
+    }
+    const { data, total } = result;
     return NextResponse.json({ data, total, page });
   } catch {
     return NextResponse.json(

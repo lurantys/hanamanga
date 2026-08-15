@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { fetchFeed } from "@/lib/mangadex";
+import { mdRefForCatalogId } from "@/lib/read";
 
 export const dynamic = "force-dynamic";
 
@@ -10,7 +11,9 @@ export async function GET(request: Request) {
   const limit = Math.min(Number(searchParams.get("limit")) || 1, 5);
 
   try {
-    const { data } = await fetchFeed(mangaId, limit, { publishAt: "desc" });
+    const ref = await mdRefForCatalogId(mangaId);
+    if (!ref) return NextResponse.json({ data: [] });
+    const { data } = await fetchFeed(ref, limit, { publishAt: "desc" });
     return NextResponse.json(
       { data },
       {

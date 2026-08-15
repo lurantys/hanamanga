@@ -3,7 +3,6 @@ import { unstable_cache } from "next/cache";
 import {
   fetchAggregate,
   fetchFeed,
-  fetchMangaById,
   fetchMangaList,
   fetchTrending,
   type Chapter,
@@ -20,8 +19,10 @@ import {
   type AtsuChapter,
   type AtsuMatch,
 } from "./atsu";
-import { getAtsuRow } from "./catalog";
+import { fetchCatalogManga, getAtsuRow } from "./catalog";
 import { parseMangaId } from "./source";
+import { matchToMangaDex } from "./integrations";
+import { fetchAniListList } from "./anilist";
 import {
   fetchKatanaChapters,
   fetchKatanaFirstChapter,
@@ -40,33 +41,53 @@ const HOME_ROWS_REVALIDATE = 300;
 const SOURCE_REVALIDATE = 3600;
 
 const cachedTrending = unstable_cache(
-  async (limit = 18): Promise<MangaListResult> => fetchTrending(limit),
+  async (limit = 18): Promise<MangaListResult> => {
+    try {
+      return await fetchAniListList({ limit, sort: "trending" });
+    } catch {
+      return fetchTrending(limit);
+    }
+  },
   ["home-trending"],
   { revalidate: HOME_ROWS_REVALIDATE },
 );
 
 const cachedPopular = unstable_cache(
-  async (limit = 18): Promise<MangaListResult> =>
-    fetchMangaList({ limit, order: { followedCount: "desc" } }),
+  async (limit = 18): Promise<MangaListResult> => {
+    try {
+      return await fetchAniListList({ limit, sort: "popular" });
+    } catch {
+      return fetchMangaList({ limit, order: { followedCount: "desc" } });
+    }
+  },
   ["home-popular"],
   { revalidate: HOME_ROWS_REVALIDATE },
 );
 
 const cachedTopRated = unstable_cache(
-  async (limit = 18): Promise<MangaListResult> =>
-    fetchMangaList({ limit, order: { rating: "desc" } }),
+  async (limit = 18): Promise<MangaListResult> => {
+    try {
+      return await fetchAniListList({ limit, sort: "top" });
+    } catch {
+      return fetchMangaList({ limit, order: { rating: "desc" } });
+    }
+  },
   ["home-top-rated"],
   { revalidate: HOME_ROWS_REVALIDATE },
 );
 
 const cachedByGenre = unstable_cache(
   async (genre: string, limit = 18): Promise<MangaListResult> => {
-    const tagId = tagIdFor(genre);
-    return fetchMangaList({
-      limit,
-      order: { followedCount: "desc" },
-      includedTags: tagId ? [tagId] : undefined,
-    });
+    try {
+      return await fetchAniListList({ limit, genre, sort: "popular" });
+    } catch {
+      const tagId = tagIdFor(genre);
+      return fetchMangaList({
+        limit,
+        order: { followedCount: "desc" },
+        includedTags: tagId ? [tagId] : undefined,
+      });
+    }
   },
   ["home-by-genre"],
   { revalidate: HOME_ROWS_REVALIDATE },
@@ -100,7 +121,7 @@ const cachedAtsuMatch = unstable_cache(
       return { match: { manga, matchedByLink: true }, chapters };
     }
     try {
-      const manga = await fetchMangaById(ref, { withStats: false });
+      const manga = await fetchCatalogManga(mangaId, { withStats: false });
       const match = await findAtsuManga({ title: manga.title, links: manga.links });
       if (!match) return null;
       const chapters = await fetchAtsuChapters(match.manga.id);
@@ -172,6 +193,32 @@ export const getMdAggregate = cache((ref: string) =>
   cachedMdAggregate(ref),
 );
 
+export async function mdRefForManga(manga: {
+  title: string;
+  altTitles?: string[];
+}): Promise<string | null> {
+  try {
+    const match = await matchToMangaDex({
+      title: manga.title,
+      altTitles: manga.altTitles,
+    });
+    return match?.id ?? null;
+  } catch {
+    return null;
+  }
+}
+
+export async function mdRefForCatalogId(mangaId: string): Promise<string | null> {
+  const { source, ref } = parseMangaId(mangaId);
+  if (source === "mangadex") return ref;
+  try {
+    const manga = await fetchCatalogManga(mangaId, { withStats: false });
+    return mdRefForManga(manga);
+  } catch {
+    return null;
+  }
+}
+
 export async function resolveFirstChapter(
   mangaId: string,
 ): Promise<string | null> {
@@ -186,8 +233,7 @@ export async function resolveFirstChapter(
       const first = ordered[0] ?? atsu.chapters[0];
       if (first) return first.id;
     }
-    const { ref } = parseMangaId(mangaId);
-    const manga = await fetchMangaById(ref, { withStats: false });
+    const manga = await fetchCatalogManga(mangaId, { withStats: false });
     const weebFirst = await fetchWeebFirstChapter([
       manga.title,
       ...(manga.altTitles ?? []),
@@ -195,12 +241,13 @@ export async function resolveFirstChapter(
     if (weebFirst) return weebFirst;
     const katanaFirst = await fetchKatanaFirstChapter(manga.title);
     if (katanaFirst) return katanaFirst;
-    const feed = await fetchFeed(ref);
+    const mdRef = await mdRefForManga(manga);
+    if (!mdRef) return null;
+    const feed = await fetchFeed(mdRef);
     const first = feed.data.find((chapter) => !chapter.externalUrl);
     if (first) return first.id;
     return null;
   } catch {
     return null;
   }
-  return null;
 }

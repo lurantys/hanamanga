@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { SITE_URL } from "@/lib/site";
-import { createHash, randomBytes } from "crypto";
+import { randomBytes } from "crypto";
 
 const CLIENT_ID = process.env.MAL_CLIENT_ID;
 const CLIENT_SECRET = process.env.MAL_CLIENT_SECRET;
@@ -32,16 +32,14 @@ export async function GET() {
   }
 
   const verifier = base64Url(randomBytes(64)).replace(/=+$/, "");
-  const challenge = base64Url(
-    createHash("sha256").update(verifier).digest(),
-  ).replace(/=+$/, "");
+  const challenge = verifier;
   const oauthState = base64Url(randomBytes(16));
 
   const params = new URLSearchParams({
     response_type: "code",
     client_id: CLIENT_ID,
     code_challenge: challenge,
-    code_challenge_method: "S256",
+    code_challenge_method: "plain",
     state: oauthState,
     redirect_uri: REDIRECT_URI,
   });

@@ -10,10 +10,6 @@ export default function NotFound() {
       >
         404
       </span>
-      <span
-        aria-hidden
-        className="pointer-events-none absolute left-1/2 top-1/2 h-[28rem] w-[28rem] -translate-x-1/2 -translate-y-1/2 rounded-full bg-red-500/10 blur-3xl"
-      />
       <div className="relative flex w-full max-w-4xl flex-col">
         <Link
           href="/"
@@ -38,7 +34,7 @@ export default function NotFound() {
             width={250}
             height={270}
             priority
-            className="h-64 w-auto shrink-0 rounded-2xl object-cover drop-shadow-[0_0_40px_rgba(239,68,68,0.15)]"
+            className="h-64 w-auto shrink-0 rounded-2xl object-cover"
           />
           <div className="flex max-w-md flex-col text-center md:text-left">
             <p className="text-sm font-semibold uppercase tracking-[0.35em] text-red-500">

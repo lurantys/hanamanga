@@ -31,7 +31,7 @@ export default async function SearchPage({
             <h1 className="text-xl font-bold text-white">Search the catalog</h1>
             <p className="max-w-sm text-sm text-zinc-400">
               Type a title in the search box above to discover manga from the
-              MangaDex catalog.
+              Hana catalog.
             </p>
             <Link
               href="/"

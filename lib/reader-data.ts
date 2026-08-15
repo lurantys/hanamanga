@@ -277,7 +277,7 @@ export async function buildReaderProps(
     })),
     pages: reader.pages.map((file) => ({
       id: file,
-      image: chapterPageUrl(UPLOADS, reader.hash, file),
+      image: chapterPageUrl(reader.baseUrl || UPLOADS, reader.hash, file),
     })),
     prevHref: prev ? `/read/${mangaId}/${prev.id}` : null,
     nextHref: next ? `/read/${mangaId}/${next.id}` : null,

@@ -8,6 +8,7 @@ import {
   CONTINUE_HERO_EVENT,
   PROGRESS_EVENT,
   getContinueList,
+  invalidateProgressCache,
   type ProgressEntry,
 } from "@/lib/progress";
 import type { Manga } from "@/lib/mangadex";
@@ -16,11 +17,15 @@ const EMPTY_LIST: ProgressEntry[] = [];
 
 function subscribe(onChange: () => void): () => void {
   const listener = () => onChange();
-  window.addEventListener("storage", listener);
+  const onStorage = (event: StorageEvent) => {
+    if (event.key === "hana:progress") invalidateProgressCache();
+    onChange();
+  };
+  window.addEventListener("storage", onStorage);
   window.addEventListener(CONTINUE_HERO_EVENT, listener);
   window.addEventListener(PROGRESS_EVENT, listener);
   return () => {
-    window.removeEventListener("storage", listener);
+    window.removeEventListener("storage", onStorage);
     window.removeEventListener(CONTINUE_HERO_EVENT, listener);
     window.removeEventListener(PROGRESS_EVENT, listener);
   };

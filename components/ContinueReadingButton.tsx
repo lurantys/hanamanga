@@ -3,15 +3,18 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { useSyncExternalStore } from "react";
-import { PROGRESS_EVENT, getProgress } from "@/lib/progress";
+import { PROGRESS_EVENT, getProgress, invalidateProgressCache } from "@/lib/progress";
 
 function subscribe(onChange: () => void): () => void {
-  const listener = () => onChange();
-  window.addEventListener("storage", listener);
-  window.addEventListener(PROGRESS_EVENT, listener);
+  const onStorage = (event: StorageEvent) => {
+    if (event.key === "hana:progress") invalidateProgressCache();
+    onChange();
+  };
+  window.addEventListener("storage", onStorage);
+  window.addEventListener(PROGRESS_EVENT, onChange);
   return () => {
-    window.removeEventListener("storage", listener);
-    window.removeEventListener(PROGRESS_EVENT, listener);
+    window.removeEventListener("storage", onStorage);
+    window.removeEventListener(PROGRESS_EVENT, onChange);
   };
 }
 

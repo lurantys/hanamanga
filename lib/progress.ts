@@ -38,26 +38,34 @@ export const PROGRESS_EVENT = "hana:progress-updated";
 let cachedHeroSnapshot: ContinueHeroSnapshot | null | undefined;
 let cachedContinueLimit = 0;
 let cachedContinueList: ProgressEntry[] | null = null;
+let cachedProgressMap: Record<string, ProgressEntry> | null = null;
 
 function readAll(): Record<string, ProgressEntry> {
   if (typeof window === "undefined") return {};
+  if (cachedProgressMap) return cachedProgressMap;
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as Record<string, ProgressEntry>) : {};
+    cachedProgressMap = raw ? (JSON.parse(raw) as Record<string, ProgressEntry>) : {};
   } catch {
-    return {};
+    cachedProgressMap = {};
   }
+  return cachedProgressMap;
 }
 
 function writeAll(map: Record<string, ProgressEntry>): void {
   if (typeof window === "undefined") return;
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(map));
+    cachedProgressMap = map;
     cachedContinueList = null;
     window.dispatchEvent(new CustomEvent(PROGRESS_EVENT));
   } catch {
     // storage full or blocked — ignore
   }
+}
+
+export function invalidateProgressCache(): void {
+  cachedProgressMap = null;
 }
 
 export function saveProgress(entry: ProgressEntry): void {

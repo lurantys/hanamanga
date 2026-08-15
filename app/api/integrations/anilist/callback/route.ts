@@ -100,7 +100,7 @@ const QUERY = /* GraphQL */ `
         entries {
           status
           progress
-          media(format_not_in: [NOVEL, ONE_SHOT]) {
+          media {
             ${ANILIST_MEDIA_FIELDS}
           }
         }
@@ -141,6 +141,10 @@ async function fetchAniListList(
   const items = entries
     .filter((entry): entry is { media: AniListMedia } => Boolean(entry.media))
     .filter((entry) => !entry.media.isAdult)
+    .filter(
+      (entry) =>
+        entry.media.format !== "NOVEL" && entry.media.format !== "ONE_SHOT",
+    )
     .map((entry) => anilistToManga(entry.media));
   return { ok: true, items };
 }

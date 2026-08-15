@@ -142,7 +142,7 @@ const ANILIST_LIST_QUERY = /* GraphQL */ `
         entries {
           status
           progress
-          media(format_not_in: [NOVEL, ONE_SHOT]) { ${ANILIST_MEDIA_FIELDS} }
+          media { ${ANILIST_MEDIA_FIELDS} }
         }
       }
     }
@@ -159,7 +159,13 @@ async function fetchAniListEntries(token: string): Promise<{ manga: Manga; statu
   const entries =
     data.MediaListCollection?.lists?.flatMap((list) => list.entries ?? []) ?? [];
   return entries
-    .filter((entry) => Boolean(entry.media) && !entry.media?.isAdult)
+    .filter(
+      (entry) =>
+        Boolean(entry.media) &&
+        !entry.media?.isAdult &&
+        entry.media?.format !== "NOVEL" &&
+        entry.media?.format !== "ONE_SHOT",
+    )
     .map((entry) => ({
       manga: anilistToManga(entry.media!),
       status: entry.status ?? undefined,

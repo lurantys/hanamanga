@@ -105,148 +105,118 @@ export default function LoginForm() {
   };
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-zinc-950 px-6 pb-24 pt-32">
-      <span
-        aria-hidden
-        className="pointer-events-none absolute left-1/2 top-1/4 h-80 w-80 -translate-x-1/2 -translate-y-1/2 rounded-full bg-red-500/10 blur-[110px]"
-      />
-      <span
-        aria-hidden
-        className="pointer-events-none absolute bottom-8 right-[15%] h-64 w-64 rounded-full bg-blue-500/10 blur-[100px]"
-      />
-
-      <div className="relative w-full max-w-sm">
-        <div className="mb-7 flex flex-col items-center gap-3">
-          <span className="relative">
-            <span
-              aria-hidden
-              className="absolute -inset-2 rounded-2xl bg-red-500/25 blur-xl"
-            />
-            <Image
-              src="/logo-v2.png"
-              alt="Hana"
-              width={56}
-              height={56}
-              priority
-              className="relative h-14 w-14 rounded-2xl object-contain shadow-lg shadow-black/40 ring-1 ring-white/10"
-            />
-          </span>
-          <span className="header-wordmark text-2xl font-bold text-zinc-50">
+    <main className="flex min-h-screen items-center justify-center bg-zinc-950 px-6 pb-24 pt-32">
+      <div className="w-full max-w-md">
+        <div className="mb-8 flex flex-col items-center gap-3">
+          <Image
+            src="/logo-v2.png"
+            alt="Hana"
+            width={64}
+            height={64}
+            priority
+            className="h-16 w-16 rounded-2xl object-contain"
+          />
+          <span className="header-wordmark text-3xl font-bold text-zinc-50">
             Hana
           </span>
         </div>
 
-        <div className="w-full rounded-2xl border border-white/10 bg-zinc-900/60 p-5 shadow-2xl shadow-black/50 backdrop-blur-xl sm:p-7">
-          <div className="flex rounded-full border border-white/10 bg-zinc-950/60 p-1">
-            {(["signin", "signup"] as const).map((m) => (
-              <button
-                key={m}
-                type="button"
-                onClick={() => switchMode(m)}
-                aria-pressed={mode === m}
-                className={`flex-1 rounded-full px-4 py-2 text-sm font-semibold transition-colors ${
-                  mode === m
-                    ? "bg-white text-zinc-950 shadow-sm shadow-black/20"
-                    : "text-zinc-400 hover:text-white"
-                }`}
-              >
-                {m === "signin" ? "Sign in" : "Create account"}
-              </button>
-            ))}
-          </div>
-
-          <h1 className="mt-6 text-center text-xl font-extrabold tracking-tight text-white">
-            {mode === "signin" ? "Welcome back" : "Join Hana"}
-          </h1>
-          <p className="mt-1 text-center text-sm text-zinc-400">
-            {mode === "signin"
-              ? "Sign in to sync your library across devices."
-              : "Save your library, progress, and settings to your account."}
-          </p>
-
-          {error && (
-            <p
-              role="alert"
-              className="mt-4 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-center text-sm text-red-300"
-            >
-              {error}
-            </p>
-          )}
-          {success && (
-            <p
-              role="status"
-              className="mt-4 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-center text-sm text-emerald-300"
-            >
-              Check your email to confirm your account, then sign in.
-            </p>
-          )}
-
-          <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-3">
-            <label className="relative block">
-              <EnvelopeIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
-              <input
-                type="email"
-                required
-                autoComplete="email"
-                placeholder="Email"
-                value={email}
-                onChange={(event) => setEmail(event.target.value)}
-                className="w-full rounded-xl border border-zinc-800 bg-zinc-950/70 py-2.5 pl-10 pr-4 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-colors focus:border-red-400/40 focus:ring-2 focus:ring-red-500/10"
-              />
-            </label>
-            <label className="relative block">
-              <LockIcon className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
-              <input
-                type="password"
-                required
-                autoComplete={
-                  mode === "signin" ? "current-password" : "new-password"
-                }
-                placeholder="Password"
-                value={password}
-                onChange={(event) => setPassword(event.target.value)}
-                className="w-full rounded-xl border border-zinc-800 bg-zinc-950/70 py-2.5 pl-10 pr-4 text-sm text-zinc-100 placeholder-zinc-500 outline-none transition-colors focus:border-red-400/40 focus:ring-2 focus:ring-red-500/10"
-              />
-            </label>
+        <div className="flex rounded-full bg-zinc-900 p-1">
+          {(["signin", "signup"] as const).map((m) => (
             <button
-              type="submit"
-              disabled={busy || authLoading}
-              className="mt-1 inline-flex items-center justify-center gap-2 rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-white/80 disabled:cursor-not-allowed disabled:opacity-50"
+              key={m}
+              type="button"
+              onClick={() => switchMode(m)}
+              aria-pressed={mode === m}
+              className={`flex-1 rounded-full px-4 py-2.5 text-sm font-semibold transition-colors ${
+                mode === m
+                  ? "bg-white text-zinc-950"
+                  : "text-zinc-400 hover:text-white"
+              }`}
             >
-              {busy ? (
-                <>
-                  <Spinner />
-                  {mode === "signin" ? "Signing in…" : "Creating account…"}
-                </>
-              ) : mode === "signin" ? (
-                "Sign in"
-              ) : (
-                "Create account"
-              )}
+              {m === "signin" ? "Sign in" : "Create account"}
             </button>
-          </form>
+          ))}
         </div>
 
-        <p className="mt-6 text-center text-xs leading-relaxed text-zinc-600">
+        <h1 className="mt-8 text-center text-2xl font-extrabold tracking-tight text-white">
+          {mode === "signin" ? "Welcome back" : "Join Hana"}
+        </h1>
+        <p className="mt-1.5 text-center text-base text-zinc-400">
+          {mode === "signin"
+            ? "Sign in to sync your library across devices."
+            : "Save your library, progress, and settings to your account."}
+        </p>
+
+        {error && (
+          <p
+            role="alert"
+            className="mt-5 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-center text-sm text-red-300"
+          >
+            {error}
+          </p>
+        )}
+        {success && (
+          <p
+            role="status"
+            className="mt-5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-center text-sm text-emerald-300"
+          >
+            Check your email to confirm your account, then sign in.
+          </p>
+        )}
+
+        <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-3">
+          <label className="relative block">
+            <EnvelopeIcon className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+            <input
+              type="email"
+              required
+              autoComplete="email"
+              placeholder="Email"
+              value={email}
+              onChange={(event) => setEmail(event.target.value)}
+              className="w-full rounded-xl border border-zinc-800 bg-zinc-900/70 py-3 pl-11 pr-4 text-base text-zinc-100 placeholder-zinc-500 outline-none transition-colors focus:border-zinc-600"
+            />
+          </label>
+          <label className="relative block">
+            <LockIcon className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+            <input
+              type="password"
+              required
+              autoComplete={
+                mode === "signin" ? "current-password" : "new-password"
+              }
+              placeholder="Password"
+              value={password}
+              onChange={(event) => setPassword(event.target.value)}
+              className="w-full rounded-xl border border-zinc-800 bg-zinc-900/70 py-3 pl-11 pr-4 text-base text-zinc-100 placeholder-zinc-500 outline-none transition-colors focus:border-zinc-600"
+            />
+          </label>
+          <button
+            type="submit"
+            disabled={busy || authLoading}
+            className="mt-1 inline-flex items-center justify-center gap-2 rounded-xl bg-white py-3 text-base font-semibold text-zinc-950 transition-colors hover:bg-white/80 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {busy ? (
+              <>
+                <Spinner />
+                {mode === "signin" ? "Signing in…" : "Creating account…"}
+              </>
+            ) : mode === "signin" ? (
+              "Sign in"
+            ) : (
+              "Create account"
+            )}
+          </button>
+        </form>
+
+        <p className="mt-7 text-center text-sm leading-relaxed text-zinc-600">
           Signing in is optional. Without an account, your library and progress
           stay on this device only.{" "}
           <Link
             href="/"
-            className="inline-flex items-center gap-1 font-semibold text-zinc-400 underline-offset-2 transition-colors hover:text-zinc-200 hover:underline"
+            className="font-semibold text-zinc-400 underline-offset-2 transition-colors hover:text-zinc-200 hover:underline"
           >
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="h-3 w-3"
-              aria-hidden
-            >
-              <path d="m12 19-7-7 7-7" />
-              <path d="M19 12H5" />
-            </svg>
             Back to browsing
           </Link>
         </p>

@@ -338,6 +338,66 @@ export async function pullAll(userId: string): Promise<void> {
   ]);
 }
 
+/** Replace the local library with the current DB contents (prunes merged/deleted rows). */
+async function refreshLibrary(userId: string): Promise<void> {
+  const supabase = createClient();
+  const { data } = await supabase
+    .from("hana_library")
+    .select("manga_id, manga, added_at")
+    .eq("user_id", userId);
+  if (!data) return;
+  const next: LibraryMap = {};
+  for (const row of data as LibraryRow[]) {
+    next[row.manga_id] = {
+      manga: row.manga as LibraryMap[string]["manga"],
+      addedAt: row.added_at,
+    };
+  }
+  if (!sameJson(getLibrarySnapshot(), next)) replaceLibrary(next);
+}
+
+/** Replace the local progress with the current DB contents. */
+async function refreshProgress(userId: string): Promise<void> {
+  const supabase = createClient();
+  const { data } = await supabase
+    .from("hana_progress")
+    .select("*")
+    .eq("user_id", userId);
+  if (!data) return;
+  const next: Record<string, ProgressEntry> = {};
+  for (const row of data as ProgressRow[]) {
+    next[row.manga_id] = {
+      mangaId: row.manga_id,
+      chapterId: row.chapter_id,
+      chapterLabel: row.chapter_label,
+      mangaTitle: row.manga_title,
+      coverUrl: row.cover_url ?? undefined,
+      scrollFraction: row.scroll_fraction,
+      mangaFraction: row.manga_fraction ?? undefined,
+      updatedAt: row.updated_at,
+    };
+  }
+  if (!sameJson(getAllProgress(), next)) replaceProgress(next);
+}
+
+/** Replace the local read state with the current DB contents. */
+async function refreshReadState(userId: string): Promise<void> {
+  const supabase = createClient();
+  const { data } = await supabase
+    .from("hana_read_state")
+    .select("manga_id, chapter_id, read_at")
+    .eq("user_id", userId);
+  if (!data) return;
+  const next: ReadMap = {};
+  for (const row of data as ReadStateRow[]) {
+    next[row.manga_id] = {
+      ...(next[row.manga_id] ?? {}),
+      [row.chapter_id]: row.read_at,
+    };
+  }
+  if (!sameJson(getReadSnapshot(), next)) replaceReadState(next);
+}
+
 /** Pull remote, merge, then upload the merged state (migrates local data up). */
 export async function syncAll(userId: string): Promise<void> {
   await pullAll(userId);
@@ -458,7 +518,13 @@ export async function syncNow(): Promise<SyncSummary | null> {
   if (!currentUserId) return null;
   await syncAll(currentUserId);
   providerSyncLast = Date.now();
-  return runProviderSync().catch(() => null);
+  const summary = await runProviderSync().catch(() => null);
+  await Promise.allSettled([
+    refreshLibrary(currentUserId),
+    refreshProgress(currentUserId),
+    refreshReadState(currentUserId),
+  ]);
+  return summary;
 }
 
 export async function handleAuthStateChange(

@@ -7,7 +7,7 @@ import {
   type AniListMedia,
 } from "@/lib/anilist";
 import type { Manga } from "@/lib/mangadex";
-import { normalizeTitleKey } from "@/lib/title";
+import { normalizeTitleKey, titleHits } from "@/lib/title";
 
 export type ProviderName = "anilist" | "mal";
 
@@ -445,17 +445,12 @@ async function pullFromProvider(
 
   const byAl = new Map<string, LibraryRow>();
   const byMal = new Map<string, LibraryRow>();
-  const byTitleUnlinked = new Map<string, LibraryRow[]>();
+  const unlinkedRows: LibraryRow[] = [];
   for (const row of library.values()) {
     const manga = row.manga as Manga;
     if (manga?.links?.al && !byAl.has(manga.links.al)) byAl.set(manga.links.al, row);
     if (manga?.links?.mal && !byMal.has(manga.links.mal)) byMal.set(manga.links.mal, row);
-    if (!manga?.links?.al && !manga?.links?.mal && manga?.title) {
-      const title = normalizeTitleKey(manga.title);
-      const arr = byTitleUnlinked.get(title) ?? [];
-      arr.push(row);
-      byTitleUnlinked.set(title, arr);
-    }
+    if (!manga?.links?.al && !manga?.links?.mal) unlinkedRows.push(row);
   }
 
   const findExisting = (entry: { manga: Manga }): LibraryRow | undefined => {
@@ -470,10 +465,8 @@ async function pullFromProvider(
       const found = byMal.get(manga.links.mal);
       if (found) return found;
     }
-    const title = manga.title ? normalizeTitleKey(manga.title) : "";
-    if (title) {
-      const candidates = byTitleUnlinked.get(title) ?? [];
-      if (candidates.length) return candidates[0];
+    for (const row of unlinkedRows) {
+      if (sameWorkByTitle(manga, row.manga as Manga)) return row;
     }
     return undefined;
   };
@@ -620,6 +613,31 @@ async function moveProgressData(
     .eq("manga_id", fromId);
 }
 
+function isLinkedManga(manga: Manga | null | undefined): boolean {
+  return Boolean(manga?.links?.al || manga?.links?.mal);
+}
+
+/** Whether two manga are the same work by title, tolerating variant titles. */
+function sameWorkByTitle(a: Manga | null | undefined, b: Manga | null | undefined): boolean {
+  const titles = (m: Manga | null | undefined): string[] =>
+    [m?.title, ...(m?.altTitles ?? [])].filter((v): v is string => Boolean(v));
+  const at = titles(a);
+  const bt = titles(b);
+  for (const x of at) {
+    for (const y of bt) {
+      const kx = normalizeTitleKey(x);
+      const ky = normalizeTitleKey(y);
+      if (!kx || !ky) continue;
+      if (kx === ky) return true;
+      const tx = kx.split(" ").filter((token) => token.length > 2);
+      const ty = ky.split(" ").filter((token) => token.length > 2);
+      if (tx.length < 2 || ty.length < 2) continue;
+      if (titleHits(x, [y])) return true;
+    }
+  }
+  return false;
+}
+
 /** Collapse library rows that refer to the same work into one. */
 async function dedupeByAl(
   userId: string,
@@ -629,22 +647,8 @@ async function dedupeByAl(
   const supabase = await createClient();
   const rows = [...library.values()];
 
-  const keyToRows = new Map<string, LibraryRow[]>();
-  const rowKeys = new Map<string, string[]>();
-  for (const row of rows) {
-    const manga = row.manga as Manga;
-    const keys: string[] = [];
-    if (manga?.links?.al) keys.push(`al:${manga.links.al}`);
-    if (manga?.links?.mal) keys.push(`mal:${manga.links.mal}`);
-    const title = manga?.title ? normalizeTitleKey(manga.title) : "";
-    if (title) keys.push(`t:${title}`);
-    rowKeys.set(row.manga_id, keys);
-    for (const key of keys) {
-      const arr = keyToRows.get(key) ?? [];
-      arr.push(row);
-      keyToRows.set(key, arr);
-    }
-  }
+  const isLinked = (row: LibraryRow): boolean =>
+    isLinkedManga(row.manga as Manga);
 
   const { data: progressRows } = await supabase
     .from("hana_progress")
@@ -661,9 +665,15 @@ async function dedupeByAl(
     ((readRows ?? []) as { manga_id: string }[]).map((row) => row.manga_id),
   );
 
-  const isLinked = (row: LibraryRow): boolean => {
-    const manga = row.manga as Manga;
-    return Boolean(manga?.links?.al || manga?.links?.mal);
+  const connects = (a: LibraryRow, b: LibraryRow): boolean => {
+    const ma = a.manga as Manga;
+    const mb = b.manga as Manga;
+    if (ma?.links?.al && ma.links.al === mb?.links?.al) return true;
+    if (ma?.links?.mal && ma.links.mal === mb?.links?.mal) return true;
+    // A title-only connection is only followed when at least one side is
+    // unlinked, so distinct linked works sharing a title never merge.
+    if (isLinked(a) && isLinked(b)) return false;
+    return sameWorkByTitle(ma, mb);
   };
 
   const visited = new Set<string>();
@@ -675,21 +685,15 @@ async function dedupeByAl(
     while (queue.length) {
       const current = queue.shift()!;
       component.push(current);
-      for (const key of rowKeys.get(current.manga_id) ?? []) {
-        for (const neighbor of keyToRows.get(key) ?? []) {
-          if (visited.has(neighbor.manga_id)) continue;
-          // Only follow a title edge when at least one side is unlinked,
-          // otherwise two different linked works sharing a title would merge.
-          if (key.startsWith("t:") && isLinked(current) && isLinked(neighbor)) {
-            continue;
-          }
-          visited.add(neighbor.manga_id);
-          queue.push(neighbor);
+      for (const candidate of rows) {
+        if (visited.has(candidate.manga_id)) continue;
+        if (connects(current, candidate)) {
+          visited.add(candidate.manga_id);
+          queue.push(candidate);
         }
       }
     }
     if (component.length < 2) continue;
-    // A title-only connection is too weak when no row carries an external id.
     if (!component.some(isLinked)) continue;
 
     const keeper =

@@ -7,6 +7,7 @@ import {
   type AniListMedia,
 } from "@/lib/anilist";
 import type { Manga } from "@/lib/mangadex";
+import { normalizeTitleKey } from "@/lib/title";
 
 export type ProviderName = "anilist" | "mal";
 
@@ -443,10 +444,39 @@ async function pullFromProvider(
   const library = await readLibrary(userId);
 
   const byAl = new Map<string, LibraryRow>();
+  const byMal = new Map<string, LibraryRow>();
+  const byTitleUnlinked = new Map<string, LibraryRow[]>();
   for (const row of library.values()) {
-    const al = (row.manga as Manga)?.links?.al;
-    if (al && !byAl.has(al)) byAl.set(al, row);
+    const manga = row.manga as Manga;
+    if (manga?.links?.al && !byAl.has(manga.links.al)) byAl.set(manga.links.al, row);
+    if (manga?.links?.mal && !byMal.has(manga.links.mal)) byMal.set(manga.links.mal, row);
+    if (!manga?.links?.al && !manga?.links?.mal && manga?.title) {
+      const title = normalizeTitleKey(manga.title);
+      const arr = byTitleUnlinked.get(title) ?? [];
+      arr.push(row);
+      byTitleUnlinked.set(title, arr);
+    }
   }
+
+  const findExisting = (entry: { manga: Manga }): LibraryRow | undefined => {
+    const manga = entry.manga;
+    const exact = library.get(manga.id);
+    if (exact) return exact;
+    if (manga.links?.al) {
+      const found = byAl.get(manga.links.al);
+      if (found) return found;
+    }
+    if (manga.links?.mal) {
+      const found = byMal.get(manga.links.mal);
+      if (found) return found;
+    }
+    const title = manga.title ? normalizeTitleKey(manga.title) : "";
+    if (title) {
+      const candidates = byTitleUnlinked.get(title) ?? [];
+      if (candidates.length) return candidates[0];
+    }
+    return undefined;
+  };
 
   const upserts: {
     user_id: string;
@@ -459,8 +489,7 @@ async function pullFromProvider(
 
   for (const entry of entries) {
     const mangaId = entry.manga.id;
-    const alId = entry.manga.links?.al;
-    const existing = library.get(mangaId) ?? (alId ? byAl.get(alId) : undefined);
+    const existing = findExisting(entry);
     const targetId = existing?.manga_id ?? mangaId;
     seen.add(targetId);
 
@@ -591,20 +620,29 @@ async function moveProgressData(
     .eq("manga_id", fromId);
 }
 
-/** Collapse library rows that share the same canonical AniList id into one. */
+/** Collapse library rows that refer to the same work into one. */
 async function dedupeByAl(
   userId: string,
   library: Map<string, LibraryRow>,
   keepIds: Set<string>,
 ): Promise<void> {
   const supabase = await createClient();
-  const groups = new Map<string, LibraryRow[]>();
-  for (const row of library.values()) {
-    const al = (row.manga as Manga)?.links?.al;
-    if (al) {
-      const arr = groups.get(al) ?? [];
+  const rows = [...library.values()];
+
+  const keyToRows = new Map<string, LibraryRow[]>();
+  const rowKeys = new Map<string, string[]>();
+  for (const row of rows) {
+    const manga = row.manga as Manga;
+    const keys: string[] = [];
+    if (manga?.links?.al) keys.push(`al:${manga.links.al}`);
+    if (manga?.links?.mal) keys.push(`mal:${manga.links.mal}`);
+    const title = manga?.title ? normalizeTitleKey(manga.title) : "";
+    if (title) keys.push(`t:${title}`);
+    rowKeys.set(row.manga_id, keys);
+    for (const key of keys) {
+      const arr = keyToRows.get(key) ?? [];
       arr.push(row);
-      groups.set(al, arr);
+      keyToRows.set(key, arr);
     }
   }
 
@@ -623,30 +661,59 @@ async function dedupeByAl(
     ((readRows ?? []) as { manga_id: string }[]).map((row) => row.manga_id),
   );
 
-  for (const [al, group] of groups) {
-    if (group.length < 2) continue;
+  const isLinked = (row: LibraryRow): boolean => {
+    const manga = row.manga as Manga;
+    return Boolean(manga?.links?.al || manga?.links?.mal);
+  };
+
+  const visited = new Set<string>();
+  for (const row of rows) {
+    if (visited.has(row.manga_id)) continue;
+    const component: LibraryRow[] = [];
+    const queue: LibraryRow[] = [row];
+    visited.add(row.manga_id);
+    while (queue.length) {
+      const current = queue.shift()!;
+      component.push(current);
+      for (const key of rowKeys.get(current.manga_id) ?? []) {
+        for (const neighbor of keyToRows.get(key) ?? []) {
+          if (visited.has(neighbor.manga_id)) continue;
+          // Only follow a title edge when at least one side is unlinked,
+          // otherwise two different linked works sharing a title would merge.
+          if (key.startsWith("t:") && isLinked(current) && isLinked(neighbor)) {
+            continue;
+          }
+          visited.add(neighbor.manga_id);
+          queue.push(neighbor);
+        }
+      }
+    }
+    if (component.length < 2) continue;
+    // A title-only connection is too weak when no row carries an external id.
+    if (!component.some(isLinked)) continue;
+
     const keeper =
-      group.find((row) => keepIds.has(row.manga_id)) ??
-      group.reduce((best, row) => {
-        const score = (r: LibraryRow) =>
-          (progressIds.has(r.manga_id) || readIds.has(r.manga_id) ? 2 : 0) +
-          (r.provider_state && Object.keys(r.provider_state).length ? 1 : 0);
-        const a = score(row);
+      component.find((r) => keepIds.has(r.manga_id)) ??
+      component.reduce((best, r) => {
+        const score = (candidate: LibraryRow) =>
+          (progressIds.has(candidate.manga_id) || readIds.has(candidate.manga_id) ? 2 : 0) +
+          (candidate.provider_state && Object.keys(candidate.provider_state).length ? 1 : 0);
+        const a = score(r);
         const b = score(best);
-        if (a !== b) return a > b ? row : best;
-        const aCanon = row.manga_id === `al:${al}`;
-        const bCanon = best.manga_id === `al:${al}`;
-        if (aCanon !== bCanon) return aCanon ? row : best;
-        return (row.added_at ?? 0) < (best.added_at ?? 0) ? row : best;
-      }, group[0]);
-    for (const row of group) {
-      if (row.manga_id === keeper.manga_id) continue;
-      await moveProgressData(userId, row.manga_id, keeper.manga_id);
+        if (a !== b) return a > b ? r : best;
+        const aAl = Boolean((r.manga as Manga)?.links?.al);
+        const bAl = Boolean((best.manga as Manga)?.links?.al);
+        if (aAl !== bAl) return aAl ? r : best;
+        return (r.added_at ?? 0) < (best.added_at ?? 0) ? r : best;
+      }, component[0]);
+    for (const candidate of component) {
+      if (candidate.manga_id === keeper.manga_id) continue;
+      await moveProgressData(userId, candidate.manga_id, keeper.manga_id);
       await supabase
         .from("hana_library")
         .delete()
         .eq("user_id", userId)
-        .eq("manga_id", row.manga_id);
+        .eq("manga_id", candidate.manga_id);
     }
   }
 }

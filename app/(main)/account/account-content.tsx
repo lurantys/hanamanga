@@ -2,9 +2,11 @@
 
 import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/auth";
 import { syncNow } from "@/lib/sync";
+import { useProviderAvatar } from "@/lib/use-provider-avatar";
 import type { SyncSummary } from "@/lib/provider-sync";
 
 type IntegrationStatus = "idle" | "checking" | "connected" | "not_configured";
@@ -166,6 +168,7 @@ function SyncIcon({ className = "h-3.5 w-3.5" }: { className?: string }) {
 
 export default function AccountContent() {
   const { user, loading, signOut } = useAuth();
+  const avatar = useProviderAvatar(user?.id ?? null);
   const searchParams = useSearchParams();
   const importOk = searchParams.get("import");
   const error = searchParams.get("error");
@@ -272,13 +275,32 @@ export default function AccountContent() {
     <main className="bg-zinc-950 pb-24">
       <div className="mx-auto max-w-2xl px-5 pt-28 md:px-10">
         <header>
-          <h1 className="text-2xl font-extrabold tracking-tight text-white md:text-3xl">
-            Account
-          </h1>
-          <p className="mt-1 text-sm text-zinc-400">
-            Signed in as{" "}
-            <span className="font-semibold text-zinc-200">{user.email}</span>
-          </p>
+          <div className="flex items-center gap-3">
+            <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/10 bg-zinc-900/80 text-base font-bold text-zinc-200">
+              {avatar?.url ? (
+                <Image
+                  src={avatar.url}
+                  alt={user.email ?? "Account"}
+                  width={48}
+                  height={48}
+                  className="h-full w-full object-cover"
+                />
+              ) : (
+                <span className="flex h-full w-full items-center justify-center">
+                  {user.email?.charAt(0).toUpperCase() ?? "U"}
+                </span>
+              )}
+            </span>
+            <div>
+              <h1 className="text-2xl font-extrabold tracking-tight text-white md:text-3xl">
+                Account
+              </h1>
+              <p className="mt-0.5 text-sm text-zinc-400">
+                Signed in as{" "}
+                <span className="font-semibold text-zinc-200">{user.email}</span>
+              </p>
+            </div>
+          </div>
         </header>
 
         {importOk && error ? (

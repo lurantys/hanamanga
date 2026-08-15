@@ -22,9 +22,9 @@ const zenKaku = Zen_Kaku_Gothic_New({
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE_URL),
-  title: "Hana — Discover Manga",
+  title: "Hana — A modern web manga reader",
   description:
-    "Hana is a Netflix-style manga catalog and reader — browse and search thousands of titles from MangaDex, build a library, and pick up right where you left off.",
+    "Discover, read, and track manga, manhwa, manhua, and webtoons — beautifully, on any device.",
   applicationName: "Hana",
   keywords: ["manga", "reader", "mangadex", "anime", "comics"],
   openGraph: {

@@ -80,6 +80,37 @@ alter table public.hana_reader_settings enable row level security;
 alter table public.hana_scanlator_preference enable row level security;
 alter table public.hana_oauth enable row level security;
 
+-- Policies are dropped first so this file can be re-run safely.
+drop policy if exists "users read own library" on public.hana_library;
+drop policy if exists "users write own library" on public.hana_library;
+drop policy if exists "users update own library" on public.hana_library;
+drop policy if exists "users delete own library" on public.hana_library;
+
+drop policy if exists "users read own progress" on public.hana_progress;
+drop policy if exists "users write own progress" on public.hana_progress;
+drop policy if exists "users update own progress" on public.hana_progress;
+drop policy if exists "users delete own progress" on public.hana_progress;
+
+drop policy if exists "users read own read state" on public.hana_read_state;
+drop policy if exists "users write own read state" on public.hana_read_state;
+drop policy if exists "users update own read state" on public.hana_read_state;
+drop policy if exists "users delete own read state" on public.hana_read_state;
+
+drop policy if exists "users read own settings" on public.hana_reader_settings;
+drop policy if exists "users write own settings" on public.hana_reader_settings;
+drop policy if exists "users update own settings" on public.hana_reader_settings;
+drop policy if exists "users delete own settings" on public.hana_reader_settings;
+
+drop policy if exists "users read own scanlator prefs" on public.hana_scanlator_preference;
+drop policy if exists "users write own scanlator prefs" on public.hana_scanlator_preference;
+drop policy if exists "users update own scanlator prefs" on public.hana_scanlator_preference;
+drop policy if exists "users delete own scanlator prefs" on public.hana_scanlator_preference;
+
+drop policy if exists "users read own oauth" on public.hana_oauth;
+drop policy if exists "users write own oauth" on public.hana_oauth;
+drop policy if exists "users update own oauth" on public.hana_oauth;
+drop policy if exists "users delete own oauth" on public.hana_oauth;
+
 create policy "users read own library" on public.hana_library
   for select using (auth.uid() = user_id);
 create policy "users write own library" on public.hana_library

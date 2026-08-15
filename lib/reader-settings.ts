@@ -98,3 +98,18 @@ export function subscribeReaderSettings(onChange: () => void): () => void {
     window.removeEventListener(READER_SETTINGS_EVENT, onChange);
   };
 }
+
+/** Replace the entire settings object (used by sync/import). */
+export function replaceReaderSettings(settings: ReaderSettings): void {
+  const next = { ...DEFAULT_READER_SETTINGS, ...settings };
+  next.brightness = clamp(next.brightness, 0.5, 1.5, DEFAULT_READER_SETTINGS.brightness);
+  next.zoom = clamp(next.zoom, 0.5, 2, DEFAULT_READER_SETTINGS.zoom);
+  cached = next;
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.setItem(READER_SETTINGS_KEY, JSON.stringify(next));
+  } catch {
+    // storage full or blocked — ignore
+  }
+  window.dispatchEvent(new CustomEvent(READER_SETTINGS_EVENT));
+}

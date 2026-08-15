@@ -6,6 +6,8 @@ export const SCANLATOR_PREFERENCE_EVENT = "hana:scanlator-preference-updated";
 
 type ScanlatorMap = Record<string, string>;
 
+export type { ScanlatorMap };
+
 const store: StorageStore<ScanlatorMap> = createStorageStore<ScanlatorMap>(
   SCANLATOR_PREFERENCE_KEY,
   SCANLATOR_PREFERENCE_EVENT,
@@ -14,6 +16,10 @@ const store: StorageStore<ScanlatorMap> = createStorageStore<ScanlatorMap>(
 
 export function getPreferredScanlator(mangaId: string): string | null {
   return store.getSnapshot()[mangaId] ?? null;
+}
+
+export function getPreferredScanlators(): ScanlatorMap {
+  return store.getSnapshot();
 }
 
 export function setPreferredScanlator(mangaId: string, scanlatorId: string): void {
@@ -28,4 +34,9 @@ export function usePreferredScanlator(mangaId: string): string | null {
     () => getPreferredScanlator(mangaId),
     () => null,
   );
+}
+
+/** Replace the entire preference map (used by sync/import). */
+export function replaceScanlatorPreference(map: ScanlatorMap): void {
+  store.setSnapshot(map);
 }

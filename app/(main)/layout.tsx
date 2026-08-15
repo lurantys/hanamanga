@@ -3,6 +3,7 @@ import Image from "next/image";
 import { Suspense } from "react";
 import { GenreMenu } from "@/components/GenreMenu";
 import { SearchBar } from "@/components/SearchBar";
+import { AuthButton } from "@/components/AuthButton";
 
 function Footer() {
   return (
@@ -89,6 +90,7 @@ function Header() {
           <Suspense fallback={null}>
             <SearchBar />
           </Suspense>
+          <AuthButton />
         </div>
       </div>
     </header>

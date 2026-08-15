@@ -8,6 +8,8 @@ export type LibraryEntry = {
 
 type LibraryMap = Record<string, LibraryEntry>;
 
+export type { LibraryMap };
+
 export const LIBRARY_STORAGE_KEY = "hana:library";
 export const LIBRARY_EVENT = "hana:library-updated";
 
@@ -55,4 +57,9 @@ export function removeFromLibrary(mangaId: string): void {
     delete map[mangaId];
     store.setSnapshot(map);
   }
+}
+
+/** Replace the entire library map (used by sync/import). */
+export function replaceLibrary(map: LibraryMap): void {
+  store.setSnapshot(map);
 }

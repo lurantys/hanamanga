@@ -68,6 +68,11 @@ export function invalidateProgressCache(): void {
   cachedProgressMap = null;
 }
 
+/** Replace the entire progress map (used by sync/import). */
+export function replaceProgress(map: Record<string, ProgressEntry>): void {
+  writeAll(map);
+}
+
 export function saveProgress(entry: ProgressEntry): void {
   const map = readAll();
   map[entry.mangaId] = entry;

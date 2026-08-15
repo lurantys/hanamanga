@@ -6,6 +6,8 @@ export const READ_EVENT = "hana:read-chapters-updated";
 
 type ReadMap = Record<string, Record<string, number>>;
 
+export type { ReadMap };
+
 const store: StorageStore<ReadMap> = createStorageStore<ReadMap>(
   READ_STORAGE_KEY,
   READ_EVENT,
@@ -80,6 +82,12 @@ export function markAllRead(mangaId: string, chapterIds: string[]): void {
 
 export function subscribeReadState(onChange: () => void): () => void {
   return store.subscribe(onChange);
+}
+
+/** Replace the entire read-state map (used by sync/import). */
+export function replaceReadState(map: ReadMap): void {
+  setCache.clear();
+  store.setSnapshot(map);
 }
 
 export function useReadChapters(mangaId: string): ReadonlySet<string> {

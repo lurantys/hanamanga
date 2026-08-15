@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Zen_Kaku_Gothic_New } from "next/font/google";
 import { WipProvider } from "@/components/WipProvider";
+import { AuthProvider } from "@/lib/auth";
 import { SITE_URL } from "@/lib/site";
 import "./globals.css";
 
@@ -53,7 +54,9 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} ${zenKaku.variable} h-full antialiased`}
     >
       <body className="flex min-h-full flex-col bg-zinc-950 text-zinc-50">
-        <WipProvider>{children}</WipProvider>
+        <AuthProvider>
+          <WipProvider>{children}</WipProvider>
+        </AuthProvider>
       </body>
     </html>
   );

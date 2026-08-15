@@ -80,6 +80,15 @@ export function markAllRead(mangaId: string, chapterIds: string[]): void {
   store.setSnapshot({ ...map, [mangaId]: next });
 }
 
+export function removeReadManga(mangaId: string): void {
+  const map = store.getSnapshot();
+  if (!map[mangaId]) return;
+  const next = { ...map };
+  delete next[mangaId];
+  setCache.delete(mangaId);
+  store.setSnapshot(next);
+}
+
 export function subscribeReadState(onChange: () => void): () => void {
   return store.subscribe(onChange);
 }

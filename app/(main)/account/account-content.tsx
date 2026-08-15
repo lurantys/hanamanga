@@ -81,10 +81,27 @@ export default function AccountContent() {
     setSyncing(true);
     setSyncResult(null);
     try {
-      await syncNow();
-      setSyncResult(
-        "Library, progress, and connected services (AniList/MAL) synced.",
-      );
+      const result = await syncNow();
+      const providers = result?.providers ?? [];
+      const errors = providers.filter((p) => p.error);
+      const unmatched = providers
+        .filter((p) => p.unmatched)
+        .map((p) => `${p.provider}: ${p.unmatched}`);
+      if (errors.length) {
+        setSyncResult(
+          `Synced, but ${errors
+            .map((p) => `${p.provider === "mal" ? "MAL" : "AniList"} failed: ${p.error}`)
+            .join(", ")}.`,
+        );
+      } else if (unmatched.length) {
+        setSyncResult(
+          `Synced. ${unmatched.join("; ")} titles on your list have no AniList match and were skipped.`,
+        );
+      } else {
+        setSyncResult(
+          "Library, progress, and connected services (AniList/MAL) synced.",
+        );
+      }
     } catch {
       setSyncResult("Sync failed — try again.");
     } finally {

@@ -20,6 +20,7 @@ export type ProviderSyncResult = {
   progressUpdates: number;
   pulled: number;
   removed: number;
+  unmatched?: number;
   error?: string;
 };
 
@@ -185,7 +186,12 @@ type MalMangaList = {
   paging?: { next?: string | null };
 };
 
-async function fetchMalEntries(token: string): Promise<{ manga: Manga; status?: string; progress?: number }[]> {
+async function fetchMalEntries(
+  token: string,
+): Promise<{
+  entries: { manga: Manga; status?: string; progress?: number }[];
+  unmatched: number;
+}> {
   const items: { malId: number; status?: string; progress?: number }[] = [];
   let next: string | null = `${MAL_API}/users/@me/mangalist?fields=my_list_status&limit=100`;
   let guard = 0;
@@ -211,12 +217,14 @@ async function fetchMalEntries(token: string): Promise<{ manga: Manga; status?: 
     const malId = manga.links?.mal ? Number(manga.links.mal) : NaN;
     if (Number.isFinite(malId)) byMalId.set(malId, manga);
   }
-  const result: { manga: Manga; status?: string; progress?: number }[] = [];
+  const entries: { manga: Manga; status?: string; progress?: number }[] = [];
+  let unmatched = 0;
   for (const item of items) {
     const manga = byMalId.get(item.malId);
-    if (manga) result.push({ manga, status: item.status, progress: item.progress });
+    if (manga) entries.push({ manga, status: item.status, progress: item.progress });
+    else unmatched++;
   }
-  return result;
+  return { entries, unmatched };
 }
 
 async function patchMalEntry(
@@ -417,13 +425,20 @@ async function pullFromProvider(
   provider: ProviderName,
   token: string,
   syncedAt: number,
-): Promise<{ pulled: number; removed: number }> {
+): Promise<{ pulled: number; removed: number; unmatched?: number }> {
   const supabase = await createClient();
-  const entries =
+  const fetched =
     provider === "anilist"
-      ? await fetchAniListEntries(token)
+      ? { entries: await fetchAniListEntries(token), unmatched: 0 }
       : await fetchMalEntries(token);
+  const { entries, unmatched } = fetched;
   const library = await readLibrary(userId);
+
+  const byAl = new Map<string, LibraryRow>();
+  for (const row of library.values()) {
+    const al = (row.manga as Manga)?.links?.al;
+    if (al && !byAl.has(al)) byAl.set(al, row);
+  }
 
   const upserts: {
     user_id: string;
@@ -436,13 +451,16 @@ async function pullFromProvider(
 
   for (const entry of entries) {
     const mangaId = entry.manga.id;
-    seen.add(mangaId);
-    const existing = library.get(mangaId);
+    const alId = entry.manga.links?.al;
+    const existing = library.get(mangaId) ?? (alId ? byAl.get(alId) : undefined);
+    const targetId = existing?.manga_id ?? mangaId;
+    seen.add(targetId);
+
     const state: ProviderState = existing?.provider_state ?? {};
     const prev = state[provider];
     upserts.push({
       user_id: userId,
-      manga_id: mangaId,
+      manga_id: targetId,
       manga: entry.manga,
       added_at: existing?.added_at ?? Date.now(),
       provider_state: {
@@ -455,6 +473,14 @@ async function pullFromProvider(
       },
     });
   }
+
+  if (upserts.length) {
+    await supabase.from("hana_library").upsert(upserts, {
+      onConflict: "user_id,manga_id",
+    });
+  }
+
+  await dedupeByAl(userId, library, seen);
 
   const toDelete: string[] = [];
   for (const [mangaId, row] of library) {
@@ -469,12 +495,148 @@ async function pullFromProvider(
       .eq("user_id", userId)
       .in("manga_id", toDelete);
   }
-  if (upserts.length) {
-    await supabase.from("hana_library").upsert(upserts, {
-      onConflict: "user_id,manga_id",
-    });
+  return {
+    pulled: upserts.length,
+    removed: toDelete.length,
+    unmatched: unmatched || undefined,
+  };
+}
+
+async function moveProgressData(
+  userId: string,
+  fromId: string,
+  toId: string,
+): Promise<void> {
+  const supabase = await createClient();
+
+  const { data: fromProg } = await supabase
+    .from("hana_progress")
+    .select("*")
+    .eq("user_id", userId)
+    .eq("manga_id", fromId)
+    .maybeSingle();
+  const { data: toProg } = await supabase
+    .from("hana_progress")
+    .select("updated_at")
+    .eq("user_id", userId)
+    .eq("manga_id", toId)
+    .maybeSingle();
+  if (
+    fromProg &&
+    (!toProg?.updated_at || (fromProg as { updated_at: number }).updated_at > (toProg as { updated_at: number }).updated_at)
+  ) {
+    const rest = { ...(fromProg as Record<string, unknown>) };
+    delete rest.id;
+    delete rest.created_at;
+    await supabase
+      .from("hana_progress")
+      .upsert({ ...rest, manga_id: toId }, { onConflict: "user_id,manga_id" });
   }
-  return { pulled: upserts.length, removed: toDelete.length };
+
+  const { data: fromRead } = await supabase
+    .from("hana_read_state")
+    .select("chapter_id, read_at")
+    .eq("user_id", userId)
+    .eq("manga_id", fromId);
+  if (fromRead?.length) {
+    const { data: toRead } = await supabase
+      .from("hana_read_state")
+      .select("chapter_id, read_at")
+      .eq("user_id", userId)
+      .eq("manga_id", toId);
+    const existingRead = new Map(
+      ((toRead ?? []) as { chapter_id: string; read_at: number }[]).map((row) => [
+        row.chapter_id,
+        row.read_at,
+      ]),
+    );
+    for (const row of fromRead as { chapter_id: string; read_at: number }[]) {
+      const prev = existingRead.get(row.chapter_id);
+      if (prev === undefined || row.read_at > prev) {
+        await supabase
+          .from("hana_read_state")
+          .upsert(
+            {
+              user_id: userId,
+              manga_id: toId,
+              chapter_id: row.chapter_id,
+              read_at: row.read_at,
+            },
+            { onConflict: "user_id,manga_id,chapter_id" },
+          );
+      }
+    }
+  }
+
+  await supabase
+    .from("hana_progress")
+    .delete()
+    .eq("user_id", userId)
+    .eq("manga_id", fromId);
+  await supabase
+    .from("hana_read_state")
+    .delete()
+    .eq("user_id", userId)
+    .eq("manga_id", fromId);
+  await supabase
+    .from("hana_scanlator_preference")
+    .delete()
+    .eq("user_id", userId)
+    .eq("manga_id", fromId);
+}
+
+/** Collapse library rows that share the same canonical AniList id into one. */
+async function dedupeByAl(
+  userId: string,
+  library: Map<string, LibraryRow>,
+  keepIds: Set<string>,
+): Promise<void> {
+  const supabase = await createClient();
+  const groups = new Map<string, LibraryRow[]>();
+  for (const row of library.values()) {
+    const al = (row.manga as Manga)?.links?.al;
+    if (al) {
+      const arr = groups.get(al) ?? [];
+      arr.push(row);
+      groups.set(al, arr);
+    }
+  }
+
+  const { data: progressRows } = await supabase
+    .from("hana_progress")
+    .select("manga_id")
+    .eq("user_id", userId);
+  const progressIds = new Set(
+    ((progressRows ?? []) as { manga_id: string }[]).map((row) => row.manga_id),
+  );
+  const { data: readRows } = await supabase
+    .from("hana_read_state")
+    .select("manga_id")
+    .eq("user_id", userId);
+  const readIds = new Set(
+    ((readRows ?? []) as { manga_id: string }[]).map((row) => row.manga_id),
+  );
+
+  for (const group of groups.values()) {
+    if (group.length < 2) continue;
+    const keeper =
+      group.find((row) => keepIds.has(row.manga_id)) ??
+      group.reduce((best, row) => {
+        const score = (r: LibraryRow) =>
+          (progressIds.has(r.manga_id) || readIds.has(r.manga_id) ? 2 : 0) +
+          (r.provider_state && Object.keys(r.provider_state).length ? 1 : 0);
+        return score(row) > score(best) ? row : best;
+      }, group[0]);
+    for (const row of group) {
+      if (row.manga_id === keeper.manga_id) continue;
+      await moveProgressData(userId, row.manga_id, keeper.manga_id);
+      await supabase
+        .from("hana_library")
+        .delete()
+        .eq("user_id", userId)
+        .eq("manga_id", row.manga_id);
+    }
+  }
 }
 
 async function syncProvider(

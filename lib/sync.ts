@@ -9,12 +9,14 @@ import {
 import {
   getAllProgress,
   replaceProgress,
+  clearProgress,
   PROGRESS_EVENT,
   type ProgressEntry,
 } from "./progress";
 import {
   getReadSnapshot,
   replaceReadState,
+  removeReadManga,
   READ_EVENT,
   type ReadMap,
 } from "./read-state";
@@ -30,6 +32,7 @@ import {
   SCANLATOR_PREFERENCE_EVENT,
   type ScanlatorMap,
 } from "./scanlator-preference";
+import type { SyncSummary } from "./provider-sync";
 
 type LibraryRow = {
   user_id: string;
@@ -397,12 +400,26 @@ function setupRealtime(userId: string): void {
     .on(
       "postgres_changes",
       { event: "*", schema: "public", table: "hana_progress" },
-      () => void pullProgress(userId),
+      (payload: { eventType?: string; old?: { manga_id?: string } | null }) => {
+        if (payload.eventType === "DELETE") {
+          const removedId = payload.old?.manga_id;
+          if (removedId) clearProgress(removedId);
+        } else {
+          void pullProgress(userId);
+        }
+      },
     )
     .on(
       "postgres_changes",
       { event: "*", schema: "public", table: "hana_read_state" },
-      () => void pullReadState(userId),
+      (payload: { eventType?: string; old?: { manga_id?: string } | null }) => {
+        if (payload.eventType === "DELETE") {
+          const removedId = payload.old?.manga_id;
+          if (removedId) removeReadManga(removedId);
+        } else {
+          void pullReadState(userId);
+        }
+      },
     )
     .on(
       "postgres_changes",
@@ -417,24 +434,31 @@ function setupRealtime(userId: string): void {
     .subscribe();
 }
 
+let providerSyncTimer: ReturnType<typeof setTimeout> | undefined;
 let providerSyncLast = 0;
 
-async function runProviderSync(): Promise<void> {
-  if (!currentUserId) return;
-  await fetch("/api/integrations/sync", { method: "POST" });
+async function runProviderSync(): Promise<SyncSummary | null> {
+  if (!currentUserId) return null;
+  const res = await fetch("/api/integrations/sync", { method: "POST" });
+  if (!res.ok) return null;
+  return (await res.json().catch(() => null)) as SyncSummary | null;
 }
 
-const scheduleProviderSync = debounce(() => {
-  if (Date.now() - providerSyncLast < 60_000) return;
-  providerSyncLast = Date.now();
-  void runProviderSync().catch(() => {});
-}, 10_000);
+function scheduleProviderSync(): void {
+  if (providerSyncTimer) return;
+  const wait = Math.max(1000, providerSyncLast + 60_000 - Date.now());
+  providerSyncTimer = setTimeout(() => {
+    providerSyncTimer = undefined;
+    providerSyncLast = Date.now();
+    void runProviderSync().catch(() => {});
+  }, wait);
+}
 
-export async function syncNow(): Promise<void> {
-  if (!currentUserId) return;
+export async function syncNow(): Promise<SyncSummary | null> {
+  if (!currentUserId) return null;
   await syncAll(currentUserId);
   providerSyncLast = Date.now();
-  await runProviderSync().catch(() => {});
+  return runProviderSync().catch(() => null);
 }
 
 export async function handleAuthStateChange(

@@ -40,12 +40,22 @@ export default function AccountContent() {
   const searchParams = useSearchParams();
   const importOk = searchParams.get("import");
   const error = searchParams.get("error");
+  const importCount = searchParams.get("count");
 
   const anilist = useIntegrationStatus("anilist");
   const mal = useIntegrationStatus("mal");
 
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<string | null>(null);
+
+  const importedCount = importCount ? Number.parseInt(importCount, 10) : null;
+
+  useEffect(() => {
+    if (!user) return;
+    if (importOk === "anilist" || importOk === "mal") {
+      void syncNow().catch(() => {});
+    }
+  }, [importOk, user]);
 
   const handleSync = useCallback(async () => {
     setSyncing(true);
@@ -58,7 +68,7 @@ export default function AccountContent() {
     } finally {
       setSyncing(false);
     }
-  }, []);
+  }, [setSyncing, setSyncResult]);
 
   if (loading) {
     return (
@@ -99,13 +109,28 @@ export default function AccountContent() {
           <span className="font-semibold text-zinc-200">{user.email}</span>
         </p>
 
-        {importOk && (
-          <p className="mt-5 rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-2 text-sm text-green-300">
-            Imported your {importOk === "anilist" ? "AniList" : "MyAnimeList"}{" "}
-            list — check your library.
+        {importOk && error ? (
+          <p className="mt-5 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
+            {error === "api_error_403" || error === "api_error_500"
+              ? "The provider API is currently unavailable — try again later."
+              : `Could not import your ${
+                  importOk === "anilist" ? "AniList" : "MyAnimeList"
+                } list. Please try again.`}
           </p>
-        )}
-        {error && (
+        ) : importOk ? (
+          <p className="mt-5 rounded-lg border border-green-500/30 bg-green-500/10 px-3 py-2 text-sm text-green-300">
+            {importedCount !== null && importedCount > 0
+              ? `Imported ${importedCount} title${
+                  importedCount === 1 ? "" : "s"
+                } from your ${
+                  importOk === "anilist" ? "AniList" : "MyAnimeList"
+                } list — check your library.`
+              : `Your ${
+                  importOk === "anilist" ? "AniList" : "MyAnimeList"
+                } list was empty or no titles matched MangaDex.`}
+          </p>
+        ) : null}
+        {error && !importOk && (
           <p className="mt-5 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
             Something went wrong connecting that service. Please try again.
           </p>

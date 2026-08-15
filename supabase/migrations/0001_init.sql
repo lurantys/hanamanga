@@ -133,3 +133,25 @@ create policy "users update own oauth" on public.hana_oauth
   for update using (auth.uid() = user_id) with check (auth.uid() = user_id);
 create policy "users delete own oauth" on public.hana_oauth
   for delete using (auth.uid() = user_id);
+
+-- Realtime: enable postgres_changes events so the browser pulls live sync updates.
+do $$
+declare
+  _table text;
+begin
+  foreach _table in array array[
+    'public.hana_library',
+    'public.hana_progress',
+    'public.hana_read_state',
+    'public.hana_reader_settings',
+    'public.hana_scanlator_preference'
+  ]
+  loop
+    if not exists (
+      select 1 from pg_publication_tables
+      where pubname = 'supabase_realtime' and schemaname = 'public' and tablename = split_part(_table, '.', 2)
+    ) then
+      execute format('alter publication supabase_realtime add table %s', _table);
+    end if;
+  end loop;
+end $$;

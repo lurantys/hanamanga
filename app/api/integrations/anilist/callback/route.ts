@@ -59,9 +59,19 @@ export async function GET(request: NextRequest) {
     { onConflict: "user_id,provider" },
   );
 
-  await importAniList(userId, tokenJson.access_token);
+  const importResult = await importAniList(userId, tokenJson.access_token);
+  if (!importResult.ok) {
+    return NextResponse.redirect(
+      `${SITE_URL}/account?import=anilist&error=${importResult.error}`,
+    );
+  }
 
-  return NextResponse.redirect(`${SITE_URL}/account?import=anilist&ok=1`);
+  const query = new URLSearchParams({
+    import: "anilist",
+    ok: "1",
+    count: String(importResult.imported),
+  });
+  return NextResponse.redirect(`${SITE_URL}/account?${query.toString()}`);
 }
 
 type AniListMediaList = {
@@ -102,7 +112,9 @@ const QUERY = /* GraphQL */ `
   }
 `;
 
-async function fetchAniListList(accessToken: string): Promise<ImportItem[]> {
+async function fetchAniListList(
+  accessToken: string,
+): Promise<{ ok: boolean; items: ImportItem[]; error?: string }> {
   const res = await fetch(ANILIST_API, {
     method: "POST",
     headers: {
@@ -111,13 +123,18 @@ async function fetchAniListList(accessToken: string): Promise<ImportItem[]> {
     },
     body: JSON.stringify({ query: QUERY, variables: { userId: null } }),
   });
-  if (!res.ok) return [];
+  if (!res.ok) {
+    void res.text().catch(() => "");
+    return { ok: false, items: [], error: `api_error_${res.status}` };
+  }
   const json = (await res.json()) as AniListMediaList;
+  if (!json.data?.MediaListCollection) {
+    return { ok: false, items: [], error: "api_error_no_data" };
+  }
   const entries =
-    json.data?.MediaListCollection?.lists?.flatMap(
-      (list) => list.entries ?? [],
-    ) ?? [];
-  return entries
+    json.data.MediaListCollection.lists?.flatMap((list) => list.entries ?? []) ??
+    [];
+  const items = entries
     .filter((entry) => !entry.media?.isAdult)
     .map((entry) => ({
       title: entry.media?.title?.english ?? entry.media?.title?.romaji ?? "",
@@ -129,11 +146,18 @@ async function fetchAniListList(accessToken: string): Promise<ImportItem[]> {
       progress: entry.progress,
       status: entry.status,
     }));
+  return { ok: true, items };
 }
 
-async function importAniList(userId: string, accessToken: string): Promise<void> {
+async function importAniList(
+  userId: string,
+  accessToken: string,
+): Promise<{ ok: boolean; imported: number; error?: string }> {
   const supabase = await createClient();
-  const items = await fetchAniListList(accessToken);
+  const list = await fetchAniListList(accessToken);
+  if (!list.ok) {
+    return { ok: false, imported: 0, error: list.error };
+  }
   const rows: {
     user_id: string;
     manga_id: string;
@@ -143,7 +167,7 @@ async function importAniList(userId: string, accessToken: string): Promise<void>
   const now = Date.now();
 
   let matched = 0;
-  for (const item of items) {
+  for (const item of list.items) {
     const manga = await matchToMangaDex(item);
     if (!manga) continue;
     matched++;
@@ -160,4 +184,5 @@ async function importAniList(userId: string, accessToken: string): Promise<void>
       onConflict: "user_id,manga_id",
     });
   }
+  return { ok: true, imported: matched };
 }

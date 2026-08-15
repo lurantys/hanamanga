@@ -67,9 +67,19 @@ export async function GET(request: NextRequest) {
     { onConflict: "user_id,provider" },
   );
 
-  await importMAL(userId, tokenJson.access_token);
+  const importResult = await importMAL(userId, tokenJson.access_token);
+  if (!importResult.ok) {
+    return NextResponse.redirect(
+      `${SITE_URL}/account?import=mal&error=${importResult.error}`,
+    );
+  }
 
-  const res = NextResponse.redirect(`${SITE_URL}/account?import=mal&ok=1`);
+  const query = new URLSearchParams({
+    import: "mal",
+    ok: "1",
+    count: String(importResult.imported),
+  });
+  const res = NextResponse.redirect(`${SITE_URL}/account?${query.toString()}`);
   res.cookies.delete("mal_oauth_verifier");
   res.cookies.delete("mal_oauth_state");
   return res;
@@ -91,7 +101,9 @@ type MalMangaList = {
   paging?: { next?: string | null };
 };
 
-async function fetchMALList(accessToken: string): Promise<ImportItem[]> {
+async function fetchMALList(
+  accessToken: string,
+): Promise<{ ok: boolean; items: ImportItem[]; error?: string }> {
   const items: ImportItem[] = [];
   let next: string | null = `${MAL_API}/users/@me/mangalist?fields=alternative_titles,my_list_status&limit=100`;
   let guard = 0;
@@ -101,7 +113,9 @@ async function fetchMALList(accessToken: string): Promise<ImportItem[]> {
     const res = await fetch(next, {
       headers: { Authorization: `Bearer ${accessToken}` },
     });
-    if (!res.ok) break;
+    if (!res.ok) {
+      return { ok: false, items: [], error: `api_error_${res.status}` };
+    }
     const json = (await res.json()) as MalMangaList;
     for (const entry of json.data ?? []) {
       const title =
@@ -120,12 +134,18 @@ async function fetchMALList(accessToken: string): Promise<ImportItem[]> {
     }
     next = json.paging?.next ?? null;
   }
-  return items;
+  return { ok: true, items };
 }
 
-async function importMAL(userId: string, accessToken: string): Promise<void> {
+async function importMAL(
+  userId: string,
+  accessToken: string,
+): Promise<{ ok: boolean; imported: number; error?: string }> {
   const supabase = await createClient();
-  const items = await fetchMALList(accessToken);
+  const list = await fetchMALList(accessToken);
+  if (!list.ok) {
+    return { ok: false, imported: 0, error: list.error };
+  }
   const rows: {
     user_id: string;
     manga_id: string;
@@ -135,7 +155,7 @@ async function importMAL(userId: string, accessToken: string): Promise<void> {
   const now = Date.now();
 
   let matched = 0;
-  for (const item of items) {
+  for (const item of list.items) {
     const manga = await matchToMangaDex(item);
     if (!manga) continue;
     matched++;
@@ -152,4 +172,5 @@ async function importMAL(userId: string, accessToken: string): Promise<void> {
       onConflict: "user_id,manga_id",
     });
   }
+  return { ok: true, imported: matched };
 }

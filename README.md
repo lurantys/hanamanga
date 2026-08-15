@@ -57,9 +57,11 @@ Then open [http://localhost:3000](http://localhost:3000). Build and serve in pro
 
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
-## Disclaimer
+## Legal Notice
 
-Hana is an unofficial reader. It does not host any content — all manga, chapters, and images are served by third-party sources (MangaDex, Atsu, MangaKatana). The developers are not affiliated with any content provider.
+Hana is a reader app only — it does not host, store, or distribute any manga. All titles, chapters, and images are sourced directly from third-party providers at the moment you open them, and all rights remain with their creators and publishers.
+
+© 2026 Hana. All rights reserved.
 
 ## License
 

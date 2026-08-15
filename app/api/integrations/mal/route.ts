@@ -41,6 +41,7 @@ export async function GET() {
     response_type: "code",
     client_id: CLIENT_ID,
     code_challenge: challenge,
+    code_challenge_method: "S256",
     state: oauthState,
     redirect_uri: REDIRECT_URI,
   });

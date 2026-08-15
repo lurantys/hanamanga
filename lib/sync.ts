@@ -2,6 +2,7 @@ import { createClient } from "./supabase/client";
 import {
   getLibrarySnapshot,
   replaceLibrary,
+  removeFromLibrary,
   LIBRARY_EVENT,
   type LibraryMap,
 } from "./library";
@@ -361,6 +362,8 @@ function attachLocalListeners(): void {
   for (const event of events) {
     window.addEventListener(event, localPush);
   }
+  window.addEventListener(LIBRARY_EVENT, scheduleProviderSync);
+  window.addEventListener(READ_EVENT, scheduleProviderSync);
   window.addEventListener("beforeunload", localPushFlush);
   const onVisibility = () => {
     if (document.visibilityState === "hidden") localPushFlush();
@@ -368,6 +371,8 @@ function attachLocalListeners(): void {
   window.addEventListener("visibilitychange", onVisibility);
   localDisposers = [
     ...events.map((event) => () => window.removeEventListener(event, localPush)),
+    () => window.removeEventListener(LIBRARY_EVENT, scheduleProviderSync),
+    () => window.removeEventListener(READ_EVENT, scheduleProviderSync),
     () => window.removeEventListener("beforeunload", localPushFlush),
     () => window.removeEventListener("visibilitychange", onVisibility),
   ];
@@ -380,7 +385,14 @@ function setupRealtime(userId: string): void {
     .on(
       "postgres_changes",
       { event: "*", schema: "public", table: "hana_library" },
-      () => void pullLibrary(userId),
+      (payload: { eventType?: string; old?: { manga_id?: string } | null }) => {
+        if (payload.eventType === "DELETE") {
+          const removedId = payload.old?.manga_id;
+          if (removedId) removeFromLibrary(removedId);
+        } else {
+          void pullLibrary(userId);
+        }
+      },
     )
     .on(
       "postgres_changes",
@@ -405,9 +417,24 @@ function setupRealtime(userId: string): void {
     .subscribe();
 }
 
+let providerSyncLast = 0;
+
+async function runProviderSync(): Promise<void> {
+  if (!currentUserId) return;
+  await fetch("/api/integrations/sync", { method: "POST" });
+}
+
+const scheduleProviderSync = debounce(() => {
+  if (Date.now() - providerSyncLast < 60_000) return;
+  providerSyncLast = Date.now();
+  void runProviderSync().catch(() => {});
+}, 10_000);
+
 export async function syncNow(): Promise<void> {
   if (!currentUserId) return;
   await syncAll(currentUserId);
+  providerSyncLast = Date.now();
+  await runProviderSync().catch(() => {});
 }
 
 export async function handleAuthStateChange(
@@ -442,5 +469,6 @@ export async function refreshSession(): Promise<string | null> {
 if (typeof window !== "undefined") {
   window.addEventListener("pageshow", () => {
     void refreshSession();
+    scheduleProviderSync();
   });
 }

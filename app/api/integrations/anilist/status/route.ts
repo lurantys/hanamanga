@@ -12,15 +12,14 @@ export async function GET() {
 
   const { data } = await supabase
     .from("hana_oauth")
-    .select("access_token")
+    .select("access_token, synced_at")
     .eq("user_id", session.user.id)
     .eq("provider", "anilist")
     .maybeSingle();
 
   return NextResponse.json({
     connected: Boolean(data?.access_token),
-    configured: Boolean(
-      process.env.ANILIST_CLIENT_ID && process.env.ANILIST_CLIENT_SECRET,
-    ),
+    configured: Boolean(process.env.ANILIST_CLIENT_ID && process.env.ANILIST_CLIENT_SECRET),
+    syncedAt: data?.synced_at ?? null,
   });
 }

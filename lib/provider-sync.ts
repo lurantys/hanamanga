@@ -1,0 +1,528 @@
+import { createClient } from "@/lib/supabase/server";
+import {
+  anilistToManga,
+  ANILIST_MEDIA_FIELDS,
+  fetchAniListByMalIds,
+  type AniListMedia,
+} from "@/lib/anilist";
+import type { Manga } from "@/lib/mangadex";
+
+export type ProviderName = "anilist" | "mal";
+
+export type ProviderState = Record<
+  string,
+  { status?: string; progress?: number; syncedAt?: number; error?: string } | undefined
+>;
+
+export type ProviderSyncResult = {
+  provider: ProviderName;
+  additions: number;
+  progressUpdates: number;
+  pulled: number;
+  removed: number;
+  error?: string;
+};
+
+export type SyncSummary = {
+  syncedAt: number;
+  providers: ProviderSyncResult[];
+};
+
+const ANILIST_API = "https://graphql.anilist.co";
+const MAL_API = "https://api.myanimelist.net/v2";
+const MAL_TOKEN_URL = "https://myanimelist.net/v1/oauth2/token";
+
+const MAL_TO_ANILIST_STATUS: Record<string, string> = {
+  reading: "CURRENT",
+  completed: "COMPLETED",
+  on_hold: "PAUSED",
+  dropped: "DROPPED",
+  plan_to_read: "PLANNING",
+  repeating: "REPEATING",
+};
+
+const ANILIST_TO_MAL_STATUS: Record<string, string> = {
+  CURRENT: "reading",
+  COMPLETED: "completed",
+  PAUSED: "on_hold",
+  DROPPED: "dropped",
+  PLANNING: "plan_to_read",
+  REPEATING: "repeating",
+};
+
+class ProviderError extends Error {
+  status: number;
+  transient: boolean;
+  constructor(message: string, status: number, transient: boolean) {
+    super(message);
+    this.name = "ProviderError";
+    this.status = status;
+    this.transient = transient;
+  }
+}
+
+function parseChapterNumber(label: string): number | null {
+  const lower = label.toLowerCase();
+  const match =
+    lower.match(/(?:^|\D)(?:chapter|ch\.?)\s*(\d+(?:\.\d+)?)/) ??
+    lower.match(/^(\d+(?:\.\d+)?)/);
+  if (!match) return null;
+  const value = Number(match[1]);
+  return Number.isFinite(value) && value >= 1 ? Math.floor(value) : null;
+}
+
+async function anilistFetch<T>(
+  token: string,
+  query: string,
+  variables: Record<string, unknown>,
+): Promise<T> {
+  let res: Response;
+  try {
+    res = await fetch(ANILIST_API, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+        "User-Agent": "Hana/1.0",
+      },
+      body: JSON.stringify({ query, variables }),
+      signal: AbortSignal.timeout(15_000),
+    });
+  } catch {
+    throw new ProviderError("AniList network error", 0, true);
+  }
+  if (!res.ok) {
+    throw new ProviderError(`AniList ${res.status}`, res.status, true);
+  }
+  const json = (await res.json().catch(() => null)) as {
+    data?: T;
+    errors?: { status?: number; message?: string }[];
+  } | null;
+  const error = json?.errors?.[0];
+  if (error) {
+    throw new ProviderError(
+      `AniList: ${error.message ?? "request failed"}`,
+      error.status ?? 400,
+      false,
+    );
+  }
+  if (!json?.data) {
+    throw new ProviderError("AniList returned no data", 500, true);
+  }
+  return json.data;
+}
+
+function malTransient(status: number): boolean {
+  return status === 0 || status === 401 || status === 429 || status >= 500;
+}
+
+async function malFetch(
+  url: string,
+  init: RequestInit,
+): Promise<Response> {
+  try {
+    return await fetch(url, init);
+  } catch {
+    throw new ProviderError("MAL network error", 0, true);
+  }
+}
+
+const SAVE_MUTATION = /* GraphQL */ `
+  mutation ($mediaId: Int, $status: MediaListStatus, $progress: Int) {
+    SaveMediaListEntry(mediaId: $mediaId, status: $status, progress: $progress) { id }
+  }
+`;
+
+const ANILIST_LIST_QUERY = /* GraphQL */ `
+  query {
+    MediaListCollection(type: MANGA) {
+      lists {
+        entries {
+          status
+          progress
+          media { ${ANILIST_MEDIA_FIELDS} }
+        }
+      }
+    }
+  }
+`;
+
+async function fetchAniListEntries(token: string): Promise<{ manga: Manga; status?: string; progress?: number }[]> {
+  const data = await anilistFetch<{
+    MediaListCollection?: {
+      lists?: { entries?: ({ status?: string | null; progress?: number | null; media?: AniListMedia | null })[] | null }[] | null;
+    } | null;
+  }>(token, ANILIST_LIST_QUERY, {});
+  const entries =
+    data.MediaListCollection?.lists?.flatMap((list) => list.entries ?? []) ?? [];
+  return entries
+    .filter((entry) => Boolean(entry.media) && !entry.media?.isAdult)
+    .map((entry) => ({
+      manga: anilistToManga(entry.media!),
+      status: entry.status ?? undefined,
+      progress: entry.progress ?? undefined,
+    }));
+}
+
+async function saveAniListEntry(
+  token: string,
+  mediaId: number,
+  status: string,
+  progress: number | null,
+): Promise<void> {
+  const variables: Record<string, unknown> = { mediaId, status };
+  if (progress != null) variables.progress = progress;
+  await anilistFetch(token, SAVE_MUTATION, variables);
+}
+
+type MalMangaList = {
+  data?: {
+    node?: {
+      id?: number;
+      my_list_status?: { status?: string; num_chapters_read?: number };
+    };
+  }[];
+  paging?: { next?: string | null };
+};
+
+async function fetchMalEntries(token: string): Promise<{ manga: Manga; status?: string; progress?: number }[]> {
+  const items: { malId: number; status?: string; progress?: number }[] = [];
+  let next: string | null = `${MAL_API}/users/@me/mangalist?fields=my_list_status&limit=100`;
+  let guard = 0;
+  while (next && guard < 20) {
+    guard++;
+    const res = await malFetch(next, { headers: { Authorization: `Bearer ${token}` } });
+    if (!res.ok) throw new ProviderError(`MAL list ${res.status}`, res.status, malTransient(res.status));
+    const json = (await res.json()) as MalMangaList;
+    for (const entry of json.data ?? []) {
+      if (typeof entry.node?.id === "number") {
+        items.push({
+          malId: entry.node.id,
+          status: entry.node.my_list_status?.status,
+          progress: entry.node.my_list_status?.num_chapters_read,
+        });
+      }
+    }
+    next = json.paging?.next ?? null;
+  }
+
+  const byMalId = new Map<number, Manga>();
+  for (const manga of await fetchAniListByMalIds(items.map((item) => item.malId))) {
+    const malId = manga.links?.mal ? Number(manga.links.mal) : NaN;
+    if (Number.isFinite(malId)) byMalId.set(malId, manga);
+  }
+  const result: { manga: Manga; status?: string; progress?: number }[] = [];
+  for (const item of items) {
+    const manga = byMalId.get(item.malId);
+    if (manga) result.push({ manga, status: item.status, progress: item.progress });
+  }
+  return result;
+}
+
+async function patchMalEntry(
+  token: string,
+  malId: number,
+  status: string,
+  progress: number | null,
+): Promise<void> {
+  const body = new URLSearchParams({ status });
+  if (progress != null) body.set("num_chapters_read", String(progress));
+  const res = await malFetch(`${MAL_API}/manga/${malId}/my_list_status`, {
+    method: "PATCH",
+    headers: {
+      Authorization: `Bearer ${token}`,
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body,
+  });
+  if (!res.ok) throw new ProviderError(`MAL patch ${res.status}`, res.status, malTransient(res.status));
+}
+
+type OAuthRow = {
+  user_id: string;
+  provider: string;
+  access_token: string;
+  refresh_token: string | null;
+  expires_at: string | null;
+};
+
+async function getMalAccessToken(userId: string, row: OAuthRow): Promise<string> {
+  if (!row.refresh_token) return row.access_token;
+  const expires = row.expires_at ? new Date(row.expires_at).getTime() : 0;
+  if (expires && expires - Date.now() > 5 * 60 * 1000) return row.access_token;
+  const clientId = process.env.MAL_CLIENT_ID;
+  const clientSecret = process.env.MAL_CLIENT_SECRET;
+  if (!clientId || !clientSecret) return row.access_token;
+  const res = await malFetch(MAL_TOKEN_URL, {
+    method: "POST",
+    headers: { "Content-Type": "application/x-www-form-urlencoded" },
+    body: new URLSearchParams({
+      grant_type: "refresh_token",
+      client_id: clientId,
+      client_secret: clientSecret,
+      refresh_token: row.refresh_token,
+    }),
+  });
+  const json = (await res.json()) as {
+    access_token?: string;
+    refresh_token?: string;
+    expires_in?: number;
+  };
+  if (!res.ok || !json.access_token) return row.access_token;
+  const supabase = await createClient();
+  await supabase
+    .from("hana_oauth")
+    .update({
+      access_token: json.access_token,
+      refresh_token: json.refresh_token ?? null,
+      expires_at: json.expires_in
+        ? new Date(Date.now() + json.expires_in * 1000).toISOString()
+        : null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("user_id", userId)
+    .eq("provider", "mal");
+  return json.access_token;
+}
+
+async function computeChaptersRead(userId: string, mangaId: string): Promise<number | null> {
+  const supabase = await createClient();
+  const { data: progress } = await supabase
+    .from("hana_progress")
+    .select("chapter_label")
+    .eq("user_id", userId)
+    .eq("manga_id", mangaId)
+    .maybeSingle();
+  if (progress?.chapter_label) {
+    const parsed = parseChapterNumber(progress.chapter_label as string);
+    if (parsed != null) return parsed;
+  }
+  const { count } = await supabase
+    .from("hana_read_state")
+    .select("*", { count: "exact", head: true })
+    .eq("user_id", userId)
+    .eq("manga_id", mangaId);
+  return count && count > 0 ? count : null;
+}
+
+type LibraryRow = {
+  manga_id: string;
+  manga: unknown;
+  added_at: number;
+  provider_state: ProviderState | null;
+};
+
+async function readLibrary(userId: string): Promise<Map<string, LibraryRow>> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("hana_library")
+    .select("manga_id, manga, added_at, provider_state")
+    .eq("user_id", userId);
+  const map = new Map<string, LibraryRow>();
+  for (const row of (data ?? []) as LibraryRow[]) {
+    map.set(row.manga_id, row);
+  }
+  return map;
+}
+
+async function setProviderState(
+  userId: string,
+  mangaId: string,
+  state: ProviderState,
+): Promise<void> {
+  const supabase = await createClient();
+  await supabase
+    .from("hana_library")
+    .update({ provider_state: state })
+    .eq("user_id", userId)
+    .eq("manga_id", mangaId);
+}
+
+function providerIdFor(provider: ProviderName, manga: Manga): number | null {
+  const raw = provider === "anilist" ? manga.links?.al : manga.links?.mal;
+  const value = raw ? Number(raw) : NaN;
+  return Number.isFinite(value) ? value : null;
+}
+
+async function pushToProvider(
+  userId: string,
+  provider: ProviderName,
+  token: string,
+): Promise<{ additions: number; progressUpdates: number }> {
+  const library = await readLibrary(userId);
+  let additions = 0;
+  let progressUpdates = 0;
+
+  for (const row of library.values()) {
+    const manga = (row.manga ?? {}) as Manga;
+    const state: ProviderState = row.provider_state ?? {};
+    const existing = state[provider];
+    if (existing?.error) continue;
+
+    const mediaId = providerIdFor(provider, manga);
+    if (mediaId == null) continue;
+
+    const progress = await computeChaptersRead(userId, row.manga_id);
+
+    try {
+      if (!existing) {
+        const status =
+          provider === "anilist"
+            ? (state.mal?.status ? MAL_TO_ANILIST_STATUS[state.mal.status] : undefined) ??
+              "CURRENT"
+            : (state.anilist?.status ? ANILIST_TO_MAL_STATUS[state.anilist.status] : undefined) ??
+              "reading";
+        if (provider === "anilist") {
+          await saveAniListEntry(token, mediaId, status, progress);
+        } else {
+          await patchMalEntry(token, mediaId, status, progress);
+        }
+        await setProviderState(userId, row.manga_id, {
+          ...state,
+          [provider]: { status, progress: progress ?? undefined, syncedAt: Date.now() },
+        });
+        additions++;
+      } else if (progress != null && existing.progress !== progress) {
+        const status = existing.status ?? (provider === "anilist" ? "CURRENT" : "reading");
+        if (provider === "anilist") {
+          await saveAniListEntry(token, mediaId, status, progress);
+        } else {
+          await patchMalEntry(token, mediaId, status, progress);
+        }
+        await setProviderState(userId, row.manga_id, {
+          ...state,
+          [provider]: { ...existing, progress, syncedAt: Date.now() },
+        });
+        progressUpdates++;
+      }
+    } catch (error) {
+      console.error(`[provider-sync] push ${provider} failed for ${row.manga_id}`, error);
+      if (!existing && error instanceof ProviderError && !error.transient) {
+        await setProviderState(userId, row.manga_id, {
+          ...state,
+          [provider]: {
+            error: error.message.slice(0, 200),
+            syncedAt: Date.now(),
+          },
+        });
+      }
+    }
+  }
+
+  return { additions, progressUpdates };
+}
+
+async function pullFromProvider(
+  userId: string,
+  provider: ProviderName,
+  token: string,
+  syncedAt: number,
+): Promise<{ pulled: number; removed: number }> {
+  const supabase = await createClient();
+  const entries =
+    provider === "anilist"
+      ? await fetchAniListEntries(token)
+      : await fetchMalEntries(token);
+  const library = await readLibrary(userId);
+
+  const upserts: {
+    user_id: string;
+    manga_id: string;
+    manga: unknown;
+    added_at: number;
+    provider_state: ProviderState;
+  }[] = [];
+  const seen = new Set<string>();
+
+  for (const entry of entries) {
+    const mangaId = entry.manga.id;
+    seen.add(mangaId);
+    const existing = library.get(mangaId);
+    const state: ProviderState = existing?.provider_state ?? {};
+    const prev = state[provider];
+    upserts.push({
+      user_id: userId,
+      manga_id: mangaId,
+      manga: entry.manga,
+      added_at: existing?.added_at ?? Date.now(),
+      provider_state: {
+        ...state,
+        [provider]: {
+          status: entry.status ?? prev?.status,
+          progress: entry.progress ?? prev?.progress,
+          syncedAt,
+        },
+      },
+    });
+  }
+
+  const toDelete: string[] = [];
+  for (const [mangaId, row] of library) {
+    const state: ProviderState = row.provider_state ?? {};
+    const st = state[provider];
+    if (st && !st.error && !seen.has(mangaId)) toDelete.push(mangaId);
+  }
+  if (toDelete.length) {
+    await supabase
+      .from("hana_library")
+      .delete()
+      .eq("user_id", userId)
+      .in("manga_id", toDelete);
+  }
+  if (upserts.length) {
+    await supabase.from("hana_library").upsert(upserts, {
+      onConflict: "user_id,manga_id",
+    });
+  }
+  return { pulled: upserts.length, removed: toDelete.length };
+}
+
+async function syncProvider(
+  userId: string,
+  provider: ProviderName,
+  oauth: OAuthRow,
+  syncedAt: number,
+): Promise<ProviderSyncResult> {
+  const supabase = await createClient();
+  const token =
+    provider === "mal" ? await getMalAccessToken(userId, oauth) : oauth.access_token;
+  const pullResult = await pullFromProvider(userId, provider, token, syncedAt);
+  const pushResult = await pushToProvider(userId, provider, token);
+  await supabase
+    .from("hana_oauth")
+    .update({ synced_at: new Date(syncedAt).toISOString() })
+    .eq("user_id", userId)
+    .eq("provider", provider);
+  return { provider, ...pushResult, ...pullResult };
+}
+
+export async function syncProviders(userId: string): Promise<SyncSummary> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("hana_oauth")
+    .select("user_id, provider, access_token, refresh_token, expires_at")
+    .eq("user_id", userId);
+
+  const syncedAt = Date.now();
+  const results: ProviderSyncResult[] = [];
+
+  for (const provider of ["anilist", "mal"] as const) {
+    const row = (data ?? []).find((r: OAuthRow) => r.provider === provider) ?? null;
+    if (!row) continue;
+    try {
+      results.push(await syncProvider(userId, provider, row, syncedAt));
+    } catch (error) {
+      console.error(`[provider-sync] ${provider} sync failed`, error);
+      results.push({
+        provider,
+        additions: 0,
+        progressUpdates: 0,
+        pulled: 0,
+        removed: 0,
+        error: error instanceof Error ? error.message : "sync failed",
+      });
+    }
+  }
+
+  return { syncedAt, providers: results };
+}

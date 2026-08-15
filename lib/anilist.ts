@@ -127,6 +127,63 @@ export class AniListError extends Error {
   }
 }
 
+async function queryAnilistAuth<T>(
+  token: string,
+  query: string,
+  variables: Record<string, unknown>,
+): Promise<T> {
+  const res = await fetch(API, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${token}`,
+      "User-Agent": "Hana/1.0",
+    },
+    body: JSON.stringify({ query, variables }),
+    signal: AbortSignal.timeout(15_000),
+  });
+  if (res.status === 429) {
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+    return queryAnilistAuth<T>(token, query, variables);
+  }
+  const json = (await res.json().catch(() => null)) as {
+    data?: T;
+    errors?: { status?: number; message?: string }[];
+  } | null;
+  const error = json?.errors?.[0];
+  if (error) {
+    throw new AniListError(
+      error.message ?? "AniList request failed",
+      error.status ?? res.status,
+    );
+  }
+  if (!json?.data) {
+    throw new AniListError("AniList returned no data", res.status);
+  }
+  return json.data as T;
+}
+
+const VIEWER_QUERY = /* GraphQL */ `
+  query ViewerId {
+    Viewer {
+      id
+    }
+  }
+`;
+
+export async function fetchAniListViewerId(token: string): Promise<number> {
+  const data = await queryAnilistAuth<{ Viewer?: { id?: number | null } | null }>(
+    token,
+    VIEWER_QUERY,
+    {},
+  );
+  const id = data.Viewer?.id;
+  if (!id) {
+    throw new AniListError("AniList viewer not found", 401);
+  }
+  return id;
+}
+
 async function queryAnilist<T>(
   query: string,
   variables: Record<string, unknown>,

@@ -2,7 +2,7 @@ import { NextResponse, type NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { SITE_URL } from "@/lib/site";
 import type { Manga } from "@/lib/mangadex";
-import { anilistToManga, ANILIST_MEDIA_FIELDS, type AniListMedia } from "@/lib/anilist";
+import { anilistToManga, ANILIST_MEDIA_FIELDS, fetchAniListViewerId, type AniListMedia } from "@/lib/anilist";
 
 const CLIENT_ID = process.env.ANILIST_CLIENT_ID;
 const CLIENT_SECRET = process.env.ANILIST_CLIENT_SECRET;
@@ -100,7 +100,7 @@ const QUERY = /* GraphQL */ `
         entries {
           status
           progress
-          media {
+          media(format_not_in: [NOVEL, ONE_SHOT]) {
             ${ANILIST_MEDIA_FIELDS}
           }
         }
@@ -112,13 +112,20 @@ const QUERY = /* GraphQL */ `
 async function fetchAniListList(
   accessToken: string,
 ): Promise<{ ok: boolean; items: Manga[]; error?: string }> {
+  let userId: number;
+  try {
+    userId = await fetchAniListViewerId(accessToken);
+  } catch (error) {
+    console.error("AniList viewer id fetch failed", error);
+    return { ok: false, items: [], error: "api_error_no_data" };
+  }
   const res = await fetch(ANILIST_API, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       Authorization: `Bearer ${accessToken}`,
     },
-    body: JSON.stringify({ query: QUERY, variables: { userId: null } }),
+    body: JSON.stringify({ query: QUERY, variables: { userId } }),
   });
   if (!res.ok) {
     void res.text().catch(() => "");

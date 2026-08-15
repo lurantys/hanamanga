@@ -3,6 +3,7 @@ import {
   anilistToManga,
   ANILIST_MEDIA_FIELDS,
   fetchAniListByMalIds,
+  fetchAniListViewerId,
   type AniListMedia,
 } from "@/lib/anilist";
 import type { Manga } from "@/lib/mangadex";
@@ -135,13 +136,13 @@ const SAVE_MUTATION = /* GraphQL */ `
 `;
 
 const ANILIST_LIST_QUERY = /* GraphQL */ `
-  query {
-    MediaListCollection(type: MANGA) {
+  query ($userId: Int) {
+    MediaListCollection(userId: $userId, type: MANGA) {
       lists {
         entries {
           status
           progress
-          media { ${ANILIST_MEDIA_FIELDS} }
+          media(format_not_in: [NOVEL, ONE_SHOT]) { ${ANILIST_MEDIA_FIELDS} }
         }
       }
     }
@@ -149,11 +150,12 @@ const ANILIST_LIST_QUERY = /* GraphQL */ `
 `;
 
 async function fetchAniListEntries(token: string): Promise<{ manga: Manga; status?: string; progress?: number }[]> {
+  const userId = await fetchAniListViewerId(token);
   const data = await anilistFetch<{
     MediaListCollection?: {
       lists?: { entries?: ({ status?: string | null; progress?: number | null; media?: AniListMedia | null })[] | null }[] | null;
     } | null;
-  }>(token, ANILIST_LIST_QUERY, {});
+  }>(token, ANILIST_LIST_QUERY, { userId });
   const entries =
     data.MediaListCollection?.lists?.flatMap((list) => list.entries ?? []) ?? [];
   return entries
@@ -480,8 +482,6 @@ async function pullFromProvider(
     });
   }
 
-  await dedupeByAl(userId, library, seen);
-
   const toDelete: string[] = [];
   for (const [mangaId, row] of library) {
     const state: ProviderState = row.provider_state ?? {};
@@ -617,7 +617,7 @@ async function dedupeByAl(
     ((readRows ?? []) as { manga_id: string }[]).map((row) => row.manga_id),
   );
 
-  for (const group of groups.values()) {
+  for (const [al, group] of groups) {
     if (group.length < 2) continue;
     const keeper =
       group.find((row) => keepIds.has(row.manga_id)) ??
@@ -625,7 +625,13 @@ async function dedupeByAl(
         const score = (r: LibraryRow) =>
           (progressIds.has(r.manga_id) || readIds.has(r.manga_id) ? 2 : 0) +
           (r.provider_state && Object.keys(r.provider_state).length ? 1 : 0);
-        return score(row) > score(best) ? row : best;
+        const a = score(row);
+        const b = score(best);
+        if (a !== b) return a > b ? row : best;
+        const aCanon = row.manga_id === `al:${al}`;
+        const bCanon = best.manga_id === `al:${al}`;
+        if (aCanon !== bCanon) return aCanon ? row : best;
+        return (row.added_at ?? 0) < (best.added_at ?? 0) ? row : best;
       }, group[0]);
     for (const row of group) {
       if (row.manga_id === keeper.manga_id) continue;
@@ -648,18 +654,48 @@ async function syncProvider(
   const supabase = await createClient();
   const token =
     provider === "mal" ? await getMalAccessToken(userId, oauth) : oauth.access_token;
-  const pullResult = await pullFromProvider(userId, provider, token, syncedAt);
-  const pushResult = await pushToProvider(userId, provider, token);
-  await supabase
-    .from("hana_oauth")
-    .update({ synced_at: new Date(syncedAt).toISOString() })
-    .eq("user_id", userId)
-    .eq("provider", provider);
-  return { provider, ...pushResult, ...pullResult };
+
+  let pullResult: { pulled: number; removed: number; unmatched?: number } = {
+    pulled: 0,
+    removed: 0,
+  };
+  let pushResult = { additions: 0, progressUpdates: 0 };
+  let error: string | undefined;
+
+  try {
+    pullResult = await pullFromProvider(userId, provider, token, syncedAt);
+  } catch (err) {
+    console.error(`[provider-sync] ${provider} pull failed`, err);
+    error = err instanceof Error ? err.message : "pull failed";
+  }
+
+  try {
+    pushResult = await pushToProvider(userId, provider, token);
+  } catch (err) {
+    console.error(`[provider-sync] ${provider} push failed`, err);
+    error ??= err instanceof Error ? err.message : "push failed";
+  }
+
+  if (!error) {
+    await supabase
+      .from("hana_oauth")
+      .update({ synced_at: new Date(syncedAt).toISOString() })
+      .eq("user_id", userId)
+      .eq("provider", provider);
+  }
+  return { provider, ...pushResult, ...pullResult, error };
 }
 
 export async function syncProviders(userId: string): Promise<SyncSummary> {
   const supabase = await createClient();
+
+  try {
+    const library = await readLibrary(userId);
+    await dedupeByAl(userId, library, new Set<string>());
+  } catch (error) {
+    console.error("[provider-sync] library dedupe failed", error);
+  }
+
   const { data } = await supabase
     .from("hana_oauth")
     .select("user_id, provider, access_token, refresh_token, expires_at")

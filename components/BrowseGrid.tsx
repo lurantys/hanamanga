@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { MangaCard } from "./MangaCard";
+import { MangaGridSkeleton } from "./MangaCardSkeleton";
 import { sortLabel, type SortKey } from "@/lib/genres";
 import type { Manga } from "@/lib/mangadex";
 
@@ -141,10 +142,7 @@ export function BrowseGrid({
               Retry
             </button>
           ) : loading ? (
-            <span
-              className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-600 border-t-zinc-200"
-              aria-hidden
-            />
+            <MangaGridSkeleton count={6} />
           ) : null}
         </div>
       ) : (

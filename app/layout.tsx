@@ -52,7 +52,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} ${zenKaku.variable} h-full antialiased`}
     >
-      <body className="min-h-full bg-zinc-950 text-zinc-50">
+      <body className="flex min-h-full flex-col bg-zinc-950 text-zinc-50">
         <WipProvider>{children}</WipProvider>
       </body>
     </html>

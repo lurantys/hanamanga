@@ -1,6 +1,6 @@
 <div align="center">
 
-<a href="https://hanamanga.vercel.app/">
+<a href="https://hanamanga.online/">
     <img src="./public/logo-v2.png" alt="Hana logo" title="Hana logo" width="80"/>
 </a>
 
@@ -13,7 +13,7 @@ Discover, read, and track manga, manhwa, manhua, and webtoons — beautifully, o
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js&logoColor=white)](https://nextjs.org)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-38BDF8?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
-[![Live](https://img.shields.io/badge/Live-hanamanga.vercel.app-0877d2?logo=vercel&logoColor=white)](https://hanamanga.vercel.app/)
+[![Live](https://img.shields.io/badge/Live-hanamanga.online-0877d2?logo=vercel&logoColor=white)](https://hanamanga.online/)
 [![Last commit](https://img.shields.io/github/last-commit/lurantys/hanamanga)](https://github.com/lurantys/hanamanga)
 
 </div>
@@ -36,11 +36,11 @@ Discover, read, and track manga, manhwa, manhua, and webtoons — beautifully, o
 
 * [Next.js](https://nextjs.org) (App Router) + React 19 + TypeScript
 * [Tailwind CSS](https://tailwindcss.com) for styling
-* Live on [Vercel](https://hanamanga.vercel.app/)
+* Live on [Vercel](https://hanamanga.online/)
 
 ## Try it live
 
-Hana is deployed and running at **[hanamanga.vercel.app](https://hanamanga.vercel.app/)** — no setup required.
+Hana is deployed and running at **[hanamanga.online](https://hanamanga.online/)** — no setup required.
 
 ## Development
 

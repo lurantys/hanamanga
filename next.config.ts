@@ -7,6 +7,7 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "uploads.mangadex.org" },
       { protocol: "https", hostname: "cdn.atsu.moe" },
       { protocol: "https", hostname: "*.anilist.co" },
+      { protocol: "https", hostname: "cdn.myanimelist.net" },
     ],
   },
 };

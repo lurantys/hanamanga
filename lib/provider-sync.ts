@@ -255,7 +255,7 @@ async function patchMalEntry(
   if (!res.ok) throw new ProviderError(`MAL patch ${res.status}`, res.status, malTransient(res.status));
 }
 
-type OAuthRow = {
+export type OAuthRow = {
   user_id: string;
   provider: string;
   access_token: string;
@@ -263,7 +263,7 @@ type OAuthRow = {
   expires_at: string | null;
 };
 
-async function getMalAccessToken(userId: string, row: OAuthRow): Promise<string> {
+export async function getMalAccessToken(userId: string, row: OAuthRow): Promise<string> {
   if (!row.refresh_token) return row.access_token;
   const expires = row.expires_at ? new Date(row.expires_at).getTime() : 0;
   if (expires && expires - Date.now() > 5 * 60 * 1000) return row.access_token;

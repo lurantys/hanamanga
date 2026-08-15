@@ -1,7 +1,9 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useAuth } from "@/lib/auth";
+import { useProviderAvatar } from "@/lib/use-provider-avatar";
 
 function UserIcon({ className }: { className?: string }) {
   return (
@@ -23,6 +25,7 @@ function UserIcon({ className }: { className?: string }) {
 
 export function AuthButton() {
   const { user, loading } = useAuth();
+  const avatar = useProviderAvatar(user?.id ?? null);
 
   if (loading) {
     return (
@@ -35,9 +38,21 @@ export function AuthButton() {
       <Link
         href="/account"
         title="Account"
-        className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-zinc-900/80 text-sm font-bold text-zinc-200 transition-colors hover:border-red-500/40 hover:text-red-300"
+        className="flex h-9 w-9 items-center justify-center overflow-hidden rounded-full border border-white/10 bg-zinc-900/80 text-sm font-bold text-zinc-200 transition-colors hover:border-red-500/40 hover:text-red-300"
       >
-        {user.email?.charAt(0).toUpperCase() ?? "U"}
+        {avatar?.url ? (
+          <Image
+            src={avatar.url}
+            alt={user.email ?? "Account"}
+            width={36}
+            height={36}
+            className="h-full w-full object-cover"
+          />
+        ) : (
+          <span className="flex h-full w-full items-center justify-center">
+            {user.email?.charAt(0).toUpperCase() ?? "U"}
+          </span>
+        )}
       </Link>
     );
   }

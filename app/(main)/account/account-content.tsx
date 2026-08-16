@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams, useRouter } from "next/navigation";
-import { useAuth } from "@/lib/auth";
+import { useAuth, getDisplayName } from "@/lib/auth";
 import { LoadingIcon } from "@/components/LoadingIcon";
 import { syncNow } from "@/lib/sync";
 import { useProviderAvatar } from "@/lib/use-provider-avatar";
@@ -142,7 +142,7 @@ function SyncIcon({ className = "h-3.5 w-3.5" }: { className?: string }) {
 }
 
 export default function AccountContent() {
-  const { user, loading, signOut } = useAuth();
+  const { user, loading, signOut, updateDisplayName } = useAuth();
   const router = useRouter();
   const avatar = useProviderAvatar(user?.id ?? null);
   const searchParams = useSearchParams();
@@ -157,6 +157,13 @@ export default function AccountContent() {
   const [syncing, setSyncing] = useState(false);
   const [syncResult, setSyncResult] = useState<string | null>(null);
   const [lastSummary, setLastSummary] = useState<SyncSummary | null>(null);
+
+  const [editingName, setEditingName] = useState(false);
+  const [nameValue, setNameValue] = useState("");
+  const [nameSaving, setNameSaving] = useState(false);
+  const [nameError, setNameError] = useState<string | null>(null);
+
+  const displayName = getDisplayName(user);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 30_000);
@@ -263,7 +270,7 @@ export default function AccountContent() {
                 />
               ) : (
                 <span className="flex h-full w-full items-center justify-center">
-                  {user.email?.charAt(0).toUpperCase() ?? "U"}
+                  {(displayName ?? user.email ?? "U").charAt(0).toUpperCase()}
                 </span>
               )}
             </span>
@@ -271,10 +278,91 @@ export default function AccountContent() {
               <h1 className="text-2xl font-extrabold tracking-tight text-white md:text-3xl">
                 Account
               </h1>
-              <p className="mt-0.5 text-sm text-zinc-400">
-                Signed in as{" "}
-                <span className="font-semibold text-zinc-200">{user.email}</span>
-              </p>
+              {editingName ? (
+                <form
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    setNameSaving(true);
+                    setNameError(null);
+                    void updateDisplayName(nameValue).then(({ error }) => {
+                      setNameSaving(false);
+                      if (error) {
+                        setNameError(error);
+                      } else {
+                        setEditingName(false);
+                      }
+                    });
+                  }}
+                  className="mt-0.5 flex items-center gap-2"
+                >
+                  <input
+                    autoFocus
+                    value={nameValue}
+                    onChange={(e) => setNameValue(e.target.value)}
+                    className="w-48 rounded-lg border border-zinc-700 bg-zinc-800 px-2 py-0.5 text-sm text-zinc-100 outline-none focus:border-zinc-500"
+                    placeholder="Display name"
+                  />
+                  <button
+                    type="submit"
+                    disabled={nameSaving}
+                    className="text-xs font-semibold text-emerald-400 hover:text-emerald-300"
+                  >
+                    {nameSaving ? "Saving…" : "Save"}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingName(false);
+                      setNameError(null);
+                    }}
+                    className="text-xs font-semibold text-zinc-500 hover:text-zinc-300"
+                  >
+                    Cancel
+                  </button>
+                  {nameError && (
+                    <span className="text-xs text-red-400">{nameError}</span>
+                  )}
+                </form>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNameValue(displayName ?? "");
+                    setEditingName(true);
+                    setNameError(null);
+                  }}
+                  className="mt-0.5 flex items-center gap-1.5 text-sm text-zinc-400 transition-colors hover:text-zinc-200"
+                >
+                  {displayName ? (
+                    <>
+                      <span className="font-semibold text-zinc-200">
+                        {displayName}
+                      </span>
+                      <span className="text-zinc-600">·</span>
+                      <span>{user.email}</span>
+                    </>
+                  ) : (
+                    <span>
+                      Signed in as{" "}
+                      <span className="font-semibold text-zinc-200">
+                        {user.email}
+                      </span>
+                    </span>
+                  )}
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-3 w-3 text-zinc-600"
+                    aria-hidden
+                  >
+                    <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                  </svg>
+                </button>
+              )}
             </div>
           </div>
         </header>

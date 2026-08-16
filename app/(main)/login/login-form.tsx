@@ -27,6 +27,24 @@ function EnvelopeIcon({ className }: { className?: string }) {
   );
 }
 
+function PersonIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <circle cx="12" cy="8" r="4" />
+      <path d="M20 21a8 8 0 0 0-16 0" />
+    </svg>
+  );
+}
+
 function LockIcon({ className }: { className?: string }) {
   return (
     <svg
@@ -54,6 +72,7 @@ export default function LoginForm() {
   const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [displayName, setDisplayName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -67,7 +86,7 @@ export default function LoginForm() {
       const { error } =
         mode === "signin"
           ? await signIn(email, password)
-          : await signUp(email, password);
+          : await signUp(email, password, displayName || undefined);
       if (error) {
         setError(error);
         return;
@@ -214,6 +233,19 @@ export default function LoginForm() {
               className="w-full rounded-xl border border-zinc-800 bg-zinc-900/70 py-3 pl-11 pr-4 text-base text-zinc-100 placeholder-zinc-500 outline-none transition-colors focus:border-zinc-600"
             />
           </label>
+          {mode === "signup" && (
+            <label className="relative block">
+              <PersonIcon className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
+              <input
+                type="text"
+                autoComplete="name"
+                placeholder="Display name (optional)"
+                value={displayName}
+                onChange={(event) => setDisplayName(event.target.value)}
+                className="w-full rounded-xl border border-zinc-800 bg-zinc-900/70 py-3 pl-11 pr-4 text-base text-zinc-100 placeholder-zinc-500 outline-none transition-colors focus:border-zinc-600"
+              />
+            </label>
+          )}
           <label className="relative block">
             <LockIcon className="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500" />
             <input

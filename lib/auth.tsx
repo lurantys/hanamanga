@@ -24,14 +24,25 @@ export function clearLocalData(): void {
   invalidateScanlatorPreference();
 }
 
+export function getDisplayName(user: User | null): string | null {
+  if (!user) return null;
+  const meta = user.user_metadata ?? {};
+  return (meta.display_name as string) || (meta.full_name as string) || null;
+}
+
 type AuthContextValue = {
   session: Session | null;
   user: User | null;
   loading: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
-  signUp: (email: string, password: string) => Promise<{ error: string | null }>;
+  signUp: (
+    email: string,
+    password: string,
+    displayName?: string,
+  ) => Promise<{ error: string | null }>;
   signInWithGoogle: (next?: string) => Promise<{ error: string | null }>;
   signOut: () => Promise<void>;
+  updateDisplayName: (name: string) => Promise<{ error: string | null }>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -87,12 +98,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       return { error: error?.message ?? null };
     },
-    signUp: async (email, password) => {
+    signUp: async (email, password, displayName) => {
       const { error } = await supabase.auth.signUp({
         email,
         password,
         options: {
           emailRedirectTo: `${window.location.origin}/login`,
+          ...(displayName ? { data: { display_name: displayName } } : {}),
         },
       });
       return { error: error?.message ?? null };
@@ -112,6 +124,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signOut: async () => {
       await supabase.auth.signOut();
       clearLocalData();
+    },
+    updateDisplayName: async (name) => {
+      const { error } = await supabase.auth.updateUser({
+        data: { display_name: name },
+      });
+      return { error: error?.message ?? null };
     },
   };
 

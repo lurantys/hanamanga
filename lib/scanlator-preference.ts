@@ -36,6 +36,10 @@ export function usePreferredScanlator(mangaId: string): string | null {
   );
 }
 
+export function invalidateScanlatorPreference(): void {
+  store.invalidate();
+}
+
 /** Replace the entire preference map (used by sync/import). */
 export function replaceScanlatorPreference(map: ScanlatorMap): void {
   store.setSnapshot(map);

@@ -6,6 +6,7 @@ import type { AtsuChapter, AtsuScanlator } from "@/lib/atsu";
 import { atsuChapterLabel } from "@/lib/atsu";
 import { markAllRead, useReadChapters } from "@/lib/read-state";
 import { setPreferredScanlator, usePreferredScanlator } from "@/lib/scanlator-preference";
+import { LoadingIcon } from "./LoadingIcon";
 
 type AtsuChapterListProps = {
   mangaId: string;
@@ -301,10 +302,7 @@ export function AtsuChapterList({
 
       {hasMore && (
         <div ref={sentinelRef} className="flex items-center justify-center py-4">
-          <span
-            className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-600 border-t-zinc-200"
-            aria-hidden
-          />
+          <LoadingIcon className="h-8 w-8" />
         </div>
       )}
     </div>

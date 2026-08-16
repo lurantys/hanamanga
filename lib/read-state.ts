@@ -93,6 +93,11 @@ export function subscribeReadState(onChange: () => void): () => void {
   return store.subscribe(onChange);
 }
 
+export function invalidateReadState(): void {
+  setCache.clear();
+  store.invalidate();
+}
+
 /** Replace the entire read-state map (used by sync/import). */
 export function replaceReadState(map: ReadMap): void {
   setCache.clear();

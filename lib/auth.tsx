@@ -4,6 +4,25 @@ import { createContext, useContext, useEffect, useState, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Session, User, AuthChangeEvent } from "@supabase/supabase-js";
 import { handleAuthStateChange } from "@/lib/sync";
+import { invalidateLibrary } from "@/lib/library";
+import { invalidateProgressCache, invalidateContinueHero } from "@/lib/progress";
+import { invalidateReadState } from "@/lib/read-state";
+import { invalidateReaderSettings } from "@/lib/reader-settings";
+import { invalidateScanlatorPreference } from "@/lib/scanlator-preference";
+
+export function clearLocalData(): void {
+  if (typeof window === "undefined") return;
+  for (let i = window.localStorage.length - 1; i >= 0; i--) {
+    const key = window.localStorage.key(i);
+    if (key?.startsWith("hana:")) window.localStorage.removeItem(key);
+  }
+  invalidateLibrary();
+  invalidateProgressCache();
+  invalidateContinueHero();
+  invalidateReadState();
+  invalidateReaderSettings();
+  invalidateScanlatorPreference();
+}
 
 type AuthContextValue = {
   session: Session | null;
@@ -81,7 +100,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signInWithGoogle: async (next) => {
       const target = next && next.startsWith("/") && !next.startsWith("//")
         ? next
-        : "/account";
+        : "/";
       const { error } = await supabase.auth.signInWithOAuth({
         provider: "google",
         options: {
@@ -92,6 +111,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     },
     signOut: async () => {
       await supabase.auth.signOut();
+      clearLocalData();
     },
   };
 

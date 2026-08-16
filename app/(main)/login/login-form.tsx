@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/lib/auth";
+import { LoadingIcon } from "@/components/LoadingIcon";
 
 type Mode = "signin" | "signup";
 
@@ -44,25 +45,11 @@ function LockIcon({ className }: { className?: string }) {
   );
 }
 
-function Spinner({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      className={`animate-spin ${className ?? "h-4 w-4"}`}
-      aria-hidden
-    >
-      <circle cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" className="opacity-25" />
-      <path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
-    </svg>
-  );
-}
-
 export default function LoginForm() {
   const { signIn, signUp, signInWithGoogle, loading: authLoading } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const next = searchParams.get("next") ?? "/account";
+  const next = searchParams.get("next") ?? "/";
 
   const [mode, setMode] = useState<Mode>("signin");
   const [email, setEmail] = useState("");
@@ -248,7 +235,7 @@ export default function LoginForm() {
           >
             {busy ? (
               <>
-                <Spinner />
+                <LoadingIcon className="h-5 w-5" />
                 {mode === "signin" ? "Signing in…" : "Creating account…"}
               </>
             ) : mode === "signin" ? (

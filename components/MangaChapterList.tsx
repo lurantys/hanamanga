@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ChapterReadCheck } from "./ChapterReadCheck";
+import { LoadingIcon } from "./LoadingIcon";
 import type { Chapter } from "@/lib/mangadex";
 
 type VolumeGroup = { volume: string | null; chapters: Chapter[] };
@@ -201,10 +202,7 @@ export function MangaChapterList({ mangaId, volumes }: MangaChapterListProps) {
 
       {hasMore ? (
         <div ref={sentinelRef} className="mt-6 flex items-center justify-center">
-          <span
-            className="h-6 w-6 animate-spin rounded-full border-2 border-zinc-600 border-t-zinc-200"
-            aria-hidden
-          />
+          <LoadingIcon className="h-8 w-8" />
         </div>
       ) : (
         <p className="mt-6 text-center text-sm text-zinc-500">

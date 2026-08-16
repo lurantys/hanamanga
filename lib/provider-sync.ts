@@ -7,7 +7,9 @@ import {
   type AniListMedia,
 } from "@/lib/anilist";
 import type { Manga } from "@/lib/mangadex";
+import { fetchCatalogManga } from "@/lib/catalog";
 import { normalizeTitleKey, titleHits } from "@/lib/title";
+import { parseMangaId } from "@/lib/source";
 
 export type ProviderName = "anilist" | "mal";
 
@@ -491,7 +493,7 @@ async function pullFromProvider(
     upserts.push({
       user_id: userId,
       manga_id: targetId,
-      manga: entry.manga,
+      manga: existing?.manga ?? entry.manga,
       added_at: existing?.added_at ?? Date.now(),
       provider_state: {
         ...state,
@@ -699,9 +701,14 @@ async function dedupeByAl(
     const keeper =
       component.find((r) => keepIds.has(r.manga_id)) ??
       component.reduce((best, r) => {
-        const score = (candidate: LibraryRow) =>
-          (progressIds.has(candidate.manga_id) || readIds.has(candidate.manga_id) ? 2 : 0) +
-          (candidate.provider_state && Object.keys(candidate.provider_state).length ? 1 : 0);
+        const score = (candidate: LibraryRow) => {
+          const parsed = parseMangaId(candidate.manga_id);
+          return (
+            (parsed.source === "mangadex" ? 4 : 0) +
+            (progressIds.has(candidate.manga_id) || readIds.has(candidate.manga_id) ? 2 : 0) +
+            (candidate.provider_state && Object.keys(candidate.provider_state).length ? 1 : 0)
+          );
+        };
         const a = score(r);
         const b = score(best);
         if (a !== b) return a > b ? r : best;
@@ -763,11 +770,43 @@ async function syncProvider(
   return { provider, ...pushResult, ...pullResult, error };
 }
 
+/**
+ * Repair library rows whose stored manga blob no longer matches their
+ * canonical id. A buggy sync step previously overwrote the blob with the
+ * provider's AniList record (id becomes "al:…") while keeping the original
+ * MangaDex manga_id, silently swapping full series for one-shots.
+ */
+async function repairLibraryBlobs(
+  userId: string,
+  library: Map<string, LibraryRow>,
+): Promise<void> {
+  const supabase = await createClient();
+  const rows = [...library.values()];
+  for (const row of rows) {
+    const manga = row.manga as Manga | null | undefined;
+    if (!manga || manga.id === row.manga_id) continue;
+    const { source } = parseMangaId(row.manga_id);
+    if (source !== "mangadex") continue;
+    let canonical: Manga;
+    try {
+      canonical = await fetchCatalogManga(row.manga_id, { withStats: false });
+    } catch {
+      continue;
+    }
+    await supabase
+      .from("hana_library")
+      .update({ manga: canonical })
+      .eq("user_id", userId)
+      .eq("manga_id", row.manga_id);
+  }
+}
+
 export async function syncProviders(userId: string): Promise<SyncSummary> {
   const supabase = await createClient();
 
   try {
     const library = await readLibrary(userId);
+    await repairLibraryBlobs(userId, library);
     await dedupeByAl(userId, library, new Set<string>());
   } catch (error) {
     console.error("[provider-sync] library dedupe failed", error);

@@ -241,12 +241,16 @@ async function pullLibrary(userId: string): Promise<void> {
   const local = getLibrarySnapshot();
   const merged: LibraryMap = { ...local };
   for (const row of data as LibraryRow[]) {
+    const manga = row.manga as LibraryMap[string]["manga"];
+    const normalized = manga && manga.id !== row.manga_id ? { ...manga, id: row.manga_id } : manga;
     const existing = local[row.manga_id];
     if (!existing || row.added_at > existing.addedAt) {
       merged[row.manga_id] = {
-        manga: row.manga as LibraryMap[string]["manga"],
+        manga: normalized,
         addedAt: row.added_at,
       };
+    } else if (existing.manga.id !== row.manga_id) {
+      merged[row.manga_id] = { ...existing, manga: normalized };
     }
   }
   if (!sameJson(local, merged)) replaceLibrary(merged);

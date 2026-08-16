@@ -114,9 +114,10 @@ export async function searchCatalog(
     searchAtsu(query, 12).catch(() => [] as AtsuCandidate[]),
   ]);
 
-  const alIds = new Set<string>();
+  const alTitleKeys = new Set<string>();
   for (const manga of al.data) {
-    if (manga.links?.al) alIds.add(manga.links.al);
+    const key = manga.links?.al ? `al:${manga.links.al}` : normalizeTitleKey(manga.title);
+    if (key) alTitleKeys.add(key);
   }
 
   const seen = new Set<string>();
@@ -139,12 +140,11 @@ export async function searchCatalog(
     ) {
       continue;
     }
-    if (candidate.anilistId && alIds.has(String(candidate.anilistId))) continue;
     const manga = atsuToManga(candidate);
     const key = manga.links?.al
       ? `al:${manga.links.al}`
       : normalizeTitleKey(manga.title);
-    if (!key || seen.has(key)) continue;
+    if (!key || seen.has(key) || alTitleKeys.has(key)) continue;
     seen.add(key);
     data.push(manga);
   }

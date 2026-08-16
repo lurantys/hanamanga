@@ -13,7 +13,12 @@ import {
 } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { getProgress, saveContinueHero, saveProgress } from "@/lib/progress";
+import {
+  getProgress,
+  PROGRESS_EVENT,
+  saveContinueHero,
+  saveProgress,
+} from "@/lib/progress";
 import {
   DEFAULT_READER_SETTINGS,
   getReaderSettings,
@@ -322,6 +327,8 @@ export function Reader({
     mangaId: string;
     chapterId: string;
   } | null>(null);
+  const lastRestoredAtRef = useRef(0);
+  const chapterInitRef = useRef(false);
 
   if (
     prevChapter?.mangaId !== mangaId ||
@@ -343,6 +350,12 @@ export function Reader({
     setPagedIndex(initial);
     setProgress(0);
   }
+
+  useEffect(() => {
+    const saved = getProgress(mangaId);
+    lastRestoredAtRef.current = saved?.updatedAt ?? 0;
+    chapterInitRef.current = false;
+  }, [mangaId, currentChapterId]);
 
   const listRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -461,6 +474,7 @@ export function Reader({
       if (value >= 0.95) markChapterRead(mangaId, currentChapterId);
       window.clearTimeout(saveTimer);
       saveTimer = window.setTimeout(() => {
+        if (!userActiveRef.current) return;
         const index = chapters.findIndex(
           (chapter) => chapter.id === currentChapterId,
         );
@@ -522,6 +536,10 @@ export function Reader({
 
   useEffect(() => {
     if (mode !== "paged") return;
+    if (!chapterInitRef.current) {
+      chapterInitRef.current = true;
+      return;
+    }
     const fraction = pages.length > 0 ? (pagedIndex + 1) / pages.length : 0;
     const index = chapters.findIndex(
       (chapter) => chapter.id === currentChapterId,
@@ -575,6 +593,7 @@ export function Reader({
     if (!saved || saved.chapterId !== currentChapterId || !saved.scrollFraction) {
       return;
     }
+    lastRestoredAtRef.current = saved.updatedAt;
     const restore = () => {
       const doc = document.documentElement;
       const max = doc.scrollHeight - doc.clientHeight;
@@ -589,6 +608,37 @@ export function Reader({
       window.clearTimeout(fallback);
     };
   }, [mangaId, currentChapterId, mode]);
+
+  useEffect(() => {
+    const onProgress = () => {
+      if (userActiveRef.current) return;
+      const saved = getProgress(mangaId);
+      if (
+        !saved ||
+        saved.chapterId !== currentChapterId ||
+        !saved.scrollFraction
+      ) {
+        return;
+      }
+      if (saved.updatedAt <= lastRestoredAtRef.current) return;
+      lastRestoredAtRef.current = saved.updatedAt;
+      if (mode === "paged") {
+        chapterInitRef.current = false;
+        setPagedIndex(
+          Math.min(
+            pages.length - 1,
+            Math.round(saved.scrollFraction * (pages.length - 1)),
+          ),
+        );
+      } else {
+        const doc = document.documentElement;
+        const max = doc.scrollHeight - doc.clientHeight;
+        if (max > 0) window.scrollTo(0, saved.scrollFraction * max);
+      }
+    };
+    window.addEventListener(PROGRESS_EVENT, onProgress);
+    return () => window.removeEventListener(PROGRESS_EVENT, onProgress);
+  }, [mode, mangaId, currentChapterId, pages.length]);
 
   useEffect(() => {
     if (mode !== "webtoon") return;

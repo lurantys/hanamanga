@@ -452,7 +452,8 @@ export function Reader({
   const setControls = useCallback((visible: boolean) => {
     controlsVisibleRef.current = visible;
     setControlsVisible(visible);
-  }, []);
+    if (isMobile) setUiHidden(!visible);
+  }, [isMobile]);
 
   const showControls = useCallback(() => {
     if (isMobile) {
@@ -462,11 +463,17 @@ export function Reader({
     }
   }, [isMobile, setControls]);
 
+  const hideChrome = useCallback(() => {
+    if (!isMobile) return;
+    window.clearTimeout(controlsTimerRef.current);
+    setControls(false);
+  }, [isMobile, setControls]);
+
   useEffect(() => {
     if (mode !== "webtoon") return;
     let saveTimer = 0;
     function onScroll() {
-      showControls();
+      hideChrome();
       const doc = document.documentElement;
       const max = doc.scrollHeight - doc.clientHeight;
       const value = max > 0 ? Math.min(1, Math.max(0, doc.scrollTop / max)) : 0;
@@ -529,7 +536,7 @@ export function Reader({
     chapters,
     scheduleAdvance,
     stopAdvance,
-    showControls,
+    hideChrome,
     mode,
     settings.autoAdvance,
   ]);
@@ -719,20 +726,20 @@ export function Reader({
   const pageNext = useCallback(() => {
     if (pagedIndex < pages.length - 1) {
       setPagedIndex(pagedIndex + 1);
-      showControls();
+      hideChrome();
     } else if (nextHrefRef.current) {
       scheduleAdvance();
     }
-  }, [pagedIndex, pages.length, scheduleAdvance, showControls]);
+  }, [pagedIndex, pages.length, scheduleAdvance, hideChrome]);
 
   const pagePrev = useCallback(() => {
     if (pagedIndex > 0) {
       setPagedIndex(pagedIndex - 1);
-      showControls();
+      hideChrome();
     } else if (prevHref) {
       router.push(prevHref);
     }
-  }, [pagedIndex, prevHref, router, showControls]);
+  }, [pagedIndex, prevHref, router, hideChrome]);
 
   const zoneNext = useCallback(() => {
     if (settings.direction === "rtl") pagePrev();

@@ -28,6 +28,17 @@ export const metadata: Metadata = {
     "Discover, read, and track manga, manhwa, manhua, and webtoons — beautifully, on any device.",
   applicationName: "Hana",
   keywords: ["manga", "reader", "mangadex", "anime", "comics"],
+  appleWebApp: {
+    capable: true,
+    title: "Hana",
+    statusBarStyle: "black-translucent",
+  },
+  icons: {
+    apple: "/apple-touch-icon.png",
+  },
+  other: {
+    "apple-mobile-web-app-capable": "yes",
+  },
   openGraph: {
     type: "website",
     url: SITE_URL,

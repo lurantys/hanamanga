@@ -114,6 +114,11 @@ export async function searchCatalog(
     searchAtsu(query, 12).catch(() => [] as AtsuCandidate[]),
   ]);
 
+  const alIds = new Set<string>();
+  for (const manga of al.data) {
+    if (manga.links?.al) alIds.add(manga.links.al);
+  }
+
   const seen = new Set<string>();
   const data: Manga[] = [];
 
@@ -134,6 +139,7 @@ export async function searchCatalog(
     ) {
       continue;
     }
+    if (candidate.anilistId && alIds.has(String(candidate.anilistId))) continue;
     const manga = atsuToManga(candidate);
     const key = manga.links?.al
       ? `al:${manga.links.al}`

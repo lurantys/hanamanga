@@ -57,14 +57,17 @@ export type WeebChapter = {
   publishedAt: string | null;
 };
 
-async function weebGet(url: string): Promise<string> {
+async function weebGet(
+  url: string,
+  headers: Record<string, string> = {},
+): Promise<string> {
   const cached = cacheStore.get(url);
   if (cached && cached.expires > Date.now()) {
     return cached.promise as Promise<string>;
   }
   const promise = (async () => {
     const res = await fetch(url, {
-      headers: { "User-Agent": USER_AGENT },
+      headers: { "User-Agent": USER_AGENT, ...headers },
       signal: AbortSignal.timeout(15_000),
     });
     if (!res.ok) {
@@ -166,10 +169,16 @@ export async function fetchWeebChapters(
   manga: WeebManga,
 ): Promise<WeebChapter[]> {
   const url = `${manga.url}/full-chapter-list`;
-  let html = await weebGet(url);
+  let html = await weebGet(url, {
+    "HX-Request": "true",
+    "HX-Target": "#chapter-list",
+  });
   if (!html.includes("hover:bg-base-300 flex-1 flex items-center p-2")) {
     await sleep(700);
-    html = await weebGet(url);
+    html = await weebGet(url, {
+      "HX-Request": "true",
+      "HX-Target": "#chapter-list",
+    });
   }
   const chapters: WeebChapter[] = [];
   const rowRe =

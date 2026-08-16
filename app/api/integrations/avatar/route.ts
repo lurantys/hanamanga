@@ -61,7 +61,10 @@ export async function GET() {
 
   const cached = avatarCache.get(userId);
   if (cached && cached.expires > Date.now()) {
-    return NextResponse.json({ provider: cached.provider, url: cached.url });
+    return NextResponse.json(
+      { provider: cached.provider, url: cached.url },
+      { headers: { "Cache-Control": "private, max-age=3600, stale-while-revalidate=86400" } },
+    );
   }
 
   const { data } = await supabase
@@ -72,11 +75,13 @@ export async function GET() {
   const anilist = rows.find((row) => row.provider === "anilist") ?? null;
   const mal = rows.find((row) => row.provider === "mal") ?? null;
 
+  const cacheHeaders = { "Cache-Control": "private, max-age=3600, stale-while-revalidate=86400" };
+
   if (anilist) {
     const url = await fetchAniListAvatar(anilist.access_token);
     if (url) {
       avatarCache.set(userId, { provider: "anilist", url, expires: Date.now() + CACHE_TTL_MS });
-      return NextResponse.json({ provider: "anilist", url });
+      return NextResponse.json({ provider: "anilist", url }, { headers: cacheHeaders });
     }
   }
   if (mal) {
@@ -84,7 +89,7 @@ export async function GET() {
     const url = await fetchMalAvatar(token);
     if (url) {
       avatarCache.set(userId, { provider: "mal", url, expires: Date.now() + CACHE_TTL_MS });
-      return NextResponse.json({ provider: "mal", url });
+      return NextResponse.json({ provider: "mal", url }, { headers: cacheHeaders });
     }
   }
 

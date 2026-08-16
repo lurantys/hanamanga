@@ -1130,7 +1130,7 @@ export function Reader({
 
           <div
             ref={contentRef}
-            className="mx-auto mt-5 flex max-w-4xl flex-col gap-2 px-3 sm:px-4"
+            className="mx-auto mt-5 flex max-w-4xl flex-col px-3 sm:px-4"
             onClick={toggleControls}
             style={{
               transform: `scale(${settings.zoom})`,
@@ -1151,7 +1151,7 @@ export function Reader({
                     width={page.width ?? undefined}
                     height={page.height ?? undefined}
                     loading={index === 0 ? "eager" : "lazy"}
-                    className="h-auto w-full rounded-lg shadow-2xl shadow-zinc-950/60 ring-1 ring-white/5"
+                    className="block h-auto w-full"
                     placeholderClassName="min-h-[60vh]"
                   />
                 </div>

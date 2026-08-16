@@ -114,19 +114,16 @@ export async function searchCatalog(
     searchAtsu(query, 12).catch(() => [] as AtsuCandidate[]),
   ]);
 
-  const alTitleKeys = new Set<string>();
-  for (const manga of al.data) {
-    const key = manga.links?.al ? `al:${manga.links.al}` : normalizeTitleKey(manga.title);
-    if (key) alTitleKeys.add(key);
-  }
-
   const seen = new Set<string>();
   const data: Manga[] = [];
 
   for (const manga of al.data) {
-    const key = manga.links?.al ? `al:${manga.links.al}` : normalizeTitleKey(manga.title);
-    if (!key || seen.has(key)) continue;
-    seen.add(key);
+    const idKey = manga.links?.al ? `al:${manga.links.al}` : null;
+    const titleKey = normalizeTitleKey(manga.title);
+    if (idKey && seen.has(idKey)) continue;
+    if (titleKey && seen.has(titleKey)) continue;
+    if (idKey) seen.add(idKey);
+    if (titleKey) seen.add(titleKey);
     data.push(manga);
   }
 
@@ -141,11 +138,12 @@ export async function searchCatalog(
       continue;
     }
     const manga = atsuToManga(candidate);
-    const key = manga.links?.al
-      ? `al:${manga.links.al}`
-      : normalizeTitleKey(manga.title);
-    if (!key || seen.has(key) || alTitleKeys.has(key)) continue;
-    seen.add(key);
+    const idKey = manga.links?.al ? `al:${manga.links.al}` : null;
+    const titleKey = normalizeTitleKey(manga.title);
+    if (idKey && seen.has(idKey)) continue;
+    if (titleKey && seen.has(titleKey)) continue;
+    if (idKey) seen.add(idKey);
+    if (titleKey) seen.add(titleKey);
     data.push(manga);
   }
 

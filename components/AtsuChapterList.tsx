@@ -32,11 +32,13 @@ export function AtsuChapterList({
   const [revealed, setRevealed] = useState(BATCH);
   const [jump, setJump] = useState("");
   const [scrollTarget, setScrollTarget] = useState<string | null>(null);
+  const [highlightId, setHighlightId] = useState<string | null>(null);
 
   const readChapters = useReadChapters(mangaId);
   const itemRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
   const sentinelRef = useRef<HTMLDivElement>(null);
   const loadingRef = useRef(false);
+  const highlightTimerRef = useRef(0);
 
   const groupChapters = useMemo(
     () =>
@@ -89,6 +91,22 @@ export function AtsuChapterList({
     if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [scrollTarget, orderedChapters]);
 
+  useEffect(
+    () => () => {
+      if (highlightTimerRef.current) window.clearTimeout(highlightTimerRef.current);
+    },
+    [],
+  );
+
+  const flashChapter = (chapterId: string) => {
+    setHighlightId(chapterId);
+    if (highlightTimerRef.current) window.clearTimeout(highlightTimerRef.current);
+    highlightTimerRef.current = window.setTimeout(
+      () => setHighlightId(null),
+      2200,
+    );
+  };
+
   const goToChapter = () => {
     const target = Number(jump.trim());
     if (!Number.isFinite(target)) return;
@@ -96,8 +114,10 @@ export function AtsuChapterList({
       (chapter) => chapter.number === target,
     );
     if (index === -1) return;
+    const chapterId = orderedChapters[index].id;
     if (index + 1 > revealed) setRevealed(index + 1);
-    setScrollTarget(orderedChapters[index].id);
+    setScrollTarget(chapterId);
+    flashChapter(chapterId);
   };
 
   const startFromBeginning = () => {
@@ -106,6 +126,7 @@ export function AtsuChapterList({
     setOrder("oldest");
     setRevealed(BATCH);
     setScrollTarget(firstId);
+    flashChapter(firstId);
   };
 
   const hasMultipleScanlators = scanlators.length > 1;
@@ -253,7 +274,11 @@ export function AtsuChapterList({
                   itemRefs.current[chapter.id] = el;
                 }}
                 href={`/read/${mangaId}/${chapter.id}`}
-                className={`group flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-zinc-900/60 px-4 py-3 backdrop-blur-xl transition-colors ${
+                className={`group flex items-center justify-between gap-3 rounded-xl border px-4 py-3 backdrop-blur-xl transition-colors ${
+                  highlightId === chapter.id
+                    ? "animate-chapter-highlight border-red-400/50 bg-red-500/20"
+                    : "border-white/10 bg-zinc-900/60"
+                } ${
                   isRead
                     ? "hover:border-emerald-400/30"
                     : "hover:border-emerald-400/40"

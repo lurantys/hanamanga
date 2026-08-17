@@ -114,6 +114,41 @@ h3 {
   animation: sheet-fade-in 0.2s ease-out both;
 }
 
+@keyframes chapter-highlight {
+  0% {
+    background-color: rgba(248, 113, 113, 0.28);
+    border-color: rgba(248, 113, 113, 0.55);
+  }
+  100% {
+    background-color: rgba(248, 113, 113, 0);
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+}
+
+@utility animate-chapter-highlight {
+  animation: chapter-highlight 1.8s ease-out both;
+}
+
+@keyframes card-pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@utility animate-card-pop-in {
+  transform-origin: bottom center;
+  animation: card-pop-in 0.18s ease-out both;
+}
+
+:root {
+  --reader-page-gap: 2rem;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .animate-kenburns,
   .animate-hero-in,

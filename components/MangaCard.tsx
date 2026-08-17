@@ -15,6 +15,7 @@ export function MangaCard({ manga, className = "" }: MangaCardProps) {
   const genres = (manga.genres ?? []).slice(0, 2);
   const rating = manga.rating ?? 0;
   const match = Math.round(rating * 10);
+  const isTopRated = rating >= 9;
   const [loaded, setLoaded] = useState(false);
 
   return (
@@ -84,8 +85,14 @@ export function MangaCard({ manga, className = "" }: MangaCardProps) {
         <div className="mt-1 flex items-center gap-1.5">
           {rating > 0 && (
             <>
-              <StarRating />
-              <span className="text-xs font-semibold text-zinc-300">
+              <StarRating
+                className={isTopRated ? "text-amber-300" : "text-white"}
+              />
+              <span
+                className={`text-xs font-semibold ${
+                  isTopRated ? "text-amber-300" : "text-zinc-300"
+                }`}
+              >
                 {rating.toFixed(1)}
               </span>
             </>

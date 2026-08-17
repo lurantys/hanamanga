@@ -1,4 +1,4 @@
-export type ReaderMode = "webtoon" | "paged";
+export type ReaderMode = "webtoon" | "paged" | "twopage";
 export type ReaderDirection = "ltr" | "rtl";
 export type PageFit = "height" | "width";
 export type ImageFilter = "none" | "sepia";

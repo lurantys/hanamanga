@@ -10,6 +10,7 @@ import { LibraryButton } from "@/components/LibraryButton";
 import { PlayButton } from "@/components/PlayButton";
 import { ReadNowButton } from "@/components/ReadNowButton";
 import { StarRating } from "@/components/StarRating";
+import { externalLinks } from "@/lib/external-links";
 import {
   statusLabel,
   truncate,
@@ -131,8 +132,10 @@ export default async function MangaPage({ params }: MangaPageProps) {
 
   const rating = manga.rating ?? 0;
   const match = rating.toFixed(1);
+  const isTopRated = rating >= 9;
   const showRating =
     Boolean(manga.description) && rating > 0 && match !== "0.0";
+  const links = externalLinks(manga.links);
 
   const volumesByKey = new Map<string | null, Chapter[]>();
   for (const chapter of fallbackChapters) {
@@ -163,7 +166,7 @@ export default async function MangaPage({ params }: MangaPageProps) {
       </div>
 
       <div className="relative z-10 mx-auto -mt-52 max-w-5xl px-5 md:px-10">
-        <div className="flex flex-col gap-8 md:flex-row md:items-end">
+        <div className="flex flex-col gap-8 md:flex-row md:items-start">
           <div className="relative w-44 shrink-0 md:w-56">
             <div className="aspect-[2/3] overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 shadow-2xl shadow-zinc-950/70">
               {manga.coverUrl ? (
@@ -184,12 +187,30 @@ export default async function MangaPage({ params }: MangaPageProps) {
 
           <div className="flex-1 space-y-4 pb-2">
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
-              <span className="inline-flex items-center gap-2 rounded-md bg-emerald-500/15 px-2.5 py-1 text-sm font-bold text-emerald-400">
+              <span
+                className={`inline-flex items-center gap-2 rounded-md px-2.5 py-1 text-sm font-bold ${
+                  isTopRated
+                    ? "bg-amber-400/15 text-amber-300"
+                    : "bg-emerald-500/15 text-emerald-400"
+                }`}
+              >
                 {showRating ? `${match} / 10` : "New"}
               </span>
               <span className="rounded-md border border-zinc-500/60 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-zinc-200">
                 {statusLabel(manga.status)}
               </span>
+              {manga.type && (
+                <span className="rounded-md border border-zinc-500/60 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-zinc-200">
+                  {manga.type}
+                </span>
+              )}
+              {manga.source && manga.source !== "Manga" && (
+                <span className="rounded-md border border-zinc-500/60 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-zinc-200">
+                  {manga.source === "Original"
+                    ? "Original"
+                    : `${manga.source} adaptation`}
+                </span>
+              )}
               {manga.year && (
                 <span className="text-sm text-zinc-300">{manga.year}</span>
               )}
@@ -218,10 +239,41 @@ export default async function MangaPage({ params }: MangaPageProps) {
               </div>
             )}
 
+            {links.length > 0 && (
+              <div className="flex flex-wrap items-center gap-1.5">
+                <span className="text-[11px] font-semibold uppercase tracking-widest text-zinc-500">
+                  Also on
+                </span>
+                {links.map((link) => (
+                  <a
+                    key={link.key}
+                    href={link.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-zinc-800/60 px-2.5 py-0.5 text-xs font-medium text-zinc-200 transition-colors hover:border-white/30 hover:text-white"
+                  >
+                    {link.label}
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3" aria-hidden>
+                      <path d="M15 3h6v6" />
+                      <path d="M10 14 21 3" />
+                      <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+                    </svg>
+                  </a>
+                ))}
+              </div>
+            )}
+
             {showRating ? (
               <div className="flex items-center gap-1.5">
-                <StarRating sizeClass="h-4 w-4" />
-                <span className="text-sm font-semibold text-zinc-300">
+                <StarRating
+                  sizeClass="h-4 w-4"
+                  className={isTopRated ? "text-amber-300" : "text-white"}
+                />
+                <span
+                  className={`text-sm font-semibold ${
+                    isTopRated ? "text-amber-300" : "text-zinc-300"
+                  }`}
+                >
                   {rating.toFixed(1)}
                 </span>
                 <span className="text-sm text-zinc-500">/ 10</span>

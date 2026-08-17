@@ -24,6 +24,8 @@ export type AniListMedia = {
   startDate?: { year?: number | null } | null;
   chapters?: number | null;
   format?: string | null;
+  source?: string | null;
+  countryOfOrigin?: string | null;
   isAdult?: boolean | null;
   updatedAt?: number | null;
 };
@@ -43,6 +45,8 @@ export const ANILIST_MEDIA_FIELDS = /* GraphQL */ `
   startDate { year }
   chapters
   format
+  source
+  countryOfOrigin
   isAdult
   updatedAt
 `;
@@ -57,6 +61,10 @@ const LIST_QUERY = /* GraphQL */ `
     $status: MediaStatus
     $isAdult: Boolean
     $ids: [Int]
+    $countryOfOrigin: CountryCode
+    $startDate_greater: FuzzyDateInt
+    $startDate_lesser: FuzzyDateInt
+    $averageScore_greater: Int
   ) {
     Page(page: $page, perPage: $perPage) {
       pageInfo { total }
@@ -68,6 +76,10 @@ const LIST_QUERY = /* GraphQL */ `
         status: $status
         isAdult: $isAdult
         id_in: $ids
+        countryOfOrigin: $countryOfOrigin
+        startDate_greater: $startDate_greater
+        startDate_lesser: $startDate_lesser
+        averageScore_greater: $averageScore_greater
         format_not_in: [NOVEL, ONE_SHOT]
       ) {
         ${ANILIST_MEDIA_FIELDS}
@@ -247,6 +259,36 @@ function statusFromAniList(status?: string | null): string | undefined {
   }
 }
 
+function typeFromAniList(
+  format?: string | null,
+  country?: string | null,
+): Manga["type"] | undefined {
+  if (format === "NOVEL" || format === "ONE_SHOT") {
+    return format === "NOVEL" ? "Novel" : "One-shot";
+  }
+  if (country === "KR") return "Manhwa";
+  if (country === "CN") return "Manhua";
+  if (country === "JP") return "Manga";
+  return undefined;
+}
+
+function sourceFromAniList(source?: string | null): Manga["source"] | undefined {
+  switch (source) {
+    case "ORIGINAL":
+      return "Original";
+    case "MANGA":
+      return "Manga";
+    case "LIGHT_NOVEL":
+      return "Light novel";
+    case "WEB_NOVEL":
+      return "Web novel";
+    case "VISUAL_NOVEL":
+      return "Visual novel";
+    default:
+      return undefined;
+  }
+}
+
 export function anilistToManga(media: AniListMedia): Manga {
   const title =
     media.title?.english ??
@@ -282,6 +324,8 @@ export function anilistToManga(media: AniListMedia): Manga {
       : undefined,
     bannerUrl: media.bannerImage ?? null,
     links,
+    type: typeFromAniList(media.format, media.countryOfOrigin),
+    source: sourceFromAniList(media.source),
   };
 }
 
@@ -290,8 +334,13 @@ export async function fetchAniListList(opts: {
   offset?: number;
   sort?: AniListSort;
   genre?: string;
+  genres?: string[];
   status?: string;
   rating?: string;
+  origin?: string;
+  yearFrom?: number;
+  yearTo?: number;
+  minScore?: number;
 } = {}): Promise<MangaListResult> {
   const limit = opts.limit ?? 24;
   const offset = opts.offset ?? 0;
@@ -301,11 +350,20 @@ export async function fetchAniListList(opts: {
     perPage: limit,
     sort: [SORT_TO_ANILIST[opts.sort ?? "popular"]],
   };
-  if (opts.genre) variables.genre_in = [opts.genre];
+  const genres = opts.genres?.length
+    ? opts.genres
+    : opts.genre
+      ? [opts.genre]
+      : [];
+  if (genres.length) variables.genre_in = genres;
   if (opts.status && STATUS_TO_ANILIST[opts.status]) {
     variables.status = STATUS_TO_ANILIST[opts.status];
   }
   if (opts.rating !== "erotica") variables.isAdult = false;
+  if (opts.origin) variables.countryOfOrigin = opts.origin;
+  if (opts.yearFrom) variables.startDate_greater = opts.yearFrom * 10000;
+  if (opts.yearTo) variables.startDate_lesser = opts.yearTo * 10000 + 1231;
+  if (opts.minScore) variables.averageScore_greater = opts.minScore * 10;
 
   const data = await queryAnilist<{
     Page?: { pageInfo?: { total?: number | null }; media?: AniListMedia[] | null };

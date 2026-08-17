@@ -2,8 +2,11 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useState } from "react";
 import {
   GENRES,
+  MIN_SCORE_OPTIONS,
+  ORIGIN_OPTIONS,
   RATING_OPTIONS,
   SORTS,
   STATUS_OPTIONS,
@@ -12,27 +15,43 @@ import {
 
 type BrowseFiltersProps = {
   sort: SortKey;
-  genre?: string;
+  genres: string[];
   status?: string;
   rating?: string;
+  origin?: string;
+  yearFrom?: string;
+  yearTo?: string;
+  minScore?: string;
 };
 
 function hrefFor({
   sort,
-  genre,
+  genres,
   status,
   rating,
+  origin,
+  yearFrom,
+  yearTo,
+  minScore,
 }: {
   sort: string;
-  genre?: string;
+  genres: string[];
   status?: string;
   rating?: string;
+  origin?: string;
+  yearFrom?: string;
+  yearTo?: string;
+  minScore?: string;
 }) {
   const params = new URLSearchParams();
   params.set("sort", sort);
-  if (genre) params.set("genre", genre);
+  if (genres.length) params.set("genres", genres.join(","));
   if (status) params.set("status", status);
   if (rating) params.set("rating", rating);
+  if (origin) params.set("origin", origin);
+  if (yearFrom) params.set("yearFrom", yearFrom);
+  if (yearTo) params.set("yearTo", yearTo);
+  if (minScore) params.set("minScore", minScore);
   return `/browse?${params.toString()}`;
 }
 
@@ -77,53 +96,299 @@ function Select({
   );
 }
 
-export function BrowseFilters({ sort, genre, status, rating }: BrowseFiltersProps) {
+function FilterSectionLabel({ children }: { children: string }) {
+  return (
+    <p className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-zinc-500">
+      {children}
+    </p>
+  );
+}
+
+function YearInput({
+  value,
+  onChange,
+  placeholder,
+  ariaLabel,
+}: {
+  value: string | undefined;
+  onChange: (value: string) => void;
+  placeholder: string;
+  ariaLabel: string;
+}) {
+  return (
+    <input
+      type="number"
+      min={1900}
+      max={2100}
+      inputMode="numeric"
+      value={value ?? ""}
+      onChange={(event) => onChange(event.target.value.replace(/\D/g, "").slice(0, 4))}
+      placeholder={placeholder}
+      aria-label={ariaLabel}
+      className="w-24 rounded-lg border border-white/10 bg-zinc-900/60 py-2 pl-3 pr-2 text-sm text-zinc-100 outline-none transition-colors placeholder:text-zinc-500 focus:border-emerald-400/50"
+    />
+  );
+}
+
+export function BrowseFilters({
+  sort,
+  genres,
+  status,
+  rating,
+  origin,
+  yearFrom,
+  yearTo,
+  minScore,
+}: BrowseFiltersProps) {
   const router = useRouter();
+  const [drawerOpen, setDrawerOpen] = useState(false);
+
+  const base = { sort, genres, status, rating, origin, yearFrom, yearTo, minScore };
+
+  const push = (patch: Partial<typeof base>) => {
+    const next = { ...base, ...patch };
+    router.push(hrefFor(next));
+  };
+
+  const activeFilterCount =
+    genres.length +
+    (status ? 1 : 0) +
+    (rating ? 1 : 0) +
+    (origin ? 1 : 0) +
+    (yearFrom || yearTo ? 1 : 0) +
+    (minScore ? 1 : 0);
+
+  const toggleGenre = (name: string) => {
+    push({
+      genres: genres.includes(name)
+        ? genres.filter((value) => value !== name)
+        : [...genres, name],
+    });
+  };
+
+  const clearAll = () => {
+    router.push(`/browse?sort=${sort}`);
+  };
+
+  const originLabel = ORIGIN_OPTIONS.find((option) => option.key === origin)?.label;
+  const minScoreLabel = MIN_SCORE_OPTIONS.find(
+    (option) => option.key === minScore,
+  )?.label;
 
   return (
-    <div className="mb-6 flex flex-wrap items-center gap-3">
-      <div className="flex flex-wrap gap-1.5 rounded-full border border-white/10 bg-zinc-900/60 p-1 backdrop-blur-xl">
-        {SORTS.map((option) => (
-          <Link
-            key={option.key}
-            href={hrefFor({ sort: option.key, genre, status, rating })}
-            className={`rounded-full px-4 py-1.5 text-sm font-medium transition active:scale-[0.97] ${
-              sort === option.key
-                ? "bg-zinc-100 text-zinc-950"
-                : "text-zinc-300 hover:bg-zinc-800 hover:text-white"
-            }`}
-          >
-            {option.label}
-          </Link>
-        ))}
+    <div className="mb-6 space-y-3">
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex flex-wrap gap-1.5 rounded-full border border-white/10 bg-zinc-900/60 p-1 backdrop-blur-xl">
+          {SORTS.map((option) => (
+            <Link
+              key={option.key}
+              href={hrefFor({ ...base, sort: option.key })}
+              className={`rounded-full px-4 py-1.5 text-sm font-medium transition active:scale-[0.97] ${
+                sort === option.key
+                  ? "bg-zinc-100 text-zinc-950"
+                  : "text-zinc-300 hover:bg-zinc-800 hover:text-white"
+              }`}
+            >
+              {option.label}
+            </Link>
+          ))}
+        </div>
+
+        <Select
+          label="Filter by status"
+          value={status ?? ""}
+          options={STATUS_OPTIONS}
+          onChange={(value) => push({ status: value })}
+        />
+
+        <Select
+          label="Filter by content rating"
+          value={rating ?? ""}
+          options={RATING_OPTIONS}
+          onChange={(value) => push({ rating: value })}
+        />
+
+        <button
+          type="button"
+          onClick={() => setDrawerOpen((value) => !value)}
+          aria-expanded={drawerOpen}
+          className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition active:scale-[0.97] ${
+            activeFilterCount > 0 || drawerOpen
+              ? "border-emerald-400/60 bg-emerald-500/15 text-emerald-300"
+              : "border-white/10 bg-zinc-900/60 text-zinc-200 hover:border-white/25"
+          }`}
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>
+            <path d="M4 6h16M7 12h10M10 18h4" />
+          </svg>
+          Filters
+          {activeFilterCount > 0 && (
+            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-emerald-400 px-1 text-[11px] font-bold text-zinc-950">
+              {activeFilterCount}
+            </span>
+          )}
+        </button>
       </div>
 
-      <Select
-        label="Filter by genre"
-        value={genre ?? ""}
-        options={[{ key: "", label: "All Genres" }, ...GENRES.map((item) => ({ key: item.name, label: item.name }))]}
-        onChange={(value) =>
-          router.push(hrefFor({ sort, genre: value, status, rating }))
-        }
-      />
+      {drawerOpen && (
+        <div className="animate-modal-in rounded-2xl border border-zinc-800 bg-zinc-900/80 p-5 backdrop-blur-xl">
+          <div className="grid gap-6 md:grid-cols-2">
+            <div>
+              <FilterSectionLabel>
+                Genres — match all selected
+              </FilterSectionLabel>
+              <div className="flex flex-wrap gap-1.5">
+                {GENRES.map((genre) => {
+                  const selected = genres.includes(genre.name);
+                  return (
+                    <button
+                      key={genre.name}
+                      type="button"
+                      onClick={() => toggleGenre(genre.name)}
+                      aria-pressed={selected}
+                      className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+                        selected
+                          ? "border-emerald-400/60 bg-emerald-500/15 text-emerald-300"
+                          : "border-white/10 bg-zinc-800/60 text-zinc-400 hover:text-white"
+                      }`}
+                    >
+                      {genre.name}
+                    </button>
+                  );
+                })}
+              </div>
+              <p className="mt-2 text-xs text-zinc-500">
+                Titles must match every selected genre.
+              </p>
+            </div>
 
-      <Select
-        label="Filter by status"
-        value={status ?? ""}
-        options={STATUS_OPTIONS}
-        onChange={(value) =>
-          router.push(hrefFor({ sort, genre, status: value, rating }))
-        }
-      />
+            <div className="space-y-5">
+              <div>
+                <FilterSectionLabel>Origin / type</FilterSectionLabel>
+                <Select
+                  label="Filter by origin"
+                  value={origin ?? ""}
+                  options={ORIGIN_OPTIONS}
+                  onChange={(value) => push({ origin: value })}
+                />
+              </div>
 
-      <Select
-        label="Filter by content rating"
-        value={rating ?? ""}
-        options={RATING_OPTIONS}
-        onChange={(value) =>
-          router.push(hrefFor({ sort, genre, status, rating: value }))
-        }
-      />
+              <div>
+                <FilterSectionLabel>Release year</FilterSectionLabel>
+                <div className="flex items-center gap-2">
+                  <YearInput
+                    value={yearFrom}
+                    onChange={(value) => push({ yearFrom: value })}
+                    placeholder="From"
+                    ariaLabel="Release year from"
+                  />
+                  <span className="text-xs text-zinc-500">to</span>
+                  <YearInput
+                    value={yearTo}
+                    onChange={(value) => push({ yearTo: value })}
+                    placeholder="To"
+                    ariaLabel="Release year to"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <FilterSectionLabel>Minimum score</FilterSectionLabel>
+                <Select
+                  label="Filter by minimum score"
+                  value={minScore ?? ""}
+                  options={MIN_SCORE_OPTIONS}
+                  onChange={(value) => push({ minScore: value })}
+                />
+              </div>
+            </div>
+          </div>
+
+          <div className="mt-5 flex items-center justify-between border-t border-zinc-800 pt-4">
+            <p className="text-xs text-zinc-500">
+              {activeFilterCount > 0
+                ? `${activeFilterCount} active filter${activeFilterCount === 1 ? "" : "s"}`
+                : "No active filters"}
+            </p>
+            <div className="flex items-center gap-2">
+              {activeFilterCount > 0 && (
+                <button
+                  type="button"
+                  onClick={clearAll}
+                  className="rounded-lg border border-white/10 bg-zinc-800/60 px-4 py-2 text-sm font-semibold text-zinc-300 transition-colors hover:border-red-400/40 hover:text-white"
+                >
+                  Clear all
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setDrawerOpen(false)}
+                className="rounded-lg bg-zinc-100 px-4 py-2 text-sm font-bold text-zinc-950 transition-colors hover:bg-white"
+              >
+                Done
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {(genres.length > 0 || origin || yearFrom || yearTo || minScore) && (
+        <div className="flex flex-wrap items-center gap-1.5">
+          {genres.map((genre) => (
+            <button
+              key={genre}
+              type="button"
+              onClick={() => toggleGenre(genre)}
+              aria-label={`Remove genre ${genre}`}
+              className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300 transition-colors hover:border-emerald-400/60 hover:text-white"
+            >
+              {genre}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3" aria-hidden>
+                <path d="M6 6l12 12M18 6L6 18" />
+              </svg>
+            </button>
+          ))}
+          {origin && (
+            <button
+              type="button"
+              onClick={() => push({ origin: "" })}
+              aria-label="Remove origin filter"
+              className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300 transition-colors hover:border-emerald-400/60 hover:text-white"
+            >
+              {originLabel ?? origin}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3" aria-hidden>
+                <path d="M6 6l12 12M18 6L6 18" />
+              </svg>
+            </button>
+          )}
+          {(yearFrom || yearTo) && (
+            <button
+              type="button"
+              onClick={() => push({ yearFrom: "", yearTo: "" })}
+              aria-label="Remove year range filter"
+              className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300 transition-colors hover:border-emerald-400/60 hover:text-white"
+            >
+              {yearFrom ? yearFrom : "…"}–{yearTo ? yearTo : "…"}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3" aria-hidden>
+                <path d="M6 6l12 12M18 6L6 18" />
+              </svg>
+            </button>
+          )}
+          {minScore && (
+            <button
+              type="button"
+              onClick={() => push({ minScore: "" })}
+              aria-label="Remove minimum score filter"
+              className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300 transition-colors hover:border-emerald-400/60 hover:text-white"
+            >
+              {minScoreLabel ?? minScore}
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3" aria-hidden>
+                <path d="M6 6l12 12M18 6L6 18" />
+              </svg>
+            </button>
+          )}
+        </div>
+      )}
     </div>
   );
 }

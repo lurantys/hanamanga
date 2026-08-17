@@ -3,7 +3,11 @@
 import { createContext, useContext, useEffect, useState, useRef } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Session, User, AuthChangeEvent } from "@supabase/supabase-js";
-import { handleAuthStateChange } from "@/lib/sync";
+import {
+  getCurrentUserId,
+  handleAuthStateChange,
+  pushAll,
+} from "@/lib/sync";
 import { invalidateLibrary } from "@/lib/library";
 import { invalidateProgressCache, invalidateContinueHero } from "@/lib/progress";
 import { invalidateReadState } from "@/lib/read-state";
@@ -122,6 +126,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return { error: error?.message ?? null };
     },
     signOut: async () => {
+      // Best-effort: flush any unsynced local changes to the account
+      // before sign-out clears the local state.
+      const userId = getCurrentUserId();
+      if (userId) await pushAll(userId).catch(() => {});
       await supabase.auth.signOut();
       clearLocalData();
     },

@@ -27,10 +27,12 @@ export function MangaChapterList({ mangaId, volumes }: MangaChapterListProps) {
   const [revealedVolumes, setRevealedVolumes] = useState(VOLUME_BATCH);
   const [jump, setJump] = useState("");
   const [scrollTarget, setScrollTarget] = useState<string | null>(null);
+  const [highlightId, setHighlightId] = useState<string | null>(null);
 
   const itemRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const sentinelRef = useRef<HTMLDivElement>(null);
   const loadingRef = useRef(false);
+  const highlightTimerRef = useRef(0);
 
   const orderedVolumes = useMemo(() => {
     const reversed =
@@ -72,6 +74,22 @@ export function MangaChapterList({ mangaId, volumes }: MangaChapterListProps) {
     if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [scrollTarget, orderedVolumes]);
 
+  useEffect(
+    () => () => {
+      if (highlightTimerRef.current) window.clearTimeout(highlightTimerRef.current);
+    },
+    [],
+  );
+
+  const flashChapter = (chapterId: string) => {
+    setHighlightId(chapterId);
+    if (highlightTimerRef.current) window.clearTimeout(highlightTimerRef.current);
+    highlightTimerRef.current = window.setTimeout(
+      () => setHighlightId(null),
+      2200,
+    );
+  };
+
   const goToChapter = () => {
     const target = Number(jump.trim());
     if (!Number.isFinite(target)) return;
@@ -80,8 +98,10 @@ export function MangaChapterList({ mangaId, volumes }: MangaChapterListProps) {
         (chapter) => parseFloat(chapter.chapter ?? "") === target,
       );
       if (index !== -1) {
+        const chapterId = orderedVolumes[i].chapters[index].id;
         setRevealedVolumes(Math.max(revealedVolumes, i + 1));
-        setScrollTarget(orderedVolumes[i].chapters[index].id);
+        setScrollTarget(chapterId);
+        flashChapter(chapterId);
         return;
       }
     }
@@ -92,6 +112,7 @@ export function MangaChapterList({ mangaId, volumes }: MangaChapterListProps) {
     setOrder("oldest");
     setRevealedVolumes(VOLUME_BATCH);
     setScrollTarget(firstChapterId);
+    flashChapter(firstChapterId);
   };
 
   return (
@@ -158,7 +179,11 @@ export function MangaChapterList({ mangaId, volumes }: MangaChapterListProps) {
                   ref={(el) => {
                     itemRefs.current[chapter.id] = el;
                   }}
-                  className="flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-zinc-900/60 px-4 py-3 backdrop-blur-xl transition-colors hover:border-white/25"
+                  className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-3 backdrop-blur-xl transition-colors hover:border-white/25 ${
+                  highlightId === chapter.id
+                    ? "animate-chapter-highlight border-red-400/50 bg-red-500/20"
+                    : "border-white/10 bg-zinc-900/60"
+                }`}
                 >
                   <div className="min-w-0">
                     <p className="truncate text-sm font-semibold text-zinc-200">

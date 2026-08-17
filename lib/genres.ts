@@ -71,6 +71,32 @@ export function isRatingKey(value: string | undefined): boolean {
   return value === "" || RATING_OPTIONS.some((option) => option.key === value);
 }
 
+export const ORIGIN_OPTIONS: { key: string; label: string }[] = [
+  { key: "", label: "Any origin" },
+  { key: "JP", label: "Manga (Japan)" },
+  { key: "KR", label: "Manhwa (Korea)" },
+  { key: "CN", label: "Manhua (China)" },
+];
+
+export function isOriginKey(value: string | undefined): boolean {
+  return (
+    value === "" || ORIGIN_OPTIONS.some((option) => option.key === value)
+  );
+}
+
+export const MIN_SCORE_OPTIONS: { key: string; label: string }[] = [
+  { key: "", label: "Any score" },
+  { key: "7", label: "7.0+" },
+  { key: "8", label: "8.0+" },
+  { key: "9", label: "9.0+" },
+];
+
+export function isMinScoreKey(value: string | undefined): boolean {
+  return (
+    value === "" || MIN_SCORE_OPTIONS.some((option) => option.key === value)
+  );
+}
+
 export function sortLabel(key: string | undefined): string {
   return SORTS.find((option) => option.key === key)?.label ?? SORTS[0].label;
 }

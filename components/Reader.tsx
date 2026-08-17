@@ -371,11 +371,14 @@ export function Reader({
   const controlsTimerRef = useRef(0);
 
   const mode = settings.mode;
+  const isTwoPage = mode === "twopage" && !isMobile;
+  const isSinglePage = mode === "paged" || (mode === "twopage" && isMobile);
+  const pageStep = isTwoPage ? 2 : 1;
 
   const displayProgress =
-    mode === "paged"
+    isSinglePage || isTwoPage
       ? pages.length > 0
-        ? (pagedIndex + 1) / pages.length
+        ? (Math.min(pagedIndex + pageStep - 1, pages.length - 1) + 1) / pages.length
         : 0
       : progress;
 
@@ -542,12 +545,13 @@ export function Reader({
   ]);
 
   useEffect(() => {
-    if (mode !== "paged") return;
+    if (mode === "webtoon") return;
     if (!chapterInitRef.current) {
       chapterInitRef.current = true;
       return;
     }
-    const fraction = pages.length > 0 ? (pagedIndex + 1) / pages.length : 0;
+    const lastShown = Math.min(pagedIndex + pageStep - 1, pages.length - 1);
+    const fraction = pages.length > 0 ? (lastShown + 1) / pages.length : 0;
     const index = chapters.findIndex(
       (chapter) => chapter.id === currentChapterId,
     );
@@ -579,12 +583,13 @@ export function Reader({
       mangaFraction,
       updatedAt: entry.updatedAt,
     });
-    if (pagedIndex >= pages.length - 1) {
+    if (pagedIndex >= pages.length - pageStep) {
       markChapterRead(mangaId, currentChapterId);
     }
   }, [
     pagedIndex,
     pages.length,
+    pageStep,
     mode,
     mangaId,
     currentChapterId,
@@ -595,7 +600,7 @@ export function Reader({
   ]);
 
   useEffect(() => {
-    if (mode === "paged") return;
+    if (mode !== "webtoon") return;
     const saved = getProgress(mangaId);
     if (!saved || saved.chapterId !== currentChapterId || !saved.scrollFraction) {
       return;
@@ -630,7 +635,7 @@ export function Reader({
       }
       if (saved.updatedAt <= lastRestoredAtRef.current) return;
       lastRestoredAtRef.current = saved.updatedAt;
-      if (mode === "paged") {
+      if (mode !== "webtoon") {
         chapterInitRef.current = false;
         setPagedIndex(
           Math.min(
@@ -698,12 +703,16 @@ export function Reader({
   const switchMode = useCallback(
     (target: ReaderMode) => {
       if (target === mode) return;
-      if (target === "paged") {
-        setPagedIndex(currentPage);
+      if (target === "webtoon") {
+        pendingScrollTargetRef.current = pagedIndex;
+      } else {
+        if (target === "twopage") {
+          setPagedIndex(Math.floor(currentPage / 2) * 2);
+        } else {
+          setPagedIndex(currentPage);
+        }
         pendingScrollTargetRef.current = null;
         window.scrollTo(0, 0);
-      } else {
-        pendingScrollTargetRef.current = pagedIndex;
       }
       updateSettings({ mode: target });
     },
@@ -725,22 +734,22 @@ export function Reader({
   }, [isMobile, setControls]);
 
   const pageNext = useCallback(() => {
-    if (pagedIndex < pages.length - 1) {
-      setPagedIndex(pagedIndex + 1);
+    if (pagedIndex < pages.length - pageStep) {
+      setPagedIndex(Math.min(pagedIndex + pageStep, pages.length - 1));
       hideChrome();
     } else if (nextHrefRef.current) {
       scheduleAdvance();
     }
-  }, [pagedIndex, pages.length, scheduleAdvance, hideChrome]);
+  }, [pagedIndex, pages.length, pageStep, scheduleAdvance, hideChrome]);
 
   const pagePrev = useCallback(() => {
     if (pagedIndex > 0) {
-      setPagedIndex(pagedIndex - 1);
+      setPagedIndex(Math.max(pagedIndex - pageStep, 0));
       hideChrome();
     } else if (prevHref) {
       router.push(prevHref);
     }
-  }, [pagedIndex, prevHref, router, hideChrome]);
+  }, [pagedIndex, pageStep, prevHref, router, hideChrome]);
 
   const zoneNext = useCallback(() => {
     if (settings.direction === "rtl") pagePrev();
@@ -777,8 +786,33 @@ export function Reader({
     [settings.direction, pageNext, pagePrev],
   );
 
+  const toggleFullscreen = useCallback(() => {
+    if (document.fullscreenElement) {
+      document.exitFullscreen().catch(() => {});
+    } else {
+      document.documentElement.requestFullscreen().catch(() => {});
+    }
+  }, []);
+
+  const zoomIn = useCallback(() => {
+    const value = Math.min(2, Number((settings.zoom + 0.25).toFixed(2)));
+    updateSettings({ zoom: value });
+  }, [settings.zoom, updateSettings]);
+
+  const zoomOut = useCallback(() => {
+    const value = Math.max(0.5, Number((settings.zoom - 0.25).toFixed(2)));
+    updateSettings({ zoom: value });
+  }, [settings.zoom, updateSettings]);
+
   useEffect(() => {
     function onKey(event: KeyboardEvent) {
+      const target = event.target as HTMLElement | null;
+      const typing =
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable);
       if (event.key === "Escape") {
         if (settingsOpen) {
           setSettingsOpen(false);
@@ -791,8 +825,38 @@ export function Reader({
         toggleUi();
         return;
       }
-      if (settingsOpen || open) return;
-      if (mode === "paged") {
+      if (typing || settingsOpen || open) return;
+      if (event.key === "w") {
+        switchMode("webtoon");
+        return;
+      }
+      if (event.key === "s") {
+        switchMode("paged");
+        return;
+      }
+      if (event.key === "t") {
+        switchMode("twopage");
+        return;
+      }
+      if (event.key === "f") {
+        toggleFullscreen();
+        return;
+      }
+      if (event.key === "+" || event.key === "=") {
+        event.preventDefault();
+        zoomIn();
+        return;
+      }
+      if (event.key === "-" || event.key === "_") {
+        event.preventDefault();
+        zoomOut();
+        return;
+      }
+      if (event.key === "0") {
+        updateSettings({ zoom: 1 });
+        return;
+      }
+      if (mode !== "webtoon") {
         if (event.key === "ArrowLeft") {
           event.preventDefault();
           if (settings.direction === "rtl") pageNext();
@@ -823,6 +887,11 @@ export function Reader({
     settingsOpen,
     open,
     toggleUi,
+    switchMode,
+    toggleFullscreen,
+    zoomIn,
+    zoomOut,
+    updateSettings,
   ]);
 
   useEffect(() => {
@@ -845,24 +914,6 @@ export function Reader({
       document.body.style.overflow = "";
     };
   }, [settingsOpen]);
-
-  const toggleFullscreen = useCallback(() => {
-    if (document.fullscreenElement) {
-      document.exitFullscreen().catch(() => {});
-    } else {
-      document.documentElement.requestFullscreen().catch(() => {});
-    }
-  }, []);
-
-  const zoomIn = useCallback(() => {
-    const value = Math.min(2, Number((settings.zoom + 0.25).toFixed(2)));
-    updateSettings({ zoom: value });
-  }, [settings.zoom, updateSettings]);
-
-  const zoomOut = useCallback(() => {
-    const value = Math.max(0.5, Number((settings.zoom - 0.25).toFixed(2)));
-    updateSettings({ zoom: value });
-  }, [settings.zoom, updateSettings]);
 
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 640px)");
@@ -928,7 +979,9 @@ export function Reader({
     const nearEnd =
       mode === "webtoon"
         ? displayProgress > 0.85
-        : pagedIndex >= pages.length - 2;
+        : isTwoPage
+          ? pagedIndex >= pages.length - 3
+          : pagedIndex >= pages.length - 2;
     if (!nearEnd) return;
     let cancelled = false;
     fetch(
@@ -947,6 +1000,7 @@ export function Reader({
     nextHref,
     nextChapterId,
     mode,
+    isTwoPage,
     displayProgress,
     pagedIndex,
     pages.length,
@@ -963,6 +1017,20 @@ export function Reader({
       : {
           maxHeight: "calc(100dvh - 9rem)",
           maxWidth: "calc(100vw - 2rem)",
+          width: "100%",
+          height: "auto",
+        };
+
+  const twoPageFitStyle =
+    settings.fit === "height"
+      ? {
+          maxHeight: "calc(100dvh - 9rem)",
+          maxWidth: "calc(50vw - 1.5rem)",
+          width: "auto",
+        }
+      : {
+          maxHeight: "calc(100dvh - 9rem)",
+          maxWidth: "calc(50vw - 1.5rem)",
           width: "100%",
           height: "auto",
         };
@@ -987,7 +1055,7 @@ export function Reader({
           showControls();
         }}
         aria-label={`Switch to ${mode === "webtoon" ? "paged" : "webtoon"} mode`}
-        title={`Switch to ${mode === "webtoon" ? "paged" : "webtoon"} mode`}
+        title={`Switch to ${mode === "webtoon" ? "paged" : "webtoon"} mode (shortcut: ${mode === "webtoon" ? "S" : "W"})`}
         className={buttonClass}
       >
         {mode === "webtoon" ? <PagedIcon /> : <ScrollIcon />}
@@ -1194,6 +1262,7 @@ export function Reader({
               transform: `scale(${settings.zoom})`,
               transformOrigin: "top center",
               filter: imageFilterCss,
+              gap: "var(--reader-page-gap)",
             }}
           >
               {pages.map((page, index) => (
@@ -1253,27 +1322,82 @@ export function Reader({
           onClick={onViewportClick}
         >
           <div className="flex min-h-full items-center justify-center px-4 pb-16 pt-20">
-            <div style={{ transform: `scale(${settings.zoom})`, filter: imageFilterCss }}>
-              <ReaderImage
-                key={pages[pagedIndex]?.id}
-                src={pages[pagedIndex]?.image ?? ""}
-                alt={`${chapterPrefix ? `${chapterPrefix} · ` : ""}Page ${pagedIndex + 1}`}
-                width={pages[pagedIndex]?.width}
-                height={pages[pagedIndex]?.height}
-                loading="eager"
-                className="rounded-lg object-contain shadow-2xl shadow-zinc-950/60 ring-1 ring-white/5"
-                style={fitStyle}
-              />
-            </div>
+            {isTwoPage ? (
+              <div
+                className={`flex items-center justify-center gap-2 sm:gap-3 ${
+                  settings.direction === "rtl" ? "flex-row-reverse" : ""
+                }`}
+                style={{
+                  transform: `scale(${settings.zoom})`,
+                  filter: imageFilterCss,
+                }}
+              >
+                {settings.direction === "rtl" && pages[pagedIndex + 1] && (
+                  <ReaderImage
+                    key={`${pages[pagedIndex + 1]?.id}-right`}
+                    src={pages[pagedIndex + 1]?.image ?? ""}
+                    alt={`${chapterPrefix ? `${chapterPrefix} · ` : ""}Page ${pagedIndex + 2}`}
+                    width={pages[pagedIndex + 1]?.width}
+                    height={pages[pagedIndex + 1]?.height}
+                    loading="eager"
+                    className="rounded-lg object-contain shadow-2xl shadow-zinc-950/60 ring-1 ring-white/5"
+                    style={twoPageFitStyle}
+                  />
+                )}
+                <ReaderImage
+                  key={`${pages[pagedIndex]?.id}-left`}
+                  src={pages[pagedIndex]?.image ?? ""}
+                  alt={`${chapterPrefix ? `${chapterPrefix} · ` : ""}Page ${pagedIndex + 1}`}
+                  width={pages[pagedIndex]?.width}
+                  height={pages[pagedIndex]?.height}
+                  loading="eager"
+                  className="rounded-lg object-contain shadow-2xl shadow-zinc-950/60 ring-1 ring-white/5"
+                  style={twoPageFitStyle}
+                />
+                {settings.direction === "ltr" && pages[pagedIndex + 1] && (
+                  <ReaderImage
+                    key={`${pages[pagedIndex + 1]?.id}-left`}
+                    src={pages[pagedIndex + 1]?.image ?? ""}
+                    alt={`${chapterPrefix ? `${chapterPrefix} · ` : ""}Page ${pagedIndex + 2}`}
+                    width={pages[pagedIndex + 1]?.width}
+                    height={pages[pagedIndex + 1]?.height}
+                    loading="lazy"
+                    className="rounded-lg object-contain shadow-2xl shadow-zinc-950/60 ring-1 ring-white/5"
+                    style={twoPageFitStyle}
+                  />
+                )}
+              </div>
+            ) : (
+              <div style={{ transform: `scale(${settings.zoom})`, filter: imageFilterCss }}>
+                <ReaderImage
+                  key={pages[pagedIndex]?.id}
+                  src={pages[pagedIndex]?.image ?? ""}
+                  alt={`${chapterPrefix ? `${chapterPrefix} · ` : ""}Page ${pagedIndex + 1}`}
+                  width={pages[pagedIndex]?.width}
+                  height={pages[pagedIndex]?.height}
+                  loading="eager"
+                  className="rounded-lg object-contain shadow-2xl shadow-zinc-950/60 ring-1 ring-white/5"
+                  style={fitStyle}
+                />
+              </div>
+            )}
           </div>
 
-          {pages[pagedIndex + 1] && (
-            <link
-              rel="preload"
-              as="image"
-              href={pages[pagedIndex + 1].image}
-            />
-          )}
+          {isTwoPage
+            ? pages[pagedIndex + 2] && (
+                <link
+                  rel="preload"
+                  as="image"
+                  href={pages[pagedIndex + 2].image}
+                />
+              )
+            : pages[pagedIndex + 1] && (
+                <link
+                  rel="preload"
+                  as="image"
+                  href={pages[pagedIndex + 1].image}
+                />
+              )}
 
           {settings.tapZones && (
             <>
@@ -1296,7 +1420,9 @@ export function Reader({
 
           <div className="pointer-events-none absolute bottom-4 left-1/2 z-10 -translate-x-1/2">
             <span className="rounded-full border border-white/10 bg-zinc-950/80 px-3 py-1 text-xs font-semibold text-zinc-300 backdrop-blur-xl">
-              {pagedIndex + 1} / {pages.length}
+              {isTwoPage
+                ? `${pagedIndex + 1}–${Math.min(pagedIndex + 2, pages.length)} / ${pages.length}`
+                : `${pagedIndex + 1} / ${pages.length}`}
             </span>
           </div>
         </div>
@@ -1392,11 +1518,18 @@ export function Reader({
                   options={[
                     { value: "webtoon" as const, label: "Webtoon" },
                     { value: "paged" as const, label: "Paged" },
+                    { value: "twopage" as const, label: "2-Page" },
                   ]}
                 />
+                {mode === "twopage" && (
+                  <p className="mt-2 text-xs text-zinc-500">
+                    Two-page spreads are shown side by side; on small screens it
+                    falls back to single pages.
+                  </p>
+                )}
               </section>
 
-              {mode === "paged" && (
+              {mode !== "webtoon" && (
                 <>
                   <section>
                     <SectionLabel>Reading direction</SectionLabel>
@@ -1466,6 +1599,33 @@ export function Reader({
                 onChange={(value) => updateSettings({ autoAdvance: value })}
                 label="Auto-advance to next chapter at the end"
               />
+
+              <section>
+                <SectionLabel>Keyboard shortcuts</SectionLabel>
+                <dl className="space-y-1.5 text-sm">
+                  {[
+                    ["← / →", "Previous / next page"],
+                    ["Space", "Next page"],
+                    ["W / S / T", "Webtoon / Paged / 2-Page mode"],
+                    ["F", "Fullscreen"],
+                    ["+ / −", "Zoom in / out"],
+                    ["0", "Reset zoom"],
+                    ["Esc", "Hide UI or close dialogs"],
+                  ].map(([keys, action]) => (
+                    <div
+                      key={keys}
+                      className="flex items-center justify-between gap-4"
+                    >
+                      <dt className="shrink-0 rounded bg-zinc-800 px-1.5 py-0.5 text-xs font-semibold text-zinc-200">
+                        {keys}
+                      </dt>
+                      <dd className="text-right text-xs text-zinc-400">
+                        {action}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              </section>
 
               <div className="flex justify-end border-t border-zinc-800 pt-4">
                 <button

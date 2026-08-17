@@ -20,6 +20,8 @@ export type Manga = {
   updatedAt?: string;
   bannerUrl?: string | null;
   links?: Record<string, string>;
+  type?: "Manga" | "Manhwa" | "Manhua" | "Novel" | "One-shot";
+  source?: "Original" | "Manga" | "Light novel" | "Web novel" | "Visual novel" | "Other";
 };
 
 export type Chapter = {
@@ -282,10 +284,12 @@ export type MangaListOptions = {
   title?: string;
   order?: Record<string, string>;
   includedTags?: string[];
+  includedTagsMode?: "AND" | "OR";
   availableLanguages?: string[];
   ids?: string[];
   status?: string[];
   contentRating?: string[];
+  year?: number;
 };
 
 export async function fetchMangaList(
@@ -312,9 +316,15 @@ export async function fetchMangaList(
   }
   if (options.includedTags?.length) {
     params["includedTags[]"] = options.includedTags;
+    if (options.includedTagsMode === "OR") {
+      params["includedTagsMode"] = "OR";
+    }
   }
   if (options.status?.length) {
     params["status[]"] = options.status;
+  }
+  if (options.year) {
+    params.year = options.year;
   }
 
   const json = await mdFetch<{

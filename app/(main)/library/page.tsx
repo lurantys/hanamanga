@@ -21,13 +21,33 @@ function thumbUrl(coverUrl?: string | null): string | null {
   return coverUrl?.replace(/\.512\.jpg$/, ".256.jpg") ?? coverUrl ?? null;
 }
 
-type SortKey = "added" | "updated" | "title";
+type SortKey = "added" | "updated" | "title" | "rating" | "released";
 type View = "grid" | "list";
+type StatusFilter =
+  | "all"
+  | "reading"
+  | "unread"
+  | "completed"
+  | "hiatus"
+  | "cancelled"
+  | "discontinued";
 
 const SORTS: { key: SortKey; label: string }[] = [
   { key: "added", label: "Recently added" },
   { key: "updated", label: "Recently read" },
   { key: "title", label: "Title A-Z" },
+  { key: "rating", label: "Top rated" },
+  { key: "released", label: "Newest releases" },
+];
+
+const STATUS_FILTERS: { key: StatusFilter; label: string }[] = [
+  { key: "all", label: "All" },
+  { key: "reading", label: "Reading" },
+  { key: "unread", label: "Unread" },
+  { key: "completed", label: "Completed" },
+  { key: "hiatus", label: "On hold" },
+  { key: "cancelled", label: "Dropped" },
+  { key: "discontinued", label: "Discontinued" },
 ];
 
 function GridCard({
@@ -226,12 +246,29 @@ export default function LibraryPage() {
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortKey>("added");
   const [view, setView] = useState<View>("grid");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
   const filtered = useMemo(() => {
     const term = query.trim().toLowerCase();
-    const list = entries.filter(({ manga }) =>
+    let list = entries.filter(({ manga }) =>
       term ? manga.title.toLowerCase().includes(term) : true,
     );
+    if (statusFilter !== "all") {
+      list = list.filter(({ manga }) => {
+        const hasProgress = Boolean(progress[manga.id]);
+        switch (statusFilter) {
+          case "reading":
+            return hasProgress;
+          case "unread":
+            return !hasProgress;
+          case "completed":
+          case "hiatus":
+          case "cancelled":
+          case "discontinued":
+            return manga.status === statusFilter;
+        }
+      });
+    }
     switch (sort) {
       case "added":
         return list;
@@ -245,14 +282,24 @@ export default function LibraryPage() {
         return [...list].sort((a, b) =>
           a.manga.title.localeCompare(b.manga.title),
         );
+      case "rating":
+        return [...list].sort(
+          (a, b) => (b.manga.rating ?? 0) - (a.manga.rating ?? 0),
+        );
+      case "released":
+        return [...list].sort((a, b) => {
+          const aTime = Date.parse(a.manga.updatedAt ?? "") || 0;
+          const bTime = Date.parse(b.manga.updatedAt ?? "") || 0;
+          return bTime - aTime;
+        });
     }
-  }, [entries, query, sort, progress]);
+  }, [entries, query, sort, progress, statusFilter]);
 
   const toolbarVisible = entries.length > 0;
 
   return (
     <main className="bg-zinc-950 pb-24">
-      <div className="px-5 pt-28 md:px-10">
+      <div className="mx-auto max-w-7xl px-5 pt-28 md:px-10">
         <header className="mb-6">
           <h1 className="text-2xl font-extrabold tracking-tight text-white md:text-3xl">
             Library
@@ -266,7 +313,8 @@ export default function LibraryPage() {
       </div>
 
       {toolbarVisible && (
-        <div className="flex flex-wrap items-center gap-3 px-5 md:px-10">
+        <div className="mx-auto max-w-7xl px-5 md:px-10">
+          <div className="flex flex-wrap items-center gap-3">
           <div className="relative min-w-0 flex-1 basis-56">
             <svg
               viewBox="0 0 24 24"
@@ -373,9 +421,28 @@ export default function LibraryPage() {
             </button>
           </div>
         </div>
+
+        <div className="mt-4 flex flex-wrap gap-1.5">
+          {STATUS_FILTERS.map((option) => (
+            <button
+              key={option.key}
+              type="button"
+              onClick={() => setStatusFilter(option.key)}
+              aria-pressed={statusFilter === option.key}
+              className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-colors ${
+                statusFilter === option.key
+                  ? "border-emerald-400/60 bg-emerald-500/15 text-emerald-300"
+                  : "border-white/10 bg-zinc-800/60 text-zinc-400 hover:text-white"
+              }`}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+        </div>
       )}
 
-      <div className="mt-8 px-5 md:px-10">
+      <div className="mx-auto mt-8 max-w-7xl px-5 md:px-10">
         {entries.length === 0 ? (
           <div className="flex flex-col items-center gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/60 px-6 py-20 text-center">
             <svg

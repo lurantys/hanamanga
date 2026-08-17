@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { BrowseFilters } from "@/components/BrowseFilters";
 import { BrowseGrid } from "@/components/BrowseGrid";
 import {
+  isMinScoreKey,
+  isOriginKey,
   isRatingKey,
   isSortKey,
   isStatusKey,
@@ -28,14 +30,34 @@ export default async function BrowsePage({
 }) {
   const params = await searchParams;
   const sortParam = Array.isArray(params.sort) ? params.sort[0] : params.sort;
-  const genreParam = Array.isArray(params.genre) ? params.genre[0] : params.genre;
+  const genresRaw = Array.isArray(params.genres)
+    ? params.genres[0]
+    : params.genres;
+  const genreLegacy = Array.isArray(params.genre) ? params.genre[0] : params.genre;
   const statusParam = Array.isArray(params.status) ? params.status[0] : params.status;
   const ratingParam = Array.isArray(params.rating) ? params.rating[0] : params.rating;
+  const originParam = Array.isArray(params.origin) ? params.origin[0] : params.origin;
+  const yearFromParam = Array.isArray(params.yearFrom)
+    ? params.yearFrom[0]
+    : params.yearFrom;
+  const yearToParam = Array.isArray(params.yearTo)
+    ? params.yearTo[0]
+    : params.yearTo;
+  const minScoreParam = Array.isArray(params.minScore)
+    ? params.minScore[0]
+    : params.minScore;
 
   const sort: SortKey = isSortKey(sortParam) ? sortParam : "popular";
-  const genre = genreParam?.trim() || undefined;
+  const genres = (genresRaw ?? genreLegacy ?? "")
+    .split(",")
+    .map((value) => value.trim())
+    .filter(Boolean);
   const status = isStatusKey(statusParam ?? "") ? (statusParam ?? "") : "";
   const rating = isRatingKey(ratingParam ?? "") ? (ratingParam ?? "") : "";
+  const origin = isOriginKey(originParam ?? "") ? (originParam ?? "") : "";
+  const yearFrom = /^\d{4}$/.test(yearFromParam ?? "") ? yearFromParam ?? "" : "";
+  const yearTo = /^\d{4}$/.test(yearToParam ?? "") ? yearToParam ?? "" : "";
+  const minScore = isMinScoreKey(minScoreParam ?? "") ? (minScoreParam ?? "") : "";
 
   let initialResults: Manga[] = [];
   let total = 0;
@@ -47,19 +69,24 @@ export default async function BrowsePage({
         limit: PER_PAGE,
         offset: 0,
         sort,
-        genre: genre || undefined,
+        genres,
         status: status || undefined,
         rating: rating || undefined,
+        origin: origin || undefined,
+        yearFrom: yearFrom ? Number(yearFrom) : undefined,
+        yearTo: yearTo ? Number(yearTo) : undefined,
+        minScore: minScore ? Number(minScore) : undefined,
       });
     } catch {
-      const tagId = genre ? tagIdFor(genre) : undefined;
+      const tagIds = genres.map(tagIdFor).filter((id): id is string => Boolean(id));
       result = await fetchMangaList({
         limit: PER_PAGE,
         offset: 0,
         order: SORT_ORDER[sort],
-        includedTags: tagId ? [tagId] : undefined,
+        includedTags: tagIds,
         status: status ? [status] : undefined,
         contentRating: rating ? RATING_VALUES[rating] : undefined,
+        year: yearFrom && yearFrom === yearTo ? Number(yearFrom) : undefined,
       });
     }
     initialResults = result.data;
@@ -68,11 +95,11 @@ export default async function BrowsePage({
     errored = true;
   }
 
-  const browseKey = `${sort}-${genre ?? ""}-${status}-${rating}`;
+  const browseKey = `${sort}-${genres.join(",")}-${status}-${rating}-${origin}-${yearFrom}-${yearTo}-${minScore}`;
 
   return (
     <main className="bg-zinc-950 pb-24">
-      <div className="px-5 pt-28 md:px-10">
+      <div className="mx-auto max-w-7xl px-5 pt-28 md:px-10">
         <header className="mb-6">
           <h1 className="text-2xl font-extrabold tracking-tight text-white md:text-3xl">
             Browse
@@ -82,14 +109,27 @@ export default async function BrowsePage({
           </p>
         </header>
 
-        <BrowseFilters sort={sort} genre={genre} status={status} rating={rating} />
+        <BrowseFilters
+          sort={sort}
+          genres={genres}
+          status={status}
+          rating={rating}
+          origin={origin}
+          yearFrom={yearFrom}
+          yearTo={yearTo}
+          minScore={minScore}
+        />
 
         <BrowseGrid
           key={browseKey}
           sort={sort}
-          genre={genre}
+          genres={genres}
           status={status}
           rating={rating}
+          origin={origin}
+          yearFrom={yearFrom}
+          yearTo={yearTo}
+          minScore={minScore}
           initialResults={initialResults}
           total={total}
           initialPage={1}

@@ -1,9 +1,10 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Suspense } from "react";
+import { AuthButton } from "@/components/AuthButton";
+import { BackToTop } from "@/components/BackToTop";
 import { GenreMenu } from "@/components/GenreMenu";
 import { SearchBar } from "@/components/SearchBar";
-import { AuthButton } from "@/components/AuthButton";
 
 function Footer() {
   return (
@@ -103,6 +104,7 @@ export default function MainLayout({ children }: LayoutProps<"/">) {
       <Header />
       {children}
       <Footer />
+      <BackToTop />
     </>
   );
 }

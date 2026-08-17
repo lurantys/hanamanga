@@ -68,6 +68,19 @@ export function curatedAtsuGenres(genres: string[] | undefined): string[] {
   return result;
 }
 
+function atsuTypeToMangaType(
+  type: string | undefined,
+  medium: string | undefined,
+): Manga["type"] | undefined {
+  const value = (type ?? medium ?? "").toLowerCase();
+  if (value.includes("manhwa")) return "Manhwa";
+  if (value.includes("manhua")) return "Manhua";
+  if (value.includes("one-shot") || value.includes("oneshot")) return "One-shot";
+  if (value.includes("novel")) return "Novel";
+  if (value.includes("manga")) return "Manga";
+  return undefined;
+}
+
 export function atsuToManga(atsu: AtsuLike): Manga {
   const links: Record<string, string> = {};
   if (atsu.anilistId) links.al = String(atsu.anilistId);
@@ -93,6 +106,7 @@ export function atsuToManga(atsu: AtsuLike): Manga {
     year: atsu.year ?? undefined,
     availableLanguages: ["en"],
     links: Object.keys(links).length ? links : undefined,
+    type: atsuTypeToMangaType(atsu.type, atsu.medium),
   };
 }
 

@@ -8,9 +8,13 @@ import type { Manga } from "@/lib/mangadex";
 
 type BrowseGridProps = {
   sort: SortKey;
-  genre?: string;
+  genres: string[];
   status?: string;
   rating?: string;
+  origin?: string;
+  yearFrom?: string;
+  yearTo?: string;
+  minScore?: string;
   initialResults: Manga[];
   total: number;
   initialPage: number;
@@ -19,9 +23,13 @@ type BrowseGridProps = {
 
 export function BrowseGrid({
   sort,
-  genre,
+  genres,
   status,
   rating,
+  origin,
+  yearFrom,
+  yearTo,
+  minScore,
   initialResults,
   total,
   initialPage,
@@ -43,9 +51,13 @@ export function BrowseGrid({
       setLoading(true);
       try {
         const params = new URLSearchParams({ sort, page: String(targetPage) });
-        if (genre) params.set("genre", genre);
+        if (genres.length) params.set("genres", genres.join(","));
         if (status) params.set("status", status);
         if (rating) params.set("rating", rating);
+        if (origin) params.set("origin", origin);
+        if (yearFrom) params.set("yearFrom", yearFrom);
+        if (yearTo) params.set("yearTo", yearTo);
+        if (minScore) params.set("minScore", minScore);
         const res = await fetch(`/api/browse?${params.toString()}`);
         const json = await res.json();
         if (!res.ok || json.error) throw new Error("request failed");
@@ -60,7 +72,7 @@ export function BrowseGrid({
         loadingRef.current = false;
       }
     },
-    [sort, genre, status, rating],
+    [sort, genres, status, rating, origin, yearFrom, yearTo, minScore],
   );
 
   useEffect(() => {
@@ -115,17 +127,20 @@ export function BrowseGrid({
     <>
       <p className="mb-4 text-sm text-zinc-400">
         {total.toLocaleString()} {total === 1 ? "title" : "titles"}
-        {genre ? (
+        {genres.length ? (
           <>
             {" "}
-            in <span className="font-semibold text-zinc-200">{genre}</span>
+            in{" "}
+            <span className="font-semibold text-zinc-200">
+              {genres.join(" + ")}
+            </span>
           </>
         ) : null}{" "}
         ·{" "}
         <span className="font-semibold text-zinc-200">{sortLabel(sort)}</span>
       </p>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7">
         {items.map((manga) => (
           <MangaCard key={manga.id} manga={manga} className="w-full!" />
         ))}
@@ -142,7 +157,7 @@ export function BrowseGrid({
               Retry
             </button>
           ) : loading ? (
-            <MangaGridSkeleton count={6} />
+            <MangaGridSkeleton count={7} />
           ) : null}
         </div>
       ) : (

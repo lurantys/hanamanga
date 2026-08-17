@@ -545,15 +545,6 @@ function IntegrationRow({
   tileClass: string;
   state: IntegrationState;
 }) {
-  if (state.status === "checking") {
-    return (
-      <div className="flex items-center justify-center gap-3 rounded-xl border border-white/10 bg-zinc-950/60 px-4 py-5 transition-colors hover:border-white/20">
-        <LoadingIcon className="h-9 w-9" />
-        <span className="font-semibold text-white">{name}</span>
-      </div>
-    );
-  }
-
   return (
     <div className="flex items-center justify-between gap-4 rounded-xl border border-white/10 bg-zinc-950/60 px-4 py-3.5 transition-colors hover:border-white/20">
       <div className="flex min-w-0 items-center gap-3.5">
@@ -573,7 +564,9 @@ function IntegrationRow({
         </div>
       </div>
 
-      {state.status === "connected" ? (
+      {state.status === "checking" ? (
+        <LoadingIcon className="h-10 w-10 shrink-0" />
+      ) : state.status === "connected" ? (
         <div className="flex shrink-0 flex-col items-end gap-1">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-1 text-xs font-semibold text-emerald-300">
             <span className="relative flex h-1.5 w-1.5">

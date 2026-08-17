@@ -545,17 +545,22 @@ function IntegrationRow({
   tileClass: string;
   state: IntegrationState;
 }) {
+  if (state.status === "checking") {
+    return (
+      <div className="flex items-center justify-center gap-3 rounded-xl border border-white/10 bg-zinc-950/60 px-4 py-5 transition-colors hover:border-white/20">
+        <LoadingIcon className="h-9 w-9" />
+        <span className="font-semibold text-white">{name}</span>
+      </div>
+    );
+  }
+
   return (
     <div className="flex items-center justify-between gap-4 rounded-xl border border-white/10 bg-zinc-950/60 px-4 py-3.5 transition-colors hover:border-white/20">
       <div className="flex min-w-0 items-center gap-3.5">
         <span
           className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${tileClass} text-white shadow-lg shadow-black/30`}
         >
-          {state.status === "checking" ? (
-            <span className="h-5 w-5 animate-pulse rounded-full bg-white/25" />
-          ) : (
-            <ProviderLogo provider={provider} className="h-6 w-6" />
-          )}
+          <ProviderLogo provider={provider} className="h-6 w-6" />
         </span>
         <div className="min-w-0">
           <p className="font-semibold text-white">{name}</p>
@@ -568,12 +573,7 @@ function IntegrationRow({
         </div>
       </div>
 
-      {state.status === "checking" ? (
-        <span className="inline-flex shrink-0 items-center gap-2 text-xs font-medium text-zinc-500">
-          <LoadingIcon className="h-4 w-4" />
-          Checking…
-        </span>
-      ) : state.status === "connected" ? (
+      {state.status === "connected" ? (
         <div className="flex shrink-0 flex-col items-end gap-1">
           <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-1 text-xs font-semibold text-emerald-300">
             <span className="relative flex h-1.5 w-1.5">

@@ -602,6 +602,7 @@ export function Reader({
     }
     lastRestoredAtRef.current = saved.updatedAt;
     const restore = () => {
+      if (userActiveRef.current) return;
       const doc = document.documentElement;
       const max = doc.scrollHeight - doc.clientHeight;
       if (max > 0) window.scrollTo(0, saved.scrollFraction * max);

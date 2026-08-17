@@ -77,22 +77,6 @@ function GridCard({
             </span>
           )}
 
-          <span
-            aria-hidden
-            className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-200 group-hover:opacity-100 pointer-coarse:opacity-100"
-          >
-            <span className="flex h-8 w-8 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
-              <svg
-                viewBox="0 0 24 24"
-                fill="white"
-                stroke="none"
-                className="ml-0.5 h-3 w-3"
-              >
-                <path d="M8 5.14v13.72L19 12 8 5.14z" />
-              </svg>
-            </span>
-          </span>
-
           {progressPct !== null && (
             <div className="absolute inset-x-0 bottom-0 h-0.5 bg-white/10">
               <div

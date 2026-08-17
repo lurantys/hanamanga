@@ -55,17 +55,6 @@ export function MangaCard({ manga, className = "" }: MangaCardProps) {
           />
         )}
 
-        <span
-          aria-hidden
-          className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-200 group-hover:opacity-100"
-        >
-          <span className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm">
-            <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
-              <path d="M12 6v12M6 12h12" />
-            </svg>
-          </span>
-        </span>
-
         <div className="absolute inset-x-0 bottom-0 flex flex-wrap gap-1 bg-gradient-to-t from-zinc-950/90 to-transparent p-2 pt-6 opacity-0 transition-opacity duration-200 group-hover:opacity-100 pointer-coarse:opacity-100">
           {genres.map((genre) => (
             <span

@@ -66,6 +66,9 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
   const showRating =
     Boolean(hero.description) && rating > 0 && match !== "0.0";
   const description = truncate(hero.description, 400);
+  const pct = snapshot
+    ? Math.round((snapshot.mangaFraction ?? snapshot.scrollFraction) * 100)
+    : null;
   const primaryHref = snapshot
     ? `/read/${hero.id}/${snapshot.chapterId}`
     : `/read/${hero.id}`;
@@ -79,7 +82,15 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>
           <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
         </svg>
-        {snapshot ? "Continue" : "Read Now"}
+        <span className="flex flex-col items-start leading-tight">
+          {snapshot ? "Continue" : "Read Now"}
+          {snapshot && (
+            <span className="text-[11px] font-semibold text-zinc-500">
+              {snapshot.chapterLabel}
+              {pct !== null && pct > 0 ? ` · ${pct}%` : ""}
+            </span>
+          )}
+        </span>
       </Link>
       <Link
         href={`/manga/${hero.id}`}

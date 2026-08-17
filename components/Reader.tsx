@@ -987,6 +987,8 @@ export function Reader({
     }
   }, [router, nextHref, nextNextHref, displayProgress]);
 
+  const preloadedChapterRef = useRef<string | null>(null);
+
   useEffect(() => {
     if (!nextHref || !nextChapterId || preloadUrls.length > 0) return;
     const nearEnd =
@@ -996,6 +998,8 @@ export function Reader({
           ? pagedIndex >= pages.length - 3
           : pagedIndex >= pages.length - 2;
     if (!nearEnd) return;
+    if (preloadedChapterRef.current === nextChapterId) return;
+    preloadedChapterRef.current = nextChapterId;
     let cancelled = false;
     fetch(
       `/api/preload-chapter?mangaId=${encodeURIComponent(mangaId)}&chapterId=${encodeURIComponent(nextChapterId)}`,

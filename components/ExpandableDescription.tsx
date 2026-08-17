@@ -51,9 +51,19 @@ function sanitize(html: string): string {
     }
   });
   doc.querySelectorAll("*").forEach((el) => {
-    if (!SAFE_TAGS.has(el.tagName)) {
-      el.replaceWith(...Array.from(el.childNodes));
+    const tag = el.tagName;
+    if (
+      tag === "HTML" ||
+      tag === "HEAD" ||
+      tag === "BODY" ||
+      SAFE_TAGS.has(tag)
+    ) {
+      return;
     }
+    const parent = el.parentNode;
+    if (!parent) return;
+    while (el.firstChild) parent.insertBefore(el.firstChild, el);
+    parent.removeChild(el);
   });
   return doc.body.innerHTML;
 }

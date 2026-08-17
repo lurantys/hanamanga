@@ -66,9 +66,6 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
   const showRating =
     Boolean(hero.description) && rating > 0 && match !== "0.0";
   const description = truncate(hero.description, 400);
-  const pct = snapshot
-    ? Math.round((snapshot.mangaFraction ?? snapshot.scrollFraction) * 100)
-    : null;
   const primaryHref = snapshot
     ? `/read/${hero.id}/${snapshot.chapterId}`
     : `/read/${hero.id}`;
@@ -176,11 +173,6 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
                   {hero.follows.toLocaleString()} followers
                 </span>
               ) : null}
-              {snapshot && pct !== null && (
-                <span className="rounded-md bg-red-500/15 px-2 py-0.5 text-xs font-bold text-red-300">
-                  {snapshot.chapterLabel} · {pct}% of manga read
-                </span>
-              )}
             </div>
 
             <h1 className="line-clamp-3 max-w-3xl text-3xl font-extrabold tracking-tight text-white drop-shadow-lg md:line-clamp-2 md:text-6xl">

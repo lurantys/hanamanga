@@ -38,46 +38,43 @@ export function NewChaptersRow() {
     const ids = continueEntries.map((entry) => entry.mangaId);
 
     let active = true;
-    fetch(`/api/manga?ids=${ids.join(",")}`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((json) => {
+    Promise.all([
+      fetch(`/api/manga?ids=${ids.join(",")}`).then((res) =>
+        res.ok ? res.json() : null,
+      ),
+      fetch(
+        `/api/feed?ids=${ids.map(encodeURIComponent).join(",")}&limit=3`,
+      ).then((res) => (res.ok ? res.json() : null)),
+    ])
+      .then(([mangaJson, feedJson]) => {
         if (!active) return;
-        const mangaList: Manga[] = json?.data ?? [];
+        const mangaList: Manga[] = mangaJson?.data ?? [];
         const byId = new Map(mangaList.map((manga) => [manga.id, manga]));
-        return Promise.all(
-          continueEntries.map(async (entry) => {
-            const manga = byId.get(entry.mangaId);
-            if (!manga) return null;
-            const readSet = read[entry.mangaId];
-            const since = baseline.get(entry.mangaId) ?? 0;
-            try {
-              const res = await fetch(
-                `/api/feed?mangaId=${encodeURIComponent(entry.mangaId)}&limit=3`,
-              );
-              if (!res.ok) return null;
-              const json = await res.json();
-              const chapters: Chapter[] = json?.data ?? [];
-              const fresh = chapters.filter((chapter) => {
-                const published = Date.parse(chapter.publishedAt ?? "");
-                if (!Number.isFinite(published) || published <= since) return false;
-                if (readSet && readSet[chapter.id]) return false;
-                return true;
-              });
-              if (!fresh.length) return null;
-              fresh.sort(
-                (a, b) =>
-                  Date.parse(b.publishedAt ?? "") - Date.parse(a.publishedAt ?? ""),
-              );
-              return { manga, latest: fresh[0] };
-            } catch {
-              return null;
-            }
-          }),
-        );
+        const feedMap: Record<string, Chapter[]> = feedJson?.data ?? {};
+        const results: Update[] = [];
+        for (const entry of continueEntries) {
+          const manga = byId.get(entry.mangaId);
+          if (!manga) continue;
+          const readSet = read[entry.mangaId];
+          const since = baseline.get(entry.mangaId) ?? 0;
+          const chapters = feedMap[entry.mangaId] ?? [];
+          const fresh = chapters.filter((chapter) => {
+            const published = Date.parse(chapter.publishedAt ?? "");
+            if (!Number.isFinite(published) || published <= since) return false;
+            if (readSet && readSet[chapter.id]) return false;
+            return true;
+          });
+          if (!fresh.length) continue;
+          fresh.sort(
+            (a, b) =>
+              Date.parse(b.publishedAt ?? "") - Date.parse(a.publishedAt ?? ""),
+          );
+          results.push({ manga, latest: fresh[0] });
+        }
+        return results;
       })
-      .then((results) => {
-        if (!active || !results) return;
-        const list = results.filter((value): value is Update => value !== null);
+      .then((list) => {
+        if (!active || !list) return;
         if (!list.length) return;
         list.sort(
           (a, b) =>

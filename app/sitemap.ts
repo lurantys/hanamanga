@@ -1,7 +1,10 @@
 import type { MetadataRoute } from "next";
+import { unstable_cache } from "next/cache";
 import { fetchAniListList } from "@/lib/anilist";
 import { fetchMangaList } from "@/lib/mangadex";
 import { SITE_URL } from "@/lib/site";
+
+export const revalidate = 3600;
 
 const STATIC_ROUTES: MetadataRoute.Sitemap = [
   {
@@ -19,9 +22,9 @@ const STATIC_ROUTES: MetadataRoute.Sitemap = [
 const TOP_MANGA_PAGES = 5;
 const PER_PAGE = 100;
 
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const mangaRoutes: MetadataRoute.Sitemap = [];
-  try {
+const cachedMangaRoutes = unstable_cache(
+  async (): Promise<MetadataRoute.Sitemap> => {
+    const mangaRoutes: MetadataRoute.Sitemap = [];
     for (let page = 0; page < TOP_MANGA_PAGES; page++) {
       let data;
       try {
@@ -51,6 +54,16 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       }
       if (data.length < PER_PAGE) break;
     }
+    return mangaRoutes;
+  },
+  ["sitemap-manga-routes"],
+  { revalidate: 3600 },
+);
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  let mangaRoutes: MetadataRoute.Sitemap = [];
+  try {
+    mangaRoutes = await cachedMangaRoutes();
   } catch {
     // fall back to the static routes only
   }

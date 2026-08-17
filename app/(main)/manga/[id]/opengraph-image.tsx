@@ -6,6 +6,7 @@ import { fetchCatalogManga } from "@/lib/catalog";
 export const alt = "Manga page on Hana";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
+export const revalidate = 3600;
 
 type OgMangaCard = {
   title: string;

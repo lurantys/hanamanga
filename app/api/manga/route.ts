@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { unstable_cache } from "next/cache";
 import { fetchMangaList, type Manga } from "@/lib/mangadex";
 import { atsuToManga } from "@/lib/catalog";
 import { fetchAtsuManga } from "@/lib/atsu";
@@ -9,15 +10,8 @@ import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const ids = (searchParams.get("ids") ?? "")
-    .split(",")
-    .map((id) => id.trim())
-    .filter(Boolean);
-  const withBanners = searchParams.get("banners") === "1";
-  if (!ids.length) return NextResponse.json({ data: [] });
-  try {
+const cachedProviderFetch = unstable_cache(
+  async (ids: string[], withBanners: boolean) => {
     const { mangadex, atsu, al } = splitMangaIds(ids);
     const [mdData, atsuData, alData] = await Promise.all([
       (async () => {
@@ -43,20 +37,6 @@ export async function GET(request: Request) {
       ),
       fetchAniListByIds(al).catch(() => [] as Manga[]),
     ]);
-    const foundAl = new Set(alData.map((manga) => manga.id));
-    const missingAl = al.filter((ref) => !foundAl.has(`al:${ref}`));
-    if (missingAl.length) {
-      const supabase = await createClient();
-      const { data: rows } = await supabase
-        .from("hana_library")
-        .select("manga_id, manga")
-        .in("manga_id", missingAl.map((ref) => `al:${ref}`));
-      for (const row of rows ?? []) {
-        const blob = row.manga as Manga | null;
-        if (!blob || typeof blob !== "object") continue;
-        alData.push({ ...blob, id: row.manga_id });
-      }
-    }
     const data = [
       ...mdData,
       ...alData,
@@ -73,11 +53,43 @@ export async function GET(request: Request) {
         }),
       );
     }
+    return data;
+  },
+  ["api-manga"],
+  { revalidate: 300 },
+);
+
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const ids = (searchParams.get("ids") ?? "")
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
+  const withBanners = searchParams.get("banners") === "1";
+  if (!ids.length) return NextResponse.json({ data: [] });
+  try {
+    const data = await cachedProviderFetch(ids, withBanners);
+    const foundAl = new Set(data.filter((m) => m.id.startsWith("al:")).map((m) => m.id));
+    const missingAl = splitMangaIds(ids).al.filter(
+      (ref) => !foundAl.has(`al:${ref}`),
+    );
+    if (missingAl.length) {
+      const supabase = await createClient();
+      const { data: rows } = await supabase
+        .from("hana_library")
+        .select("manga_id, manga")
+        .in("manga_id", missingAl.map((ref) => `al:${ref}`));
+      for (const row of rows ?? []) {
+        const blob = row.manga as Manga | null;
+        if (!blob || typeof blob !== "object") continue;
+        data.push({ ...blob, id: row.manga_id });
+      }
+    }
     return NextResponse.json(
       { data },
       {
         headers: {
-          "Cache-Control": "no-store",
+          "Cache-Control": "public, max-age=300, s-maxage=300, stale-while-revalidate=600",
         },
       },
     );

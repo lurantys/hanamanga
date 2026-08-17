@@ -1,4 +1,5 @@
 import { notFound, redirect } from "next/navigation";
+import { unstable_cache } from "next/cache";
 import {
   chapterPageUrl,
   fetchChapterReader,
@@ -63,6 +64,21 @@ function mdChapterNumber(chapter: Chapter): number | null {
  * chapter navigation stays consistent across both code paths.
  */
 export async function buildReaderProps(
+  mangaId: string,
+  chapterId: string,
+): Promise<ReaderProps> {
+  return cachedReaderProps(mangaId, chapterId);
+}
+
+const cachedReaderProps = unstable_cache(
+  async (mangaId: string, chapterId: string): Promise<ReaderProps> => {
+    return buildReaderPropsUncached(mangaId, chapterId);
+  },
+  ["reader-props"],
+  { revalidate: 600 },
+);
+
+async function buildReaderPropsUncached(
   mangaId: string,
   chapterId: string,
 ): Promise<ReaderProps> {

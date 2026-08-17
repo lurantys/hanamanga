@@ -1,10 +1,63 @@
 import { NextResponse } from "next/server";
+import { unstable_cache } from "next/cache";
 import { fetchAniListList } from "@/lib/anilist";
 import { fetchMangaList, getTagId, type Manga } from "@/lib/mangadex";
 
 export const dynamic = "force-dynamic";
 
 const POOL_FETCH_LIMIT = 24;
+
+const cachedPools = unstable_cache(
+  async (tags: string[], offsetBase: number): Promise<Manga[][]> => {
+    const pools: Manga[][] = [];
+    for (const tag of tags.slice(0, 4)) {
+      try {
+        const result = await fetchAniListList({
+          limit: POOL_FETCH_LIMIT,
+          offset: offsetBase,
+          genre: tag,
+          sort: "popular",
+        });
+        pools.push(result.data);
+      } catch {
+        try {
+          const tagId = await getTagId(tag);
+          const result = await fetchMangaList({
+            limit: POOL_FETCH_LIMIT,
+            offset: offsetBase,
+            order: { followedCount: "desc" },
+            includedTags: tagId ? [tagId] : undefined,
+          });
+          pools.push(result.data);
+        } catch {
+          // skip genres neither source can filter on
+        }
+      }
+    }
+    try {
+      const general = await fetchAniListList({
+        limit: POOL_FETCH_LIMIT,
+        offset: offsetBase + 40,
+        sort: "popular",
+      });
+      pools.push(general.data);
+    } catch {
+      try {
+        const general = await fetchMangaList({
+          limit: POOL_FETCH_LIMIT,
+          offset: offsetBase + 40,
+          order: { followedCount: "desc" },
+        });
+        pools.push(general.data);
+      } catch {
+        // fall through to the pools already collected
+      }
+    }
+    return pools;
+  },
+  ["api-recommend-pools"],
+  { revalidate: 300 },
+);
 
 function parseWeightedTags(raw: string): { name: string; weight: number }[] {
   return raw
@@ -74,50 +127,10 @@ export async function GET(request: Request) {
   }
 
   const offsetBase = (seed % 12) * POOL_FETCH_LIMIT;
-  const pools: Manga[][] = [];
-  for (const tag of weighted.slice(0, 4)) {
-    try {
-      const result = await fetchAniListList({
-        limit: POOL_FETCH_LIMIT,
-        offset: offsetBase,
-        genre: tag.name,
-        sort: "popular",
-      });
-      pools.push(result.data);
-    } catch {
-      try {
-        const tagId = await getTagId(tag.name);
-        const result = await fetchMangaList({
-          limit: POOL_FETCH_LIMIT,
-          offset: offsetBase,
-          order: { followedCount: "desc" },
-          includedTags: tagId ? [tagId] : undefined,
-        });
-        pools.push(result.data);
-      } catch {
-        // skip genres neither source can filter on
-      }
-    }
-  }
-  try {
-    const general = await fetchAniListList({
-      limit: POOL_FETCH_LIMIT,
-      offset: offsetBase + 40,
-      sort: "popular",
-    });
-    pools.push(general.data);
-  } catch {
-    try {
-      const general = await fetchMangaList({
-        limit: POOL_FETCH_LIMIT,
-        offset: offsetBase + 40,
-        order: { followedCount: "desc" },
-      });
-      pools.push(general.data);
-    } catch {
-      // fall through to the pools already collected
-    }
-  }
+  const pools = await cachedPools(
+    weighted.map((tag) => tag.name),
+    offsetBase,
+  );
 
   let candidates: Manga[] = [];
   if (pools.length) {

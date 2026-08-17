@@ -1,4 +1,5 @@
 import { unstable_cache } from "next/cache";
+import { cache } from "react";
 import {
   fetchMangaById,
   fetchSearch,
@@ -150,19 +151,25 @@ export async function searchCatalog(
   return { data, total: data.length, offset: 0, limit };
 }
 
-export async function fetchCatalogManga(
-  id: string,
-  options: { withStats?: boolean } = {},
-): Promise<Manga> {
-  const { source, ref } = parseMangaId(id);
-  if (source === "atsu") {
-    return atsuToManga(await fetchAtsuManga(ref));
-  }
-  if (source === "al") {
-    return fetchAniListById(ref);
-  }
-  return fetchMangaById(ref, { withStats: options.withStats });
-}
+const cachedCatalogManga = unstable_cache(
+  async (id: string, withStats: boolean): Promise<Manga> => {
+    const { source, ref } = parseMangaId(id);
+    if (source === "atsu") {
+      return atsuToManga(await fetchAtsuManga(ref));
+    }
+    if (source === "al") {
+      return fetchAniListById(ref);
+    }
+    return fetchMangaById(ref, { withStats });
+  },
+  ["catalog-manga"],
+  { revalidate: 300 },
+);
+
+export const fetchCatalogManga = cache(
+  (id: string, options: { withStats?: boolean } = {}): Promise<Manga> =>
+    cachedCatalogManga(id, options.withStats ?? false),
+);
 
 const cachedAtsuRow = unstable_cache(
   async (type: string, limit: number): Promise<Manga[]> => {

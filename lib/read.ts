@@ -193,20 +193,29 @@ export const getMdAggregate = cache((ref: string) =>
   cachedMdAggregate(ref),
 );
 
-export async function mdRefForManga(manga: {
+export const mdRefForManga = cache(async (manga: {
   title: string;
   altTitles?: string[];
-}): Promise<string | null> {
-  try {
-    const match = await matchToMangaDex({
-      title: manga.title,
-      altTitles: manga.altTitles,
-    });
-    return match?.id ?? null;
-  } catch {
-    return null;
-  }
-}
+}): Promise<string | null> => cachedMdRefForManga(manga));
+
+const cachedMdRefForManga = unstable_cache(
+  async (manga: {
+    title: string;
+    altTitles?: string[];
+  }): Promise<string | null> => {
+    try {
+      const match = await matchToMangaDex({
+        title: manga.title,
+        altTitles: manga.altTitles,
+      });
+      return match?.id ?? null;
+    } catch {
+      return null;
+    }
+  },
+  ["resolve-md-ref"],
+  { revalidate: 3600 },
+);
 
 export async function mdRefForCatalogId(mangaId: string): Promise<string | null> {
   const { source, ref } = parseMangaId(mangaId);

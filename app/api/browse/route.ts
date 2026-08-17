@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { unstable_cache } from "next/cache";
 import { fetchAniListList } from "@/lib/anilist";
 import { fetchMangaList } from "@/lib/mangadex";
 import {
@@ -15,6 +16,38 @@ export const dynamic = "force-dynamic";
 
 const PER_PAGE = 24;
 
+const cachedBrowse = unstable_cache(
+  async (sort: SortKey, genre: string, status: string, rating: string, page: number) => {
+    const offset = (page - 1) * PER_PAGE;
+    try {
+      try {
+        return await fetchAniListList({
+          limit: PER_PAGE,
+          offset,
+          sort,
+          genre: genre || undefined,
+          status: status || undefined,
+          rating: rating || undefined,
+        });
+      } catch {
+        const tagId = genre ? tagIdFor(genre) : undefined;
+        return await fetchMangaList({
+          limit: PER_PAGE,
+          offset,
+          order: SORT_ORDER[sort],
+          includedTags: tagId ? [tagId] : undefined,
+          status: status ? [status] : undefined,
+          contentRating: rating ? RATING_VALUES[rating] : undefined,
+        });
+      }
+    } catch {
+      return { data: [], total: 0 };
+    }
+  },
+  ["api-browse"],
+  { revalidate: 300 },
+);
+
 export async function GET(request: Request) {
   const sp = new URL(request.url).searchParams;
   const sortParam = sp.get("sort") ?? "popular";
@@ -25,32 +58,23 @@ export async function GET(request: Request) {
   const ratingParam = sp.get("rating")?.trim() || undefined;
   const rating = isRatingKey(ratingParam ?? "") ? (ratingParam ?? "") : "";
   const page = Math.max(1, Number(sp.get("page")) || 1);
-  const offset = (page - 1) * PER_PAGE;
 
   try {
-    let result;
-    try {
-      result = await fetchAniListList({
-        limit: PER_PAGE,
-        offset,
-        sort,
-        genre: genre || undefined,
-        status: status || undefined,
-        rating: rating || undefined,
-      });
-    } catch {
-      const tagId = genre ? tagIdFor(genre) : undefined;
-      result = await fetchMangaList({
-        limit: PER_PAGE,
-        offset,
-        order: SORT_ORDER[sort],
-        includedTags: tagId ? [tagId] : undefined,
-        status: status ? [status] : undefined,
-        contentRating: rating ? RATING_VALUES[rating] : undefined,
-      });
-    }
-    const { data, total } = result;
-    return NextResponse.json({ data, total, page });
+    const { data, total } = await cachedBrowse(
+      sort,
+      genre ?? "",
+      status ?? "",
+      rating ?? "",
+      page,
+    );
+    return NextResponse.json(
+      { data, total, page },
+      {
+        headers: {
+          "Cache-Control": "public, max-age=300, s-maxage=300, stale-while-revalidate=600",
+        },
+      },
+    );
   } catch {
     return NextResponse.json(
       { data: [], total: 0, error: "unavailable" },

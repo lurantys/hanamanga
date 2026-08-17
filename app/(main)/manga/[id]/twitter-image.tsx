@@ -4,3 +4,5 @@ export {
   size,
   contentType,
 } from "./opengraph-image";
+
+export const revalidate = 3600;

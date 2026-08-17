@@ -3,6 +3,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AtsuChapterList } from "@/components/AtsuChapterList";
+import { ExternalLinkLogo } from "@/components/BrandIcons";
 import { ContinueReadingButton } from "@/components/ContinueReadingButton";
 import { MangaChapterList } from "@/components/MangaChapterList";
 import { ExpandableDescription } from "@/components/ExpandableDescription";
@@ -250,10 +251,11 @@ export default async function MangaPage({ params }: MangaPageProps) {
                     href={link.href}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 rounded-full border border-white/10 bg-zinc-800/60 px-2.5 py-0.5 text-xs font-medium text-zinc-200 transition-colors hover:border-white/30 hover:text-white"
+                    className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-zinc-800/60 px-2.5 py-0.5 text-xs font-medium text-zinc-200 transition-colors hover:border-white/30 hover:bg-zinc-700/60 hover:text-white"
                   >
+                    <ExternalLinkLogo logoKey={link.key} className="shrink-0" />
                     {link.label}
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3" aria-hidden>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3 text-zinc-500" aria-hidden>
                       <path d="M15 3h6v6" />
                       <path d="M10 14 21 3" />
                       <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />

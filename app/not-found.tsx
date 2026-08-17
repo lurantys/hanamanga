@@ -29,11 +29,12 @@ export default function NotFound() {
         </Link>
         <div className="mt-14 flex flex-col items-center gap-12 md:flex-row md:items-center md:gap-20">
           <Image
-            src="/404girl.png"
+            src="/nezukoloading.gif"
             alt="A clueless anime girl, lost and confused"
             width={250}
             height={270}
             priority
+            unoptimized
             className="h-64 w-auto shrink-0 rounded-2xl object-cover"
           />
           <div className="flex max-w-md flex-col text-center md:text-left">

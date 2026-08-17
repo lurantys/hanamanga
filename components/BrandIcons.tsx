@@ -18,14 +18,15 @@ export function MalIcon({ className = "h-4 w-4" }: { className?: string }) {
 
 export function ExternalLinkLogo({
   logoKey,
-  className = "h-3.5 w-3.5",
+  className,
 }: {
   logoKey: ExternalLinkKey;
   className?: string;
 }) {
+  const classes = `h-3.5 w-3.5 shrink-0 ${className ?? ""}`.trim();
   if (logoKey === "al")
-    return <AniListIcon className={`${className} text-[#02a9ff]`} />;
+    return <AniListIcon className={`${classes} text-[#02a9ff]`} />;
   if (logoKey === "mal")
-    return <MalIcon className={`${className} text-[#2e51a2]`} />;
+    return <MalIcon className={`${classes} text-[#2e51a2]`} />;
   return null;
 }

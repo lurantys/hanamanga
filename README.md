@@ -22,13 +22,14 @@ Discover, read, and track manga, manhwa, manhua, and webtoons — beautifully, o
 
 <div align="left">
 
-* **Discover & browse** — trending, popular, and genre carousels, plus search and filtered browsing.
+* **Discover & browse** — trending, popular, and genre carousels, plus instant search and filtered browsing.
 * **Personalized home feed** — *Recommended for You* and *New Chapters* built from your library and reading history.
-* **Flexible reader** — paged and webtoon modes, zoom and fit controls, and an immersive mode.
+* **Built-in reader** — smooth paged and webtoon modes with zoom, fit, and immersive controls.
 * **Library & Continue Reading** — pick up right where you left off; your progress stays on your device.
 * **Rich detail pages** — chapters, ratings, genres, and related titles.
-* **Source-aware** — pulls from MangaDex, Atsu, and MangaKatana; chapters hosted externally open in their source.
-* **Fast & responsive** — server-rendered with Next.js, tuned for both desktop and mobile.
+* **Source-aware** — aggregates MangaDex, Atsu, and MangaKatana and reads chapters in-app with automatic source fallback.
+* **Track & sync** — connect AniList or MyAnimeList to keep your reading lists in sync.
+* **Fast & responsive** — server-rendered with Next.js, tuned for desktop and mobile.
 
 </div>
 
@@ -36,22 +37,12 @@ Discover, read, and track manga, manhwa, manhua, and webtoons — beautifully, o
 
 * [Next.js](https://nextjs.org) (App Router) + React 19 + TypeScript
 * [Tailwind CSS](https://tailwindcss.com) for styling
+* [Supabase](https://supabase.com) for authentication and library storage
 * Live on [Vercel](https://hanamanga.online/)
 
 ## Try it live
 
 Hana is deployed and running at **[hanamanga.online](https://hanamanga.online/)** — no setup required.
-
-## Development
-
-To run a local copy:
-
-```bash
-npm install
-npm run dev
-```
-
-Then open [http://localhost:3000](http://localhost:3000). Build and serve in production with `npm run build && npm run start`.
 
 ## Contributing
 

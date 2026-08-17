@@ -270,7 +270,7 @@ export function anilistToManga(media: AniListMedia): Manga {
     title,
     altTitles: altTitles.length ? [...new Set(altTitles)] : undefined,
     description: media.description ?? undefined,
-    coverUrl: media.coverImage?.extraLarge ?? media.coverImage?.large ?? null,
+    coverUrl: media.coverImage?.large ?? media.coverImage?.extraLarge ?? null,
     genres: media.genres ?? [],
     rating: media.averageScore != null ? media.averageScore / 10 : undefined,
     follows: media.popularity ?? undefined,

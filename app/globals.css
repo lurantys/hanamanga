@@ -39,7 +39,7 @@ h3 {
 }
 
 @utility glass-in {
-  transform-origin: top right;
+  transform-origin: top;
   animation: glass-in 0.18s ease-out;
 }
 

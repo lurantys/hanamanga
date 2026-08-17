@@ -139,7 +139,7 @@ export function SearchBar() {
       )}
 
       {open && debouncedQuery && (
-        <div className="glass-in absolute right-0 top-[calc(100%+12px)] z-50 w-[min(24rem,calc(100vw-2rem))] overflow-hidden rounded-[2rem] border border-white/10 bg-zinc-950/95 p-4 shadow-[0_24px_60px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.08)] ring-1 ring-inset ring-white/10 backdrop-blur-2xl">
+        <div className="glass-in absolute left-1/2 top-[calc(100%+12px)] z-50 w-[min(24rem,calc(100vw-2rem))] -translate-x-1/2 overflow-hidden rounded-[2rem] border border-white/10 bg-zinc-950/95 p-4 shadow-[0_24px_60px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.08)] ring-1 ring-inset ring-white/10 backdrop-blur-2xl">
           <SearchLiveResults
             key={debouncedQuery}
             query={debouncedQuery}

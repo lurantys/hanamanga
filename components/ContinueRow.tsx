@@ -73,6 +73,7 @@ export function ContinueRow() {
           <Link
             key={entry.mangaId}
             href={`/read/${entry.mangaId}/${entry.chapterId}`}
+            prefetch={false}
             aria-label={`${title} — ${entry.chapterLabel}, ${pct}% of the manga read. Continue reading.`}
             className="group w-36 shrink-0 rounded-lg text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 md:w-44"
           >

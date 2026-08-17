@@ -274,6 +274,7 @@ export function AtsuChapterList({
                   itemRefs.current[chapter.id] = el;
                 }}
                 href={`/read/${mangaId}/${chapter.id}`}
+                prefetch={false}
                 className={`group flex items-center justify-between gap-3 rounded-xl border px-4 py-3 backdrop-blur-xl transition-colors ${
                   highlightId === chapter.id
                     ? "animate-chapter-highlight border-red-400/50 bg-red-500/20"

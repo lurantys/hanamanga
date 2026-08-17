@@ -53,6 +53,7 @@ function GridCard({
     <div className="group relative">
       <Link
         href={href}
+        prefetch={false}
         className="block rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
         aria-label={ariaLabel}
       >
@@ -139,6 +140,7 @@ function ListCard({
     <div className="group relative flex items-center gap-3.5 rounded-xl border border-white/10 bg-zinc-900/50 p-2.5 transition-colors hover:border-white/20 hover:bg-zinc-900/80">
       <Link
         href={href}
+        prefetch={false}
         className="block shrink-0 rounded-md focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
         aria-label={ariaLabel}
       >
@@ -154,7 +156,7 @@ function ListCard({
       </Link>
 
       <div className="min-w-0 flex-1">
-        <Link href={href} className="block focus:outline-none">
+        <Link href={href} prefetch={false} className="block focus:outline-none">
           <p className="line-clamp-1 text-sm font-semibold text-zinc-200">
             {title}
           </p>

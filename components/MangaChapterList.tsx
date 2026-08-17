@@ -212,6 +212,7 @@ export function MangaChapterList({ mangaId, volumes }: MangaChapterListProps) {
                     ) : (
                       <Link
                         href={`/read/${mangaId}/${chapter.id}`}
+                        prefetch={false}
                         className="rounded-lg border border-white/10 bg-zinc-800/60 px-3.5 py-1.5 text-xs font-semibold text-zinc-200 transition-colors hover:bg-zinc-700/60 hover:text-white"
                       >
                         Read

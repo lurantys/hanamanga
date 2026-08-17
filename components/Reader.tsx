@@ -969,9 +969,22 @@ export function Reader({
     return parts[parts.length - 1] ?? null;
   }, [nextHref]);
 
+  const prefetchedNextRef = useRef<string | null>(null);
+  const prefetchedNextNextRef = useRef<string | null>(null);
+
   useEffect(() => {
-    if (nextHref) router.prefetch(nextHref);
-    if (displayProgress > 0.6 && nextNextHref) router.prefetch(nextNextHref);
+    if (nextHref && prefetchedNextRef.current !== nextHref) {
+      prefetchedNextRef.current = nextHref;
+      router.prefetch(nextHref);
+    }
+    if (
+      displayProgress > 0.6 &&
+      nextNextHref &&
+      prefetchedNextNextRef.current !== nextNextHref
+    ) {
+      prefetchedNextNextRef.current = nextNextHref;
+      router.prefetch(nextNextHref);
+    }
   }, [router, nextHref, nextNextHref, displayProgress]);
 
   useEffect(() => {
@@ -1175,6 +1188,7 @@ export function Reader({
                       <Link
                         key={chapter.id}
                         href={`/read/${mangaId}/${chapter.id}`}
+                        prefetch={false}
                         data-active={isActive}
                         onClick={() => setOpen(false)}
                         className={`block rounded-lg px-3 py-2 text-sm transition-colors ${

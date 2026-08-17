@@ -401,7 +401,7 @@ export default function AccountContent() {
           </p>
         )}
 
-        <section className="mt-6 rounded-2xl border border-white/10 bg-zinc-900/60 p-5">
+        <section className="mt-6 rounded-2xl border border-white/10 bg-zinc-900/60 p-5 glass-in" style={{ animationDelay: '0ms' }}>
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-start gap-3">
               <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-zinc-950/70 text-zinc-300">
@@ -419,7 +419,7 @@ export default function AccountContent() {
             <button
               onClick={handleSync}
               disabled={syncing}
-              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-white/15 px-4 py-2 text-sm font-semibold text-zinc-200 transition-colors hover:border-white/40 hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-white/15 px-4 py-2 text-sm font-semibold text-zinc-200 transition-colors hover:border-white/40 hover:text-white disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.985] active:transition-transform active:duration-80"
             >
               {syncing ? (
                 <>
@@ -483,7 +483,7 @@ export default function AccountContent() {
           )}
         </section>
 
-        <section className="mt-5 rounded-2xl border border-white/10 bg-zinc-900/60 p-5">
+        <section className="mt-5 rounded-2xl border border-white/10 bg-zinc-900/60 p-5 glass-in" style={{ animationDelay: '60ms' }}>
           <div className="flex items-center gap-3">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-zinc-950/70 text-zinc-300">
               <svg
@@ -523,7 +523,7 @@ export default function AccountContent() {
           </div>
         </section>
 
-        <section className="mt-5 rounded-2xl border border-white/10 bg-zinc-900/60 p-5">
+        <section className="mt-5 rounded-2xl border border-white/10 bg-zinc-900/60 p-5 glass-in" style={{ animationDelay: '120ms' }}>
           <div className="flex items-center justify-between gap-4">
             <div>
               <h2 className="text-lg font-bold text-white">Sign out</h2>
@@ -538,7 +538,7 @@ export default function AccountContent() {
                   router.refresh();
                 });
               }}
-              className="shrink-0 inline-flex items-center justify-center rounded-full border border-red-500/40 px-4 py-2 text-sm font-semibold text-red-300 transition-colors hover:border-red-500/70 hover:text-red-200"
+              className="shrink-0 inline-flex items-center justify-center rounded-full border border-red-500/40 px-4 py-2 text-sm font-semibold text-red-300 transition-colors hover:border-red-500/70 hover:text-red-200 active:scale-[0.985] active:transition-transform active:duration-80"
             >
               Sign out
             </button>
@@ -611,7 +611,7 @@ function IntegrationRow({
       ) : (
         <a
           href={href}
-          className="shrink-0 inline-flex items-center justify-center rounded-full bg-white px-4 py-1.5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-white/80"
+          className="shrink-0 inline-flex items-center justify-center rounded-full bg-white px-4 py-1.5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-white/80 active:scale-[0.985] active:transition-transform active:duration-80"
         >
           Connect
         </a>

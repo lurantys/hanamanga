@@ -29,14 +29,14 @@ const PROVIDERS: {
   {
     provider: "anilist",
     name: "AniList",
-    description: "Two-way sync with your AniList manga list.",
+    description: "Sync your manga list both ways.",
     href: "/api/integrations/anilist",
     tileClass: "bg-zinc-800",
   },
   {
     provider: "mal",
     name: "MyAnimeList",
-    description: "Two-way sync with your MAL manga list.",
+    description: "Sync your MAL manga list both ways.",
     href: "/api/integrations/mal",
     tileClass: "bg-zinc-800",
   },
@@ -410,9 +410,7 @@ export default function AccountContent() {
               <div>
                 <h2 className="text-lg font-bold text-white">Sync</h2>
                 <p className="mt-0.5 text-sm text-zinc-400">
-                  Syncs your library, progress, and read chapters across
-                  devices, and two-way syncs your AniList and MyAnimeList
-                  lists.
+                  Library, progress, and read chapters across devices.
                 </p>
               </div>
             </div>
@@ -486,29 +484,14 @@ export default function AccountContent() {
         <section className="mt-5 rounded-2xl border border-white/10 bg-zinc-900/60 p-5 glass-in" style={{ animationDelay: '60ms' }}>
           <div className="flex items-center gap-3">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-zinc-950/70 text-zinc-300">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.75"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-4 w-4"
-                aria-hidden
-              >
-                <path d="M20 6 9 17l-5-5" />
-                <path d="M21 11v10H3V3h10" />
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>
+                <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z" />
+                <path d="M22 6l-10 10L2 12" />
               </svg>
             </span>
             <div>
-              <h2 className="text-lg font-bold text-white">
-                Tracked on other lists
-              </h2>
-              <p className="mt-0.5 text-sm text-zinc-400">
-                Connect a service to sync your tracked manga both ways — titles
-                you add or read in Hana update your AniList/MAL list, and vice
-                versa.
-              </p>
+              <h2 className="text-lg font-bold text-white">External Lists</h2>
+              <p className="mt-0.5 text-sm text-zinc-400">Two-way sync with AniList and MyAnimeList.</p>
             </div>
           </div>
 
@@ -527,9 +510,7 @@ export default function AccountContent() {
           <div className="flex items-center justify-between gap-4">
             <div>
               <h2 className="text-lg font-bold text-white">Sign out</h2>
-              <p className="mt-0.5 text-sm text-zinc-400">
-                Your data stays saved in your account.
-              </p>
+              <p className="mt-0.5 text-sm text-zinc-400">Your library stays saved.</p>
             </div>
             <button
               onClick={() => {

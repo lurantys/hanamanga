@@ -23,14 +23,6 @@ function thumbUrl(coverUrl?: string | null): string | null {
 
 type SortKey = "added" | "updated" | "title" | "rating" | "released";
 type View = "grid" | "list";
-type StatusFilter =
-  | "all"
-  | "reading"
-  | "unread"
-  | "completed"
-  | "hiatus"
-  | "cancelled"
-  | "discontinued";
 
 const SORTS: { key: SortKey; label: string }[] = [
   { key: "added", label: "Recently added" },
@@ -38,16 +30,6 @@ const SORTS: { key: SortKey; label: string }[] = [
   { key: "title", label: "Title A-Z" },
   { key: "rating", label: "Top rated" },
   { key: "released", label: "Newest releases" },
-];
-
-const STATUS_FILTERS: { key: StatusFilter; label: string }[] = [
-  { key: "all", label: "All" },
-  { key: "reading", label: "Reading" },
-  { key: "unread", label: "Unread" },
-  { key: "completed", label: "Completed" },
-  { key: "hiatus", label: "On hold" },
-  { key: "cancelled", label: "Dropped" },
-  { key: "discontinued", label: "Discontinued" },
 ];
 
 function GridCard({
@@ -246,29 +228,12 @@ export default function LibraryPage() {
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortKey>("added");
   const [view, setView] = useState<View>("grid");
-  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
 
   const filtered = useMemo(() => {
     const term = query.trim().toLowerCase();
-    let list = entries.filter(({ manga }) =>
+    const list = entries.filter(({ manga }) =>
       term ? manga.title.toLowerCase().includes(term) : true,
     );
-    if (statusFilter !== "all") {
-      list = list.filter(({ manga }) => {
-        const hasProgress = Boolean(progress[manga.id]);
-        switch (statusFilter) {
-          case "reading":
-            return hasProgress;
-          case "unread":
-            return !hasProgress;
-          case "completed":
-          case "hiatus":
-          case "cancelled":
-          case "discontinued":
-            return manga.status === statusFilter;
-        }
-      });
-    }
     switch (sort) {
       case "added":
         return list;
@@ -293,7 +258,7 @@ export default function LibraryPage() {
           return bTime - aTime;
         });
     }
-  }, [entries, query, sort, progress, statusFilter]);
+  }, [entries, query, sort, progress]);
 
   const toolbarVisible = entries.length > 0;
 
@@ -420,24 +385,6 @@ export default function LibraryPage() {
               </svg>
             </button>
           </div>
-        </div>
-
-        <div className="mt-4 flex flex-wrap gap-1.5">
-          {STATUS_FILTERS.map((option) => (
-            <button
-              key={option.key}
-              type="button"
-              onClick={() => setStatusFilter(option.key)}
-              aria-pressed={statusFilter === option.key}
-              className={`rounded-full border px-3.5 py-1.5 text-xs font-semibold transition-colors ${
-                statusFilter === option.key
-                  ? "border-emerald-400/60 bg-emerald-500/15 text-emerald-300"
-                  : "border-white/10 bg-zinc-800/60 text-zinc-400 hover:text-white"
-              }`}
-            >
-              {option.label}
-            </button>
-          ))}
         </div>
         </div>
       )}

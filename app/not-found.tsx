@@ -35,7 +35,7 @@ export default function NotFound() {
             height={270}
             priority
             unoptimized
-            className="h-64 w-auto shrink-0 rounded-2xl object-cover"
+            className="h-[20.8rem] w-auto shrink-0 rounded-2xl object-cover"
           />
           <div className="flex max-w-md flex-col text-center md:text-left">
             <p className="text-sm font-semibold uppercase tracking-[0.35em] text-red-500">

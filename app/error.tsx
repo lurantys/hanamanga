@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
+import Image from "next/image";
+import Link from "next/link";
 
 type ErrorProps = {
   error: Error & { digest?: string };
@@ -13,22 +15,66 @@ export default function Error({ error, reset }: ErrorProps) {
   }, [error]);
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-zinc-950 px-6">
-      <div className="max-w-md text-center">
-        <h1 className="text-2xl font-extrabold tracking-tight text-white">
-          Something went wrong
-        </h1>
-        <p className="mt-2 text-sm leading-relaxed text-zinc-400">
-          The manga catalog couldn&apos;t be loaded right now. MangaDex may be
-          busy — give it a moment.
-        </p>
-        <button
-          type="button"
-          onClick={reset}
-          className="mt-6 rounded-lg bg-white px-6 py-2.5 text-sm font-bold text-zinc-950 transition-colors hover:bg-white/80"
+    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-zinc-950 px-6 py-16">
+      <div className="relative flex w-full max-w-4xl flex-col">
+        <Link
+          href="/"
+          className="flex w-fit items-center gap-2"
+          aria-label="Hana home"
         >
-          Try again
-        </button>
+          <Image
+            src="/logo-v2.png"
+            alt="Hana"
+            width={40}
+            height={40}
+            className="h-10 w-10 rounded-xl object-contain"
+          />
+          <span className="header-wordmark text-lg font-bold text-zinc-50">
+            Hana
+          </span>
+        </Link>
+        <div className="mt-14 flex flex-col items-center gap-12 md:flex-row md:items-center md:gap-20">
+          <Image
+            src="/nezukoloading.gif"
+            alt="A clueless anime girl, lost and confused"
+            width={250}
+            height={270}
+            priority
+            unoptimized
+            className="h-[20.8rem] w-auto shrink-0 rounded-2xl object-cover"
+          />
+          <div className="flex max-w-md flex-col text-center md:text-left">
+            <p className="text-sm font-semibold uppercase tracking-[0.35em] text-red-500">
+              Error
+            </p>
+            <h1 className="mt-3 text-5xl font-black leading-tight tracking-tight text-white">
+              Something went wrong
+            </h1>
+            <p className="mt-4 text-sm leading-relaxed text-zinc-400">
+              The manga catalog couldn&apos;t be loaded right now. The source
+              may be busy — give it a moment, or head home to keep browsing.
+            </p>
+            <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row md:justify-start">
+              <button
+                type="button"
+                onClick={reset}
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-white/80"
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>
+                  <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8" />
+                  <path d="M21 3v5h-5" />
+                </svg>
+                Try again
+              </button>
+              <Link
+                href="/"
+                className="inline-flex items-center justify-center rounded-full border border-white/15 px-6 py-2.5 text-sm font-semibold text-zinc-300 transition-colors hover:border-white/40 hover:text-white"
+              >
+                Back to Home
+              </Link>
+            </div>
+          </div>
+        </div>
       </div>
     </main>
   );

@@ -3,7 +3,6 @@ import Image from "next/image";
 import { Suspense } from "react";
 import { AuthButton } from "@/components/AuthButton";
 import { BackToTop } from "@/components/BackToTop";
-import { GenreMenu } from "@/components/GenreMenu";
 import { SearchBar } from "@/components/SearchBar";
 
 function Footer() {
@@ -85,7 +84,6 @@ function Header() {
           >
             Library
           </Link>
-          <GenreMenu />
         </nav>
         <div className="flex items-center gap-3">
           <Suspense fallback={null}>

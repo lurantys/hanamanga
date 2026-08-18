@@ -90,7 +90,7 @@ export function SearchResults({
 
   if (!items.length) {
     return (
-      <div className="relative flex flex-col items-center gap-12 overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/60 px-6 py-16 text-center md:flex-row md:items-center md:justify-center md:gap-20 md:text-left">
+      <div className="relative flex min-h-[70vh] flex-col items-center justify-center gap-12 py-16 text-center md:flex-row md:items-center md:justify-center md:gap-20 md:text-left">
         <span
           aria-hidden
           className="pointer-events-none absolute inset-0 flex select-none items-center justify-center text-[10rem] font-black leading-none tracking-tighter text-white/[0.04] md:text-[16rem]"

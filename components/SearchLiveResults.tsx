@@ -91,6 +91,7 @@ export function SearchLiveResults({ query, onPick }: SearchLiveResultsProps) {
             <Link
               key={manga.id}
               href={`/manga/${manga.id}`}
+              prefetch={false}
               onClick={onPick}
               aria-label={`${manga.title}. Open detail page.`}
               className="group flex items-center gap-3 rounded-xl px-2 py-1.5 transition-colors hover:bg-zinc-900/70"

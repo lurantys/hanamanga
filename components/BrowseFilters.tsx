@@ -183,6 +183,7 @@ export function BrowseFilters({
             <Link
               key={option.key}
               href={hrefFor({ ...base, sort: option.key })}
+              prefetch={false}
               className={`rounded-full px-4 py-1.5 text-sm font-medium transition active:scale-[0.97] ${
                 sort === option.key
                   ? "bg-zinc-100 text-zinc-950"

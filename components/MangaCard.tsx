@@ -21,6 +21,7 @@ export function MangaCard({ manga, className = "" }: MangaCardProps) {
   return (
     <Link
       href={`/manga/${manga.id}`}
+      prefetch={false}
       aria-label={
         manga.rating
           ? `${manga.title} — rated ${match}/100. Open detail page.`

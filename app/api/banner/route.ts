@@ -10,7 +10,14 @@ export async function GET(request: Request) {
   if (!title && !anilistId) return NextResponse.json({ bannerUrl: null });
   try {
     const bannerUrl = await bannerForManga({ title, anilistId });
-    return NextResponse.json({ bannerUrl });
+    return NextResponse.json(
+      { bannerUrl },
+      {
+        headers: {
+          "Cache-Control": "public, max-age=3600, s-maxage=3600, stale-while-revalidate=86400",
+        },
+      },
+    );
   } catch {
     return NextResponse.json({ bannerUrl: null });
   }

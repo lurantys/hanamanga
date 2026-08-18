@@ -68,11 +68,16 @@ export function RecommendedRow() {
           .slice(0, 6)
           .map(([genre, weight]) => `${genre}:${weight.toFixed(2)}`);
         if (!tags.length) return;
+        const key = tags.join(",") + "|" + [...exclude].sort().join(",");
+        let h = 0;
+        for (let i = 0; i < key.length; i++) {
+          h = ((h << 5) - h + key.charCodeAt(i)) | 0;
+        }
         const params = new URLSearchParams({
           tags: tags.join(","),
           exclude: [...exclude].join(","),
           limit: "18",
-          seed: String(Math.floor(Math.random() * 1_000_000)),
+          seed: String(Math.abs(h) % 1_000_000),
         });
         return fetch(`/api/recommend?${params.toString()}`)
           .then((res) => (res.ok ? res.json() : null))

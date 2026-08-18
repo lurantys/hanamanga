@@ -290,6 +290,7 @@ export type MangaListOptions = {
   status?: string[];
   contentRating?: string[];
   year?: number;
+  withStats?: boolean;
 };
 
 export async function fetchMangaList(
@@ -335,7 +336,7 @@ export async function fetchMangaList(
   }>("/manga", params);
 
   const manga = (json.data ?? []).map(normalizeManga);
-  await enrichWithStats(manga);
+  if (options.withStats) await enrichWithStats(manga);
 
   return {
     data: manga,
@@ -361,6 +362,7 @@ export async function fetchTrending(limit = 18): Promise<MangaListResult> {
   const { data } = await fetchMangaList({
     limit: 100,
     order: { followedCount: "desc" },
+    withStats: true,
   });
   const scored = data
     .map((manga) => ({
@@ -420,6 +422,7 @@ export async function fetchSearch(
     limit: prefetch,
     title: query,
     order: { relevance: "desc" },
+    withStats: true,
   });
 
   const needle = query.toLowerCase();

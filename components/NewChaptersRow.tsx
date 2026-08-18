@@ -27,7 +27,7 @@ export function NewChaptersRow() {
   }
 
   useEffect(() => {
-    const continueEntries = getContinueList(50);
+    const continueEntries = getContinueList(20);
     if (!continueEntries.length) return;
 
     const baseline = new Map<string, number>();

@@ -146,12 +146,12 @@ export function MangaChapterList({ mangaId, volumes }: MangaChapterListProps) {
             }}
             placeholder="Ch. #"
             aria-label="Jump to chapter number"
-            className="w-24 rounded-lg border border-white/10 bg-zinc-900/60 py-2 pl-3 pr-2 text-sm text-zinc-100 outline-none transition-colors placeholder:text-zinc-500 focus:border-emerald-400/50"
+            className="w-24 rounded-lg border border-white/10 bg-zinc-900/60 py-2 pl-3 pr-2 text-sm text-zinc-100 outline-none transition-colors placeholder:text-zinc-500 focus:border-red-400/50"
           />
           <button
             type="button"
             onClick={goToChapter}
-            className="rounded-lg border border-white/10 bg-zinc-800/60 px-3 py-2 text-xs font-semibold text-zinc-200 transition-colors hover:border-emerald-400/40 hover:text-white"
+            className="rounded-lg border border-white/10 bg-zinc-800/60 px-3 py-2 text-xs font-semibold text-zinc-200 transition-colors hover:border-red-400/40 hover:text-white"
           >
             Go
           </button>
@@ -160,7 +160,7 @@ export function MangaChapterList({ mangaId, volumes }: MangaChapterListProps) {
         <button
           type="button"
           onClick={startFromBeginning}
-          className="rounded-lg border border-white/10 bg-zinc-800/60 px-3 py-2 text-xs font-semibold text-zinc-200 transition-colors hover:border-emerald-400/40 hover:text-white"
+          className="rounded-lg border border-white/10 bg-zinc-800/60 px-3 py-2 text-xs font-semibold text-zinc-200 transition-colors hover:border-red-400/40 hover:text-white"
         >
           Start from beginning
         </button>

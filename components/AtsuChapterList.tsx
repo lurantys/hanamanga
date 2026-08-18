@@ -146,7 +146,7 @@ export function AtsuChapterList({
                 onClick={() => setPreferredScanlator(mangaId, scanlator.id)}
                 className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
                   selected === scanlator.id
-                    ? "border-emerald-400/60 bg-emerald-500/15 text-emerald-300"
+                    ? "border-red-400/60 bg-red-500/15 text-red-300"
                     : "border-white/10 bg-zinc-800/60 text-zinc-400 hover:text-white"
                 }`}
               >
@@ -168,7 +168,7 @@ export function AtsuChapterList({
                   groupChapters.map((chapter) => chapter.id),
                 )
               }
-              className="shrink-0 rounded-lg border border-white/10 bg-zinc-800/60 px-3 py-2 text-xs font-semibold text-zinc-300 transition-colors hover:border-emerald-400/40 hover:text-emerald-300"
+              className="shrink-0 rounded-lg border border-white/10 bg-zinc-800/60 px-3 py-2 text-xs font-semibold text-zinc-300 transition-colors hover:border-red-400/40 hover:text-red-300"
             >
               Mark all read
             </button>
@@ -193,7 +193,7 @@ export function AtsuChapterList({
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder={`Find chapter (${groupChapters.length} available)`}
-              className="w-full rounded-lg border border-white/10 bg-zinc-900/60 py-2 pl-9 pr-3 text-sm text-zinc-100 outline-none transition-colors placeholder:text-zinc-500 focus:border-emerald-400/50"
+              className="w-full rounded-lg border border-white/10 bg-zinc-900/60 py-2 pl-9 pr-3 text-sm text-zinc-100 outline-none transition-colors placeholder:text-zinc-500 focus:border-red-400/50"
             />
           </label>
         </div>
@@ -228,12 +228,12 @@ export function AtsuChapterList({
             }}
             placeholder="Ch. #"
             aria-label="Jump to chapter number"
-            className="w-24 rounded-lg border border-white/10 bg-zinc-900/60 py-2 pl-3 pr-2 text-sm text-zinc-100 outline-none transition-colors placeholder:text-zinc-500 focus:border-emerald-400/50"
+            className="w-24 rounded-lg border border-white/10 bg-zinc-900/60 py-2 pl-3 pr-2 text-sm text-zinc-100 outline-none transition-colors placeholder:text-zinc-500 focus:border-red-400/50"
           />
           <button
             type="button"
             onClick={goToChapter}
-            className="rounded-lg border border-white/10 bg-zinc-800/60 px-3 py-2 text-xs font-semibold text-zinc-200 transition-colors hover:border-emerald-400/40 hover:text-white"
+            className="rounded-lg border border-white/10 bg-zinc-800/60 px-3 py-2 text-xs font-semibold text-zinc-200 transition-colors hover:border-red-400/40 hover:text-white"
           >
             Go
           </button>
@@ -242,7 +242,7 @@ export function AtsuChapterList({
         <button
           type="button"
           onClick={startFromBeginning}
-          className="rounded-lg border border-white/10 bg-zinc-800/60 px-3 py-2 text-xs font-semibold text-zinc-200 transition-colors hover:border-emerald-400/40 hover:text-white"
+          className="rounded-lg border border-white/10 bg-zinc-800/60 px-3 py-2 text-xs font-semibold text-zinc-200 transition-colors hover:border-red-400/40 hover:text-white"
         >
           Start from beginning
         </button>
@@ -281,8 +281,8 @@ export function AtsuChapterList({
                     : "border-white/10 bg-zinc-900/60"
                 } ${
                   isRead
-                    ? "hover:border-emerald-400/30"
-                    : "hover:border-emerald-400/40"
+                    ? "hover:border-red-400/30"
+                    : "hover:border-red-400/40"
                 }`}
               >
                 <div className="min-w-0">
@@ -300,7 +300,7 @@ export function AtsuChapterList({
                           strokeWidth="2.5"
                           strokeLinecap="round"
                           strokeLinejoin="round"
-                          className="h-3.5 w-3.5 shrink-0 text-emerald-400"
+                          className="h-3.5 w-3.5 shrink-0 text-red-400"
                           aria-hidden
                         >
                           <path d="M20 6 9 17l-5-5" />
@@ -317,7 +317,7 @@ export function AtsuChapterList({
                       : ""}
                   </p>
                 </div>
-                <span className="shrink-0 rounded-lg border border-white/10 bg-zinc-800/60 px-3.5 py-1.5 text-xs font-semibold text-zinc-200 transition-colors group-hover:border-emerald-400/40 group-hover:bg-zinc-700/60 group-hover:text-white">
+                <span className="shrink-0 rounded-lg border border-white/10 bg-zinc-800/60 px-3.5 py-1.5 text-xs font-semibold text-zinc-200 transition-colors group-hover:border-red-400/40 group-hover:bg-zinc-700/60 group-hover:text-white">
                   {isRead ? "Re-read" : "Read"}
                 </span>
               </Link>

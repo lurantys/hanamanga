@@ -54,6 +54,11 @@ export function SearchBar() {
 
   useEffect(() => {
     if (!open) return;
+    inputRef.current?.focus();
+  }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") close();
     };
@@ -92,51 +97,54 @@ export function SearchBar() {
   };
 
   return (
-    <div ref={containerRef} className="relative flex items-center">
-      {open ? (
-        <form
-          onSubmit={onSubmit}
-          role="search"
-          className="animate-search-expand search-expanded flex items-center gap-2 rounded-full border border-zinc-700/60 bg-zinc-900/80 py-2 pl-3.5 pr-1.5 shadow-[0_8px_30px_rgba(0,0,0,0.4)] backdrop-blur-2xl transition-colors focus-within:border-red-400/40"
-        >
-          <SearchIcon className="h-4 w-4 shrink-0 text-zinc-500" />
-          <input
-            ref={inputRef}
-            autoFocus
-            type="text"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search manga…"
-            aria-label="Search manga"
-            enterKeyHint="search"
-            className="w-40 bg-transparent text-sm text-zinc-50 outline-none placeholder:text-zinc-500 sm:w-56 lg:w-64"
-          />
-          <button
-            type="button"
-            onClick={() => {
-              if (query) {
-                setQuery("");
-                inputRef.current?.focus();
-              } else {
-                close();
-              }
-            }}
-            aria-label={query ? "Clear search" : "Close search"}
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
-          >
-            <XIcon className="h-4 w-4" />
-          </button>
-        </form>
-      ) : (
+    <div ref={containerRef} className="relative flex h-9 items-center overflow-hidden">
+      {/* Search button — always in DOM, fades out */}
+      <button
+        type="button"
+        onClick={() => setOpen(true)}
+        aria-label="Search manga"
+        className={`absolute inset-0 flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-zinc-900/60 text-zinc-200 transition-opacity duration-200 hover:border-white/25 hover:bg-zinc-800/80 hover:text-white ${open ? "pointer-events-none opacity-0" : "opacity-100"}`}
+      >
+        <SearchIcon className="h-4 w-4" />
+      </button>
+
+      {/* Search form — always in DOM, slides in */}
+      <form
+        onSubmit={onSubmit}
+        role="search"
+        className={`search-expanded flex h-9 items-center gap-2 rounded-full border bg-zinc-900/80 pl-3.5 pr-1.5 shadow-[0_8px_30px_rgba(0,0,0,0.4)] backdrop-blur-2xl transition-[width,opacity,border-color] duration-300 focus-within:border-red-400/40 ${
+          open
+            ? "w-40 border-zinc-700/60 opacity-100 sm:w-56 lg:w-64"
+            : "w-9 border-transparent opacity-0 pointer-events-none"
+        }`}
+      >
+        <SearchIcon className="h-4 w-4 shrink-0 text-zinc-500" />
+        <input
+          ref={inputRef}
+          type="text"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder="Search manga…"
+          aria-label="Search manga"
+          enterKeyHint="search"
+          className={`min-w-0 bg-transparent text-sm text-zinc-50 outline-none placeholder:text-zinc-500 transition-[width] duration-300 ${open ? "w-full" : "w-0"}`}
+        />
         <button
           type="button"
-          onClick={() => setOpen(true)}
-          aria-label="Search manga"
-          className="flex h-9 w-9 items-center justify-center rounded-full border border-white/10 bg-zinc-900/60 text-zinc-200 transition-all duration-200 hover:border-white/25 hover:bg-zinc-800/80 hover:text-white"
+          onClick={() => {
+            if (query) {
+              setQuery("");
+              inputRef.current?.focus();
+            } else {
+              close();
+            }
+          }}
+          aria-label={query ? "Clear search" : "Close search"}
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
         >
-          <SearchIcon className="h-4 w-4" />
+          <XIcon className="h-4 w-4" />
         </button>
-      )}
+      </form>
 
       {open && debouncedQuery && (
         <div className="glass-in absolute left-1/2 top-[calc(100%+12px)] z-50 w-[min(24rem,calc(100vw-2rem))] -translate-x-1/2 overflow-hidden rounded-[2rem] border border-white/10 bg-zinc-950/95 p-4 shadow-[0_24px_60px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.08)] ring-1 ring-inset ring-white/10 backdrop-blur-2xl">

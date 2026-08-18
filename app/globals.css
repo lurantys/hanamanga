@@ -43,22 +43,6 @@ h3 {
   animation: glass-in 0.18s ease-out;
 }
 
-@keyframes search-expand {
-  from {
-    opacity: 0;
-    transform: scaleX(0.55);
-  }
-  to {
-    opacity: 1;
-    transform: scaleX(1);
-  }
-}
-
-@utility animate-search-expand {
-  transform-origin: right;
-  animation: search-expand 0.22s ease-out;
-}
-
 @keyframes hero-in {
   from {
     opacity: 0.3;
@@ -153,7 +137,6 @@ h3 {
   .animate-kenburns,
   .animate-hero-in,
   .animate-modal-in,
-  .animate-search-expand,
   .glass-in {
     animation: none;
   }
@@ -184,8 +167,15 @@ body {
   font-family: var(--font-sans), Arial, Helvetica, sans-serif;
 }
 
+.header-wordmark {
+  transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 @media (max-width: 640px) {
   header:has(.search-expanded) .header-wordmark {
-    display: none;
+    opacity: 0;
+    transform: translateX(-8px);
+    pointer-events: none;
+    transition: opacity 0.2s, transform 0.25s cubic-bezier(0.32, 0.72, 0, 1);
   }
 }

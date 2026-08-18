@@ -26,6 +26,7 @@ import {
   subscribeReaderSettings,
   type ReaderMode,
   type ReaderSettings,
+  type WebtoonLayout,
 } from "@/lib/reader-settings";
 import {
   markChapterRead,
@@ -1280,7 +1281,7 @@ export function Reader({
               transform: `scale(${settings.zoom})`,
               transformOrigin: "top center",
               filter: imageFilterCss,
-              gap: "var(--reader-page-gap)",
+              gap: settings.webtoonLayout === "continuous" ? 0 : "var(--reader-page-gap)",
             }}
           >
               {pages.map((page, index) => (
@@ -1546,6 +1547,24 @@ export function Reader({
                   </p>
                 )}
               </section>
+
+              {mode === "webtoon" && (
+                <section>
+                  <SectionLabel>Webtoon layout</SectionLabel>
+                  <Segmented
+                    value={settings.webtoonLayout}
+                    onChange={(value: WebtoonLayout) => updateSettings({ webtoonLayout: value })}
+                    options={[
+                      { value: "gapped" as const, label: "Gapped" },
+                      { value: "continuous" as const, label: "Continuous" },
+                    ]}
+                  />
+                  <p className="mt-2 text-xs text-zinc-500">
+                    Continuous mode removes gaps between pages for a seamless
+                    scroll.
+                  </p>
+                </section>
+              )}
 
               {mode !== "webtoon" && (
                 <>

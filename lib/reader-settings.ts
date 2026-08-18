@@ -2,6 +2,7 @@ export type ReaderMode = "webtoon" | "paged" | "twopage";
 export type ReaderDirection = "ltr" | "rtl";
 export type PageFit = "height" | "width";
 export type ImageFilter = "none" | "sepia";
+export type WebtoonLayout = "gapped" | "continuous";
 
 export type ReaderSettings = {
   mode: ReaderMode;
@@ -12,6 +13,7 @@ export type ReaderSettings = {
   tapZones: boolean;
   autoAdvance: boolean;
   zoom: number;
+  webtoonLayout: WebtoonLayout;
 };
 
 export const READER_SETTINGS_KEY = "hana:reader-settings";
@@ -26,6 +28,7 @@ export const DEFAULT_READER_SETTINGS: ReaderSettings = {
   tapZones: true,
   autoAdvance: true,
   zoom: 1,
+  webtoonLayout: "gapped",
 };
 
 function clamp(value: number, min: number, max: number, fallback: number): number {

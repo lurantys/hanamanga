@@ -46,18 +46,14 @@ Hana is deployed and running at **[hanamanga.online](https://hanamanga.online/)*
 
 ## Desktop App (Experimental)
 
-A native **Windows** desktop build of Hana — the same reader, packaged with a built-in server so it runs offline and standalone.
+Windows (x64) build of Hana with a built-in server. Runs standalone, no setup required.
 
-> ⚠️ **EXPERIMENTAL · BETA · Full of bugs**
->
-> This is a bleeding-edge preview. Expect rough edges, unpolished flows, and the occasional crash. The desktop app is provided as-is and may change or break without notice. The web version at hanamanga.online remains the stable experience.
+**BETA - expect bugs.** The web version is the stable experience.
 
-**[⬇ Download Hana Desktop for Windows (x64) — BETA](https://github.com/lurantys/hanamanga/releases/download/v0.1.0-beta/Hana_0.1.0_x64-setup.exe)**
+[Download Hana for Windows (x64) - BETA](https://github.com/lurantys/hanamanga/releases/download/v0.1.0-beta/Hana_0.1.0_x64-setup.exe)
 
-* Single-file installer — no Node.js, no setup, no extra tools.
-* Launches straight into the home page with a hidden local server.
-* Email/password login works out of the box. Google, AniList, and MAL sign-in require adding `http://127.0.0.1:<port>` as a redirect URL in those services.
-* Rebuilt from the same codebase as the web app; from source via `npm run desktop:build` (needs Rust + MSVC build tools).
+- Email/password login works out of the box. Google, AniList, and MAL login require adding `http://127.0.0.1:<port>` as a redirect URL.
+- Build from source with `npm run desktop:build`.
 
 ## Contributing
 

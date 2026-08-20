@@ -15,6 +15,23 @@ struct ChildState(Mutex<Option<std::process::Child>>);
 
 const APP_ORIGIN: &str = "http://127.0.0.1";
 
+#[cfg(windows)]
+fn enable_dark_titlebar(window: &tauri::WebviewWindow) {
+    use windows::Win32::Graphics::Dwm::{DwmSetWindowAttribute, DWMWA_USE_IMMERSIVE_DARK_MODE};
+    let Ok(hwnd) = window.hwnd() else {
+        return;
+    };
+    let enabled: i32 = 1;
+    let ptr = &enabled as *const i32 as *const core::ffi::c_void;
+    let size = std::mem::size_of::<i32>() as u32;
+    unsafe {
+        let _ = DwmSetWindowAttribute(hwnd, DWMWA_USE_IMMERSIVE_DARK_MODE, ptr, size);
+    }
+}
+
+#[cfg(not(windows))]
+fn enable_dark_titlebar(_window: &tauri::WebviewWindow) {}
+
 fn port_open(port: u16) -> bool {
     TcpStream::connect((Ipv4Addr::LOCALHOST, port)).is_ok()
 }
@@ -101,7 +118,7 @@ fn main() {
                 .inner_size(1280.0, 800.0)
                 .min_inner_size(800.0, 600.0);
 
-                if let Err(e) = builder.build() {
+                if let Err(e) = builder.build().map(|window| enable_dark_titlebar(&window)) {
                     eprintln!("failed to create window: {e}");
                 }
             });

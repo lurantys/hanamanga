@@ -1,7 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  output: "standalone",
+  ...(process.env.DESKTOP_STANDALONE === "1"
+    ? { output: "standalone" as const }
+    : {}),
   images: {
     unoptimized: true,
     dangerouslyAllowLocalIP: true,

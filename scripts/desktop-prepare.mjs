@@ -19,6 +19,8 @@ try {
 
 // Desktop must resolve OAuth redirects to the local server.
 env.NEXT_PUBLIC_SITE_URL = env.NEXT_PUBLIC_SITE_URL || "http://127.0.0.1:3111";
+// Only the desktop build emits the standalone server output.
+env.DESKTOP_STANDALONE = "1";
 
 const build = spawnSync("npx", ["next", "build"], {
   cwd: root,

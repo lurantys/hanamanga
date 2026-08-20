@@ -52,7 +52,7 @@ A native **Windows** desktop build of Hana — the same reader, packaged with a 
 >
 > This is a bleeding-edge preview. Expect rough edges, unpolished flows, and the occasional crash. The desktop app is provided as-is and may change or break without notice. The web version at hanamanga.online remains the stable experience.
 
-**[⬇ Download Hana Desktop for Windows (x64) — BETA](https://github.com/lurantys/hanamanga/releases)**
+**[⬇ Download Hana Desktop for Windows (x64) — BETA](https://github.com/lurantys/hanamanga/releases/download/v0.1.0-beta/Hana_0.1.0_x64-setup.exe)**
 
 * Single-file installer — no Node.js, no setup, no extra tools.
 * Launches straight into the home page with a hidden local server.

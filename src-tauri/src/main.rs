@@ -61,6 +61,7 @@ fn load_server_env(resource_dir: &std::path::Path) -> Vec<(String, String)> {
 
 fn main() {
     tauri::Builder::default()
+        .plugin(tauri_plugin_opener::init())
         .manage(ChildState(Mutex::new(None)))
         .setup(|app| {
             let handle = app.handle().clone();

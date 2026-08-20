@@ -43,3 +43,11 @@ AGENTS.md
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# tauri desktop
+/src-tauri/target/
+/src-tauri/server/
+/src-tauri/binaries/
+/src-tauri/app-icon.png
+/src-tauri/icons/
+/dist/

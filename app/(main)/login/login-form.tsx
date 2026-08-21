@@ -6,6 +6,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "@/lib/auth";
 import { LoadingIcon } from "@/components/LoadingIcon";
+import { SignInIcon } from "@/components/AuthIcons";
 
 type Mode = "signin" | "signup";
 
@@ -271,7 +272,10 @@ export default function LoginForm() {
                 {mode === "signin" ? "Signing in…" : "Creating account…"}
               </>
             ) : mode === "signin" ? (
-              "Sign in"
+              <>
+                <SignInIcon className="h-5 w-5" />
+                Sign in
+              </>
             ) : (
               "Create account"
             )}

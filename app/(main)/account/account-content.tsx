@@ -9,6 +9,7 @@ import { useAuth, getDisplayName } from "@/lib/auth";
 import { LoadingIcon } from "@/components/LoadingIcon";
 import { syncNow } from "@/lib/sync";
 import { useProviderAvatar } from "@/lib/use-provider-avatar";
+import { SignInIcon, SignOutIcon } from "@/components/AuthIcons";
 import type { SyncSummary } from "@/lib/provider-sync";
 
 type IntegrationStatus = "idle" | "checking" | "connected" | "not_configured";
@@ -243,8 +244,9 @@ export default function AccountContent() {
         </p>
         <Link
           href="/login"
-          className="mt-2 inline-flex items-center justify-center rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-white/80"
+          className="mt-2 inline-flex items-center justify-center gap-2 rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-white/80"
         >
+          <SignInIcon className="h-4 w-4" />
           Sign in
         </Link>
       </main>
@@ -507,8 +509,9 @@ export default function AccountContent() {
                   router.refresh();
                 });
               }}
-              className="shrink-0 inline-flex items-center justify-center rounded-full border border-red-500/40 px-4 py-2 text-sm font-semibold text-red-300 transition-colors hover:border-red-500/70 hover:text-red-200 active:scale-[0.985] active:transition-transform active:duration-80"
+              className="shrink-0 inline-flex items-center justify-center gap-2 rounded-full border border-red-500/40 px-4 py-2 text-sm font-semibold text-red-300 transition-colors hover:border-red-500/70 hover:text-red-200 active:scale-[0.985] active:transition-transform active:duration-80"
             >
+              <SignOutIcon className="h-4 w-4" />
               Sign out
             </button>
           </div>

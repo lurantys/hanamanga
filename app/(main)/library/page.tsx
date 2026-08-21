@@ -35,6 +35,13 @@ function thumbUrl(coverUrl?: string | null): string | null {
 
 type SortKey = "added" | "updated" | "title" | "rating" | "released";
 type View = "grid" | "list";
+type FilterKey = "all" | "reading" | "finished";
+
+const FILTERS: { key: FilterKey; label: string }[] = [
+  { key: "all", label: "All" },
+  { key: "reading", label: "Reading" },
+  { key: "finished", label: "Finished" },
+];
 
 const SORTS: { key: SortKey; label: string }[] = [
   { key: "added", label: "Recently added" },
@@ -380,12 +387,17 @@ export default function LibraryPage() {
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortKey>("added");
   const [view, setView] = useState<View>("grid");
+  const [filter, setFilter] = useState<FilterKey>("all");
 
   const filtered = useMemo(() => {
     const term = query.trim().toLowerCase();
-    const list = entries.filter(({ manga }) =>
-      term ? manga.title.toLowerCase().includes(term) : true,
-    );
+    const list = entries.filter(({ manga }) => {
+      if (term && !manga.title.toLowerCase().includes(term)) return false;
+      const isRead = Boolean(finished[manga.id]);
+      if (filter === "finished") return isRead;
+      if (filter === "reading") return !isRead && Boolean(progress[manga.id]);
+      return true;
+    });
     switch (sort) {
       case "added":
         return list;
@@ -410,7 +422,7 @@ export default function LibraryPage() {
           return bTime - aTime;
         });
     }
-  }, [entries, query, sort, progress]);
+  }, [entries, query, sort, progress, finished, filter]);
 
   const toolbarVisible = entries.length > 0;
 
@@ -454,6 +466,25 @@ export default function LibraryPage() {
               aria-label="Search your library"
               className="w-full appearance-none rounded-full border border-white/10 bg-zinc-900/60 py-2.5 pl-10 pr-4 text-sm font-medium text-zinc-200 outline-none backdrop-blur-xl transition-colors placeholder:text-zinc-500 hover:border-white/25 focus:border-emerald-400/50"
             />
+          </div>
+
+          <div className="flex rounded-full border border-white/10 bg-zinc-900/60 p-1 backdrop-blur-xl">
+            {FILTERS.map((option) => (
+              <button
+                key={option.key}
+                type="button"
+                onClick={() => setFilter(option.key)}
+                aria-label={`Show ${option.label.toLowerCase()} manga`}
+                aria-pressed={filter === option.key}
+                className={`rounded-full px-4 py-1.5 text-sm font-medium transition active:scale-[0.97] ${
+                  filter === option.key
+                    ? "bg-zinc-100 text-zinc-950"
+                    : "text-zinc-400 hover:bg-zinc-800 hover:text-white"
+                }`}
+              >
+                {option.label}
+              </button>
+            ))}
           </div>
 
           <div className="relative">
@@ -598,35 +629,71 @@ export default function LibraryPage() {
             </div>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-900/60 px-6 py-16 text-center">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.5"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="h-8 w-8 text-zinc-600"
-              aria-hidden
-            >
-              <circle cx="11" cy="11" r="8" />
-              <path d="m21 21-4.3-4.3" />
-            </svg>
-            <p className="text-sm text-zinc-400">
-              No titles match{" "}
-              <span className="font-semibold text-zinc-200">
-                &ldquo;{query}&rdquo;
-              </span>
-              .
-            </p>
-            <button
-              type="button"
-              onClick={() => setQuery("")}
-              className="text-sm font-semibold text-zinc-200 underline-offset-4 hover:underline"
-            >
-              Clear search
-            </button>
-          </div>
+          query ? (
+            <div className="flex flex-col items-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-900/60 px-6 py-16 text-center">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-8 w-8 text-zinc-600"
+                aria-hidden
+              >
+                <circle cx="11" cy="11" r="8" />
+                <path d="m21 21-4.3-4.3" />
+              </svg>
+              <p className="text-sm text-zinc-400">
+                No titles match{" "}
+                <span className="font-semibold text-zinc-200">
+                  &ldquo;{query}&rdquo;
+                </span>
+                .
+              </p>
+              <button
+                type="button"
+                onClick={() => setQuery("")}
+                className="text-sm font-semibold text-zinc-200 underline-offset-4 hover:underline"
+              >
+                Clear search
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col items-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-900/60 px-6 py-16 text-center">
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-8 w-8 text-zinc-600"
+                aria-hidden
+              >
+                {filter === "finished" ? (
+                  <path d="M20 6 9 17l-5-5" />
+                ) : (
+                  <>
+                    <circle cx="12" cy="12" r="9" />
+                    <path d="M12 7v5l3 2" />
+                  </>
+                )}
+              </svg>
+              <p className="text-sm text-zinc-400">
+                {filter === "finished"
+                  ? "Nothing marked as finished yet."
+                  : "Nothing in progress — open a chapter to start reading."}
+              </p>
+              <button
+                type="button"
+                onClick={() => setFilter("all")}
+                className="text-sm font-semibold text-zinc-200 underline-offset-4 hover:underline"
+              >
+                Show all
+              </button>
+            </div>
+          )
         ) : view === "grid" ? (
           <div className="grid grid-cols-4 gap-x-3 gap-y-5 sm:grid-cols-6 lg:grid-cols-8">
             {filtered.map(({ manga, addedAt }) => {

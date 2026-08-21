@@ -184,7 +184,7 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
               ) : null}
             </div>
 
-            <h1 className="line-clamp-3 max-w-3xl text-3xl font-extrabold tracking-tight text-white drop-shadow-lg md:line-clamp-2 md:text-6xl">
+            <h1 className="line-clamp-3 max-w-3xl text-3xl font-extrabold leading-tight tracking-tight text-white drop-shadow-lg md:line-clamp-2 md:text-6xl">
               {hero.title}
             </h1>
 

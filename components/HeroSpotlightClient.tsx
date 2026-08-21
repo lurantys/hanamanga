@@ -35,7 +35,8 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
   const [imageLoaded, setImageLoaded] = useState(false);
 
   const hero = snapshot?.manga ?? initial;
-  const imageSrc: string | null = hero.coverUrl ?? null;
+  const bannerSrc = hero.bannerUrl ?? null;
+  const imageSrc: string | null = bannerSrc ?? hero.coverUrl ?? null;
 
   const ready = !imageSrc || imageLoaded;
 
@@ -112,9 +113,9 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
           fill
           sizes="(min-width:768px) 100vw, 512px"
           onLoad={() => setImageLoaded(true)}
-          className={`scale-125 object-cover blur-2xl object-top transition-opacity duration-700 ${
-            ready ? "opacity-100" : "opacity-0"
-          }`}
+          className={`object-cover object-top transition-opacity duration-700 ${
+            bannerSrc ? "" : "scale-125 blur-2xl"
+          } ${ready ? "opacity-100" : "opacity-0"}`}
         />
       ) : (
         <div

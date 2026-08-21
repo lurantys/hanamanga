@@ -272,9 +272,34 @@ export default function AccountContent() {
               )}
             </span>
             <div>
-              <h1 className="text-2xl font-extrabold tracking-tight text-white md:text-3xl">
-                Account
-              </h1>
+              <div className="flex items-center gap-2">
+                <h1 className="text-2xl font-extrabold tracking-tight text-white md:text-3xl">
+                  {displayName ?? "Account"}
+                </h1>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setNameValue(displayName ?? "");
+                    setEditingName(true);
+                    setNameError(null);
+                  }}
+                  aria-label="Edit display name"
+                  className="rounded-md p-1 text-zinc-600 transition-colors hover:text-zinc-300"
+                >
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-4 w-4"
+                    aria-hidden
+                  >
+                    <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
+                  </svg>
+                </button>
+              </div>
               {editingName ? (
                 <form
                   onSubmit={(e) => {
@@ -321,44 +346,10 @@ export default function AccountContent() {
                   )}
                 </form>
               ) : (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setNameValue(displayName ?? "");
-                    setEditingName(true);
-                    setNameError(null);
-                  }}
-                  className="mt-0.5 flex items-center gap-1.5 text-sm text-zinc-400 transition-colors hover:text-zinc-200"
-                >
-                  {displayName ? (
-                    <>
-                      <span className="font-semibold text-zinc-200">
-                        {displayName}
-                      </span>
-                      <span className="text-zinc-600">·</span>
-                      <span>{user.email}</span>
-                    </>
-                  ) : (
-                    <span>
-                      Signed in as{" "}
-                      <span className="font-semibold text-zinc-200">
-                        {user.email}
-                      </span>
-                    </span>
-                  )}
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="h-3 w-3 text-zinc-600"
-                    aria-hidden
-                  >
-                    <path d="M17 3a2.85 2.83 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5Z" />
-                  </svg>
-                </button>
+                <p className="mt-0.5 text-sm text-zinc-400">
+                  Account <span className="text-zinc-600">·</span>{" "}
+                  {user.email}
+                </p>
               )}
             </div>
           </div>

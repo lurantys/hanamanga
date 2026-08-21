@@ -256,13 +256,13 @@ export default function AccountContent() {
       <div className="mx-auto max-w-2xl px-5 pt-28 md:px-10">
         <header>
           <div className="flex items-center gap-3">
-            <span className="flex h-12 w-12 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/10 bg-zinc-900/80 text-base font-bold text-zinc-200">
+            <span className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/10 bg-zinc-900/80 text-base font-bold text-zinc-200">
               {avatar?.url ? (
                 <Image
                   src={avatar.url}
                   alt={user.email ?? "Account"}
-                  width={48}
-                  height={48}
+                  width={96}
+                  height={96}
                   className="h-full w-full object-cover"
                 />
               ) : (

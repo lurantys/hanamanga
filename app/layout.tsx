@@ -39,6 +39,7 @@ export const metadata: Metadata = {
   },
   other: {
     "apple-mobile-web-app-capable": "yes",
+    referrer: "no-referrer",
   },
   openGraph: {
     type: "website",

@@ -8,7 +8,7 @@ import {
 } from "@/lib/anilist";
 import type { Manga } from "@/lib/mangadex";
 import { fetchCatalogManga } from "@/lib/catalog";
-import { normalizeTitleKey, titleHits } from "@/lib/title";
+import { sameWorkByTitle } from "@/lib/title";
 import { parseMangaId } from "@/lib/source";
 
 export type ProviderName = "anilist" | "mal";
@@ -617,27 +617,6 @@ async function moveProgressData(
 
 function isLinkedManga(manga: Manga | null | undefined): boolean {
   return Boolean(manga?.links?.al || manga?.links?.mal);
-}
-
-/** Whether two manga are the same work by title, tolerating variant titles. */
-function sameWorkByTitle(a: Manga | null | undefined, b: Manga | null | undefined): boolean {
-  const titles = (m: Manga | null | undefined): string[] =>
-    [m?.title, ...(m?.altTitles ?? [])].filter((v): v is string => Boolean(v));
-  const at = titles(a);
-  const bt = titles(b);
-  for (const x of at) {
-    for (const y of bt) {
-      const kx = normalizeTitleKey(x);
-      const ky = normalizeTitleKey(y);
-      if (!kx || !ky) continue;
-      if (kx === ky) return true;
-      const tx = kx.split(" ").filter((token) => token.length > 2);
-      const ty = ky.split(" ").filter((token) => token.length > 2);
-      if (tx.length < 2 || ty.length < 2) continue;
-      if (titleHits(x, [y])) return true;
-    }
-  }
-  return false;
 }
 
 /** Collapse library rows that refer to the same work into one. */

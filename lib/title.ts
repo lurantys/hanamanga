@@ -7,6 +7,35 @@ export function normalizeTitleKey(value: string): string {
     .trim();
 }
 
+type WorkTitles = {
+  title: string;
+  altTitles?: readonly (string | null | undefined)[] | null;
+};
+
+/** Whether two manga are the same work by title, tolerating variant titles. */
+export function sameWorkByTitle(
+  a: WorkTitles | null | undefined,
+  b: WorkTitles | null | undefined,
+): boolean {
+  const titles = (m: WorkTitles | null | undefined): string[] =>
+    [m?.title, ...(m?.altTitles ?? [])].filter((v): v is string => Boolean(v));
+  const at = titles(a);
+  const bt = titles(b);
+  for (const x of at) {
+    for (const y of bt) {
+      const kx = normalizeTitleKey(x);
+      const ky = normalizeTitleKey(y);
+      if (!kx || !ky) continue;
+      if (kx === ky) return true;
+      const tx = kx.split(" ").filter((token) => token.length > 2);
+      const ty = ky.split(" ").filter((token) => token.length > 2);
+      if (tx.length < 2 || ty.length < 2) continue;
+      if (titleHits(x, [y])) return true;
+    }
+  }
+  return false;
+}
+
 export function titleHits(
   query: string,
   targets: readonly (string | null | undefined)[],

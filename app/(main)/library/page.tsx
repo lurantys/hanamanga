@@ -21,6 +21,7 @@ import {
   type ProgressEntry,
 } from "@/lib/progress";
 import { statusLabel } from "@/lib/mangadex";
+import { sameWorkByTitle } from "@/lib/title";
 
 const EMPTY_LIBRARY_SNAPSHOT = {};
 
@@ -454,13 +455,17 @@ export default function LibraryPage() {
     }
   }, [entries, query, sort, progress, finished, filter]);
 
-  const extraReading = useMemo(
-    () =>
-      continueList.filter(
-        (entry) => !library[entry.mangaId] && !finished[entry.mangaId],
-      ),
-    [continueList, library, finished],
-  );
+  const extraReading = useMemo(() => {
+    const libraryManga = Object.values(library).map(({ manga }) => manga);
+    return continueList.filter(
+      (entry) =>
+        !library[entry.mangaId] &&
+        !finished[entry.mangaId] &&
+        !libraryManga.some((manga) =>
+          sameWorkByTitle({ title: entry.mangaTitle }, manga),
+        ),
+    );
+  }, [continueList, library, finished]);
 
   const toolbarVisible = entries.length > 0 || extraReading.length > 0;
 

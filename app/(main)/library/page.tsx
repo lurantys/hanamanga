@@ -55,7 +55,7 @@ type View = "grid" | "list";
 type FilterKey = "all" | "reading" | "finished";
 
 const FILTERS: { key: FilterKey; label: string }[] = [
-  { key: "all", label: "All" },
+  { key: "all", label: "Library" },
   { key: "reading", label: "Reading" },
   { key: "finished", label: "Finished" },
 ];

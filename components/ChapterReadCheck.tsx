@@ -1,6 +1,6 @@
 "use client";
 
-import { useReadChapters } from "@/lib/read-state";
+import { useMangaRead, useReadChapters } from "@/lib/read-state";
 
 type ChapterReadCheckProps = {
   mangaId: string;
@@ -9,8 +9,9 @@ type ChapterReadCheckProps = {
 
 export function ChapterReadCheck({ mangaId, chapterId }: ChapterReadCheckProps) {
   const readChapters = useReadChapters(mangaId);
+  const mangaRead = useMangaRead(mangaId);
 
-  if (!readChapters.has(chapterId)) return null;
+  if (!mangaRead && !readChapters.has(chapterId)) return null;
 
   return (
     <span

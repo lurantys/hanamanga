@@ -30,6 +30,7 @@ import {
 } from "@/lib/reader-settings";
 import {
   markChapterRead,
+  markFinishedIfLastChapter,
   useReadChapters,
 } from "@/lib/read-state";
 import type { ReaderProps } from "@/lib/reader-data";
@@ -482,7 +483,10 @@ export function Reader({
       const max = doc.scrollHeight - doc.clientHeight;
       const value = max > 0 ? Math.min(1, Math.max(0, doc.scrollTop / max)) : 0;
       setProgress(value);
-      if (value >= 0.95) markChapterRead(mangaId, currentChapterId);
+      if (value >= 0.95) {
+        markChapterRead(mangaId, currentChapterId);
+        markFinishedIfLastChapter(mangaId, currentChapterId, chapters);
+      }
       window.clearTimeout(saveTimer);
       saveTimer = window.setTimeout(() => {
         if (!userActiveRef.current) return;
@@ -586,6 +590,7 @@ export function Reader({
     });
     if (pagedIndex >= pages.length - pageStep) {
       markChapterRead(mangaId, currentChapterId);
+      markFinishedIfLastChapter(mangaId, currentChapterId, chapters);
     }
   }, [
     pagedIndex,

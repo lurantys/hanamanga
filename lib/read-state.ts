@@ -111,3 +111,60 @@ export function useReadChapters(mangaId: string): ReadonlySet<string> {
     () => EMPTY_READ_SET,
   );
 }
+
+export const FINISHED_STORAGE_KEY = "hana:finished-manga";
+export const FINISHED_EVENT = "hana:finished-manga-updated";
+
+type FinishedMap = Record<string, number>;
+
+const finishedStore = createStorageStore<FinishedMap>(
+  FINISHED_STORAGE_KEY,
+  FINISHED_EVENT,
+  {},
+);
+
+export function markMangaRead(mangaId: string): void {
+  const map = finishedStore.getSnapshot();
+  if (map[mangaId]) return;
+  finishedStore.setSnapshot({ ...map, [mangaId]: Date.now() });
+}
+
+export function markMangaUnread(mangaId: string): void {
+  const map = finishedStore.getSnapshot();
+  if (!map[mangaId]) return;
+  const next = { ...map };
+  delete next[mangaId];
+  finishedStore.setSnapshot(next);
+}
+
+export function isMangaRead(mangaId: string): boolean {
+  return Boolean(finishedStore.getSnapshot()[mangaId]);
+}
+
+export function getFinishedSnapshot(): FinishedMap {
+  return finishedStore.getSnapshot();
+}
+
+export function subscribeFinished(onChange: () => void): () => void {
+  return finishedStore.subscribe(onChange);
+}
+
+/** Mark the manga as read when the given chapter is the latest one available. */
+export function markFinishedIfLastChapter(
+  mangaId: string,
+  chapterId: string,
+  chapters: { id: string }[],
+): void {
+  const last = chapters[chapters.length - 1];
+  if (last && last.id === chapterId) markMangaRead(mangaId);
+}
+
+const EMPTY_READ_FLAG = false;
+
+export function useMangaRead(mangaId: string): boolean {
+  return useSyncExternalStore(
+    subscribeFinished,
+    () => isMangaRead(mangaId),
+    () => EMPTY_READ_FLAG,
+  );
+}

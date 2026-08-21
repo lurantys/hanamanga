@@ -2,12 +2,18 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useMemo, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import {
   getLibrarySnapshot,
   removeFromLibrary,
   subscribeLibrary,
 } from "@/lib/library";
+import {
+  getFinishedSnapshot,
+  markMangaRead,
+  markMangaUnread,
+  subscribeFinished,
+} from "@/lib/read-state";
 import { getAllProgress } from "@/lib/progress";
 import { statusLabel } from "@/lib/mangadex";
 
@@ -15,6 +21,12 @@ const EMPTY_LIBRARY_SNAPSHOT = {};
 
 function getServerSnapshot(): ReturnType<typeof getLibrarySnapshot> {
   return EMPTY_LIBRARY_SNAPSHOT;
+}
+
+const EMPTY_FINISHED_SNAPSHOT: Record<string, number> = {};
+
+function getFinishedServerSnapshot(): Record<string, number> {
+  return EMPTY_FINISHED_SNAPSHOT;
 }
 
 function thumbUrl(coverUrl?: string | null): string | null {
@@ -32,6 +44,147 @@ const SORTS: { key: SortKey; label: string }[] = [
   { key: "released", label: "Newest releases" },
 ];
 
+function CheckIcon({ className }: { className: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M20 6 9 17l-5-5" />
+    </svg>
+  );
+}
+
+function EllipsisIcon({ className }: { className: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" className={className} aria-hidden>
+      <circle cx="5" cy="12" r="1.8" />
+      <circle cx="12" cy="12" r="1.8" />
+      <circle cx="19" cy="12" r="1.8" />
+    </svg>
+  );
+}
+
+function TrashIcon({ className }: { className: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      aria-hidden
+    >
+      <path d="M3 6h18" />
+      <path d="M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2" />
+      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
+    </svg>
+  );
+}
+
+function CardMenu({
+  title,
+  isRead,
+  onToggleRead,
+  onRemove,
+  buttonClassName,
+  iconClassName,
+  wrapperClassName,
+  revealOnHover,
+}: {
+  title: string;
+  isRead: boolean;
+  onToggleRead: () => void;
+  onRemove: () => void;
+  buttonClassName: string;
+  iconClassName: string;
+  wrapperClassName?: string;
+  revealOnHover?: boolean;
+}) {
+  const [open, setOpen] = useState(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (event: PointerEvent) => {
+      if (!rootRef.current?.contains(event.target as Node)) setOpen(false);
+    };
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("pointerdown", onPointerDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [open]);
+
+  return (
+    <div
+      ref={rootRef}
+      className={`${wrapperClassName ?? ""} ${
+        revealOnHover && !open
+          ? "opacity-0 transition-opacity duration-200 focus-within:opacity-100 group-hover:opacity-100"
+          : ""
+      }`}
+    >
+      <button
+        type="button"
+        onClick={() => setOpen((value) => !value)}
+        aria-label={`More actions for ${title}`}
+        aria-haspopup="menu"
+        aria-expanded={open}
+        className={buttonClassName}
+      >
+        <EllipsisIcon className={iconClassName} />
+      </button>
+
+      {open && (
+        <div
+          role="menu"
+          aria-label={`${title} actions`}
+          className="glass-in absolute right-0 top-full z-30 mt-1.5 w-44 overflow-hidden rounded-xl border border-white/10 bg-zinc-900 shadow-xl shadow-zinc-950/60"
+        >
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              onToggleRead();
+            }}
+            className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-sm font-medium text-zinc-200 transition-colors hover:bg-zinc-800 hover:text-white"
+          >
+            <CheckIcon className="h-4 w-4 shrink-0 text-emerald-400" />
+            {isRead ? "Mark as unread" : "Mark as read"}
+          </button>
+          <div role="separator" className="h-px bg-white/10" />
+          <button
+            type="button"
+            role="menuitem"
+            onClick={() => {
+              setOpen(false);
+              onRemove();
+            }}
+            className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-500/10 hover:text-red-200"
+          >
+            <TrashIcon className="h-4 w-4 shrink-0" />
+            Remove from library
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function GridCard({
   title,
   coverUrl,
@@ -39,6 +192,8 @@ function GridCard({
   ariaLabel,
   progressPct,
   meta,
+  isRead,
+  onToggleRead,
   onRemove,
 }: {
   title: string;
@@ -47,6 +202,8 @@ function GridCard({
   ariaLabel: string;
   progressPct: number | null;
   meta: string;
+  isRead: boolean;
+  onToggleRead: () => void;
   onRemove: () => void;
 }) {
   return (
@@ -86,28 +243,29 @@ function GridCard({
               />
             </div>
           )}
+
+          {isRead && (
+            <span
+              title="Finished"
+              aria-label="Finished"
+              className="absolute bottom-1.5 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-zinc-950"
+            >
+              <CheckIcon className="h-2.5 w-2.5" />
+            </span>
+          )}
         </div>
       </Link>
 
-      <button
-        type="button"
-        onClick={onRemove}
-        aria-label={`Remove ${title} from library`}
-        className="absolute right-1 top-1 z-10 flex h-5 w-5 items-center justify-center rounded-full border border-white/20 bg-zinc-950/80 text-zinc-300 opacity-0 transition-all duration-200 hover:border-red-400/50 hover:text-red-300 focus:opacity-100 group-hover:opacity-100"
-      >
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="h-2.5 w-2.5"
-          aria-hidden
-        >
-          <path d="M5 5l14 14M19 5L5 19" />
-        </svg>
-      </button>
+      <CardMenu
+        title={title}
+        isRead={isRead}
+        onToggleRead={onToggleRead}
+        onRemove={onRemove}
+        wrapperClassName="absolute right-1 top-1 z-10"
+        revealOnHover
+        buttonClassName="flex h-5 w-5 items-center justify-center rounded-full border border-white/20 bg-zinc-950/80 text-zinc-300 transition-all duration-200 hover:border-white/40 hover:text-white"
+        iconClassName="h-2.5 w-2.5"
+      />
 
       <div className="mt-1 px-0.5">
         <p className="line-clamp-1 text-xs font-semibold text-zinc-200">
@@ -126,6 +284,8 @@ function ListCard({
   ariaLabel,
   progressPct,
   meta,
+  isRead,
+  onToggleRead,
   onRemove,
 }: {
   title: string;
@@ -134,6 +294,8 @@ function ListCard({
   ariaLabel: string;
   progressPct: number | null;
   meta: string;
+  isRead: boolean;
+  onToggleRead: () => void;
   onRemove: () => void;
 }) {
   return (
@@ -177,25 +339,24 @@ function ListCard({
         )}
       </div>
 
-      <button
-        type="button"
-        onClick={onRemove}
-        aria-label={`Remove ${title} from library`}
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 text-zinc-400 transition-colors hover:border-red-400/40 hover:bg-red-500/10 hover:text-red-300"
-      >
-        <svg
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="h-4 w-4"
-          aria-hidden
+      {isRead && (
+        <span
+          title="Finished"
+          aria-label="Finished"
+          className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-zinc-950"
         >
-          <path d="M5 5l14 14M19 5L5 19" />
-        </svg>
-      </button>
+          <CheckIcon className="h-3 w-3" />
+        </span>
+      )}
+
+      <CardMenu
+        title={title}
+        isRead={isRead}
+        onToggleRead={onToggleRead}
+        onRemove={onRemove}
+        buttonClassName="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 text-zinc-400 transition-colors hover:border-white/25 hover:bg-zinc-800 hover:text-white"
+        iconClassName="h-4 w-4"
+      />
     </div>
   );
 }
@@ -205,6 +366,11 @@ export default function LibraryPage() {
     subscribeLibrary,
     getLibrarySnapshot,
     getServerSnapshot,
+  );
+  const finished = useSyncExternalStore(
+    subscribeFinished,
+    getFinishedSnapshot,
+    getFinishedServerSnapshot,
   );
   const entries = useMemo(
     () => Object.values(library).sort((a, b) => b.addedAt - a.addedAt),
@@ -471,6 +637,7 @@ export default function LibraryPage() {
                       mangaProgress.scrollFraction) * 100,
                   )
                 : null;
+              const isRead = Boolean(finished[manga.id]);
               return (
                 <GridCard
                   key={manga.id}
@@ -488,9 +655,17 @@ export default function LibraryPage() {
                   }
                   progressPct={pct}
                   meta={
-                    mangaProgress
-                      ? `Continue · ${mangaProgress.chapterLabel}`
-                      : `Added ${new Date(addedAt).toLocaleDateString()}`
+                    isRead
+                      ? "Finished"
+                      : mangaProgress
+                        ? `Continue · ${mangaProgress.chapterLabel}`
+                        : `Added ${new Date(addedAt).toLocaleDateString()}`
+                  }
+                  isRead={isRead}
+                  onToggleRead={() =>
+                    isRead
+                      ? markMangaUnread(manga.id)
+                      : markMangaRead(manga.id)
                   }
                   onRemove={() => removeFromLibrary(manga.id)}
                 />
@@ -507,10 +682,13 @@ export default function LibraryPage() {
                       mangaProgress.scrollFraction) * 100,
                   )
                 : null;
+              const isRead = Boolean(finished[manga.id]);
               const metaBits = [
-                mangaProgress
-                  ? `Continue · ${mangaProgress.chapterLabel}`
-                  : `Added ${new Date(addedAt).toLocaleDateString()}`,
+                isRead
+                  ? "Finished"
+                  : mangaProgress
+                    ? `Continue · ${mangaProgress.chapterLabel}`
+                    : `Added ${new Date(addedAt).toLocaleDateString()}`,
               ];
               const status = statusLabel(manga.status);
               if (status) metaBits.push(status);
@@ -532,6 +710,12 @@ export default function LibraryPage() {
                   }
                   progressPct={pct}
                   meta={metaBits.join(" · ")}
+                  isRead={isRead}
+                  onToggleRead={() =>
+                    isRead
+                      ? markMangaUnread(manga.id)
+                      : markMangaRead(manga.id)
+                  }
                   onRemove={() => removeFromLibrary(manga.id)}
                 />
               );

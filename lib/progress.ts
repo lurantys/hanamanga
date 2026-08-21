@@ -87,6 +87,19 @@ export function getAllProgress(): Record<string, ProgressEntry> {
   return readAll();
 }
 
+export function subscribeProgress(onChange: () => void): () => void {
+  const onStorage = (event: StorageEvent) => {
+    if (event.key === STORAGE_KEY) invalidateProgressCache();
+    onChange();
+  };
+  window.addEventListener("storage", onStorage);
+  window.addEventListener(PROGRESS_EVENT, onChange);
+  return () => {
+    window.removeEventListener("storage", onStorage);
+    window.removeEventListener(PROGRESS_EVENT, onChange);
+  };
+}
+
 export function getContinueList(limit = 18): ProgressEntry[] {
   if (!cachedContinueList || cachedContinueLimit !== limit) {
     cachedContinueList = Object.values(readAll())

@@ -14,7 +14,12 @@ import {
   markMangaUnread,
   subscribeFinished,
 } from "@/lib/read-state";
-import { getAllProgress } from "@/lib/progress";
+import {
+  getContinueList,
+  getAllProgress,
+  subscribeProgress,
+  type ProgressEntry,
+} from "@/lib/progress";
 import { statusLabel } from "@/lib/mangadex";
 
 const EMPTY_LIBRARY_SNAPSHOT = {};
@@ -27,6 +32,18 @@ const EMPTY_FINISHED_SNAPSHOT: Record<string, number> = {};
 
 function getFinishedServerSnapshot(): Record<string, number> {
   return EMPTY_FINISHED_SNAPSHOT;
+}
+
+const EMPTY_PROGRESS_SNAPSHOT: Record<string, ProgressEntry> = {};
+
+function getProgressServerSnapshot(): Record<string, ProgressEntry> {
+  return EMPTY_PROGRESS_SNAPSHOT;
+}
+
+const EMPTY_CONTINUE_SNAPSHOT: ProgressEntry[] = [];
+
+function getContinueServerSnapshot(): ProgressEntry[] {
+  return EMPTY_CONTINUE_SNAPSHOT;
 }
 
 function thumbUrl(coverUrl?: string | null): string | null {
@@ -210,8 +227,8 @@ function GridCard({
   progressPct: number | null;
   meta: string;
   isRead: boolean;
-  onToggleRead: () => void;
-  onRemove: () => void;
+  onToggleRead?: () => void;
+  onRemove?: () => void;
 }) {
   return (
     <div className="group relative">
@@ -263,16 +280,18 @@ function GridCard({
         </div>
       </Link>
 
-      <CardMenu
-        title={title}
-        isRead={isRead}
-        onToggleRead={onToggleRead}
-        onRemove={onRemove}
-        wrapperClassName="absolute right-1 top-1 z-10"
-        revealOnHover
-        buttonClassName="flex h-5 w-5 items-center justify-center rounded-full border border-white/20 bg-zinc-950/80 text-zinc-300 transition-all duration-200 hover:border-white/40 hover:text-white"
-        iconClassName="h-2.5 w-2.5"
-      />
+      {onRemove && onToggleRead && (
+        <CardMenu
+          title={title}
+          isRead={isRead}
+          onToggleRead={onToggleRead}
+          onRemove={onRemove}
+          wrapperClassName="absolute right-1 top-1 z-10"
+          revealOnHover
+          buttonClassName="flex h-5 w-5 items-center justify-center rounded-full border border-white/20 bg-zinc-950/80 text-zinc-300 transition-all duration-200 hover:border-white/40 hover:text-white"
+          iconClassName="h-2.5 w-2.5"
+        />
+      )}
 
       <div className="mt-1 px-0.5">
         <p className="line-clamp-1 text-xs font-semibold text-zinc-200">
@@ -302,8 +321,8 @@ function ListCard({
   progressPct: number | null;
   meta: string;
   isRead: boolean;
-  onToggleRead: () => void;
-  onRemove: () => void;
+  onToggleRead?: () => void;
+  onRemove?: () => void;
 }) {
   return (
     <div className="group relative flex items-center gap-3.5 rounded-xl border border-white/10 bg-zinc-900/50 p-2.5 transition-colors hover:border-white/20 hover:bg-zinc-900/80">
@@ -356,14 +375,16 @@ function ListCard({
         </span>
       )}
 
-      <CardMenu
-        title={title}
-        isRead={isRead}
-        onToggleRead={onToggleRead}
-        onRemove={onRemove}
-        buttonClassName="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 text-zinc-400 transition-colors hover:border-white/25 hover:bg-zinc-800 hover:text-white"
-        iconClassName="h-4 w-4"
-      />
+      {onRemove && onToggleRead && (
+        <CardMenu
+          title={title}
+          isRead={isRead}
+          onToggleRead={onToggleRead}
+          onRemove={onRemove}
+          buttonClassName="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 text-zinc-400 transition-colors hover:border-white/25 hover:bg-zinc-800 hover:text-white"
+          iconClassName="h-4 w-4"
+        />
+      )}
     </div>
   );
 }
@@ -379,11 +400,20 @@ export default function LibraryPage() {
     getFinishedSnapshot,
     getFinishedServerSnapshot,
   );
+  const progress = useSyncExternalStore(
+    subscribeProgress,
+    getAllProgress,
+    getProgressServerSnapshot,
+  );
+  const continueList = useSyncExternalStore(
+    subscribeProgress,
+    () => getContinueList(100),
+    getContinueServerSnapshot,
+  );
   const entries = useMemo(
     () => Object.values(library).sort((a, b) => b.addedAt - a.addedAt),
     [library],
   );
-  const progress = getAllProgress();
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortKey>("added");
   const [view, setView] = useState<View>("grid");
@@ -424,7 +454,15 @@ export default function LibraryPage() {
     }
   }, [entries, query, sort, progress, finished, filter]);
 
-  const toolbarVisible = entries.length > 0;
+  const extraReading = useMemo(
+    () =>
+      continueList.filter(
+        (entry) => !library[entry.mangaId] && !finished[entry.mangaId],
+      ),
+    [continueList, library, finished],
+  );
+
+  const toolbarVisible = entries.length > 0 || extraReading.length > 0;
 
   return (
     <main className="bg-zinc-950 pb-24">
@@ -573,7 +611,7 @@ export default function LibraryPage() {
       )}
 
       <div className="mx-auto mt-8 max-w-7xl px-5 md:px-10">
-        {entries.length === 0 ? (
+        {entries.length === 0 && extraReading.length === 0 ? (
           <div className="relative flex min-h-[70vh] flex-col items-center justify-center gap-12 py-16 text-center md:flex-row md:items-center md:justify-center md:gap-20 md:text-left">
             <span
               aria-hidden
@@ -628,7 +666,7 @@ export default function LibraryPage() {
               </div>
             </div>
           </div>
-        ) : filtered.length === 0 ? (
+        ) : filtered.length === 0 && (filter !== "reading" || extraReading.length === 0) ? (
           query ? (
             <div className="flex flex-col items-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-900/60 px-6 py-16 text-center">
               <svg
@@ -683,7 +721,9 @@ export default function LibraryPage() {
               <p className="text-sm text-zinc-400">
                 {filter === "finished"
                   ? "Nothing marked as finished yet."
-                  : "Nothing in progress — open a chapter to start reading."}
+                  : filter === "reading"
+                    ? "Nothing in progress — open a chapter to start reading."
+                    : "Nothing here yet."}
               </p>
               <button
                 type="button"
@@ -738,6 +778,24 @@ export default function LibraryPage() {
                 />
               );
             })}
+            {filter === "reading" &&
+              extraReading.map((entry) => {
+                const pct = Math.round(
+                  (entry.mangaFraction ?? entry.scrollFraction) * 100,
+                );
+                return (
+                  <GridCard
+                    key={`continue-${entry.mangaId}`}
+                    title={entry.mangaTitle}
+                    coverUrl={thumbUrl(entry.coverUrl)}
+                    href={`/read/${entry.mangaId}/${entry.chapterId}`}
+                    ariaLabel={`${entry.mangaTitle} — continue from ${entry.chapterLabel}, ${pct}% read`}
+                    progressPct={pct}
+                    meta={`Continue · ${entry.chapterLabel}`}
+                    isRead={false}
+                  />
+                );
+              })}
           </div>
         ) : (
           <div className="flex flex-col gap-2.5">
@@ -787,6 +845,24 @@ export default function LibraryPage() {
                 />
               );
             })}
+            {filter === "reading" &&
+              extraReading.map((entry) => {
+                const pct = Math.round(
+                  (entry.mangaFraction ?? entry.scrollFraction) * 100,
+                );
+                return (
+                  <ListCard
+                    key={`continue-${entry.mangaId}`}
+                    title={entry.mangaTitle}
+                    coverUrl={thumbUrl(entry.coverUrl)}
+                    href={`/read/${entry.mangaId}/${entry.chapterId}`}
+                    ariaLabel={`${entry.mangaTitle} — continue from ${entry.chapterLabel}, ${pct}% read`}
+                    progressPct={pct}
+                    meta={`Continue · ${entry.chapterLabel}`}
+                    isRead={false}
+                  />
+                );
+              })}
           </div>
         )}
       </div>

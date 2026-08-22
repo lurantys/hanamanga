@@ -101,26 +101,26 @@ async function buildReaderPropsUncached(
   if (atsuMatch) {
     try {
       const atsuReader = await buildAtsuReader({
-        mangaId,
+        mangaId: manga.id,
         atsuMangaId: atsuMatch.manga.id,
         atsuChapters,
         chapterId,
       });
-       if (atsuReader && atsuReader.pages.length > 0) {
-         return {
-          mangaId,
-          mangaTitle: manga.title,
-          mangaCoverUrl: manga.coverUrl ?? null,
-          mangaHref: `/manga/${mangaId}`,
-          chapterLabel: atsuReader.chapterLabel,
-          chapterNumber: atsuReader.chapterNumber,
-          currentChapterId: chapterId,
-          chapters: atsuReader.chapters,
-          pages: atsuReader.pages,
-          prevHref: atsuReader.prevHref,
-          nextHref: atsuReader.nextHref,
-        };
-      }
+if (atsuReader && atsuReader.pages.length > 0) {
+          return {
+           mangaId: manga.id,
+           mangaTitle: manga.title,
+           mangaCoverUrl: manga.coverUrl ?? null,
+           mangaHref: `/manga/${manga.id}`,
+           chapterLabel: atsuReader.chapterLabel,
+           chapterNumber: atsuReader.chapterNumber,
+           currentChapterId: chapterId,
+           chapters: atsuReader.chapters,
+           pages: atsuReader.pages,
+           prevHref: atsuReader.prevHref,
+           nextHref: atsuReader.nextHref,
+         };
+       }
     } catch {
       // fall through to other sources
     }
@@ -170,8 +170,8 @@ async function buildReaderPropsUncached(
               label: chapter.label,
             })),
             pages: pages.map((image) => ({ id: image, image })),
-            prevHref: prev ? `/read/${mangaId}/${prev.id}` : null,
-            nextHref: next ? `/read/${mangaId}/${next.id}` : null,
+prevHref: prev ? `/read/${manga.id}/${prev.id}` : null,
+           nextHref: next ? `/read/${manga.id}/${next.id}` : null,
           };
         }
       }
@@ -180,21 +180,21 @@ async function buildReaderPropsUncached(
     // WeebCentral unavailable — fall through to MangaKatana.
   }
 
-  if (weebReader) {
-    return {
-      mangaId,
-      mangaTitle: manga.title,
-      mangaCoverUrl: manga.coverUrl ?? null,
-      mangaHref: `/manga/${mangaId}`,
-      chapterLabel: weebReader.chapterLabel,
-      chapterNumber: weebReader.chapterNumber,
-      currentChapterId: chapterId,
-      chapters: weebReader.chapters,
-      pages: weebReader.pages,
-      prevHref: weebReader.prevHref,
-      nextHref: weebReader.nextHref,
-    };
-  }
+if (weebReader) {
+     return {
+       mangaId: manga.id,
+       mangaTitle: manga.title,
+       mangaCoverUrl: manga.coverUrl ?? null,
+       mangaHref: `/manga/${manga.id}`,
+       chapterLabel: weebReader.chapterLabel,
+       chapterNumber: weebReader.chapterNumber,
+       currentChapterId: chapterId,
+       chapters: weebReader.chapters,
+       pages: weebReader.pages,
+       prevHref: weebReader.prevHref,
+       nextHref: weebReader.nextHref,
+     };
+   }
 
   let katanaReader: {
     chapterLabel: string;
@@ -236,8 +236,8 @@ async function buildReaderPropsUncached(
               label: chapter.label,
             })),
             pages: pages.map((image) => ({ id: image, image })),
-            prevHref: prev ? `/read/${mangaId}/${prev.id}` : null,
-            nextHref: next ? `/read/${mangaId}/${next.id}` : null,
+prevHref: prev ? `/read/${manga.id}/${prev.id}` : null,
+           nextHref: next ? `/read/${manga.id}/${next.id}` : null,
           };
         }
       }
@@ -246,21 +246,21 @@ async function buildReaderPropsUncached(
     // MangaKatana unavailable — fall through to MangaDex.
   }
 
-  if (katanaReader) {
-    return {
-      mangaId,
-      mangaTitle: manga.title,
-      mangaCoverUrl: manga.coverUrl ?? null,
-      mangaHref: `/manga/${mangaId}`,
-      chapterLabel: katanaReader.chapterLabel,
-      chapterNumber: katanaReader.chapterNumber,
-      currentChapterId: chapterId,
-      chapters: katanaReader.chapters,
-      pages: katanaReader.pages,
-      prevHref: katanaReader.prevHref,
-      nextHref: katanaReader.nextHref,
-    };
-  }
+if (katanaReader) {
+     return {
+       mangaId: manga.id,
+       mangaTitle: manga.title,
+       mangaCoverUrl: manga.coverUrl ?? null,
+       mangaHref: `/manga/${manga.id}`,
+       chapterLabel: katanaReader.chapterLabel,
+       chapterNumber: katanaReader.chapterNumber,
+       currentChapterId: chapterId,
+       chapters: katanaReader.chapters,
+       pages: katanaReader.pages,
+       prevHref: katanaReader.prevHref,
+       nextHref: katanaReader.nextHref,
+     };
+   }
 
   if (!mdRef) notFound();
   let feed;
@@ -287,23 +287,23 @@ async function buildReaderPropsUncached(
   const next =
     currentIndex < feed.data.length - 1 ? feed.data[currentIndex + 1] : null;
 
-  return {
-    mangaId,
-    mangaTitle: manga.title,
-    mangaCoverUrl: manga.coverUrl ?? null,
-    mangaHref: `/manga/${mangaId}`,
-    chapterLabel: mdChapterLabel(mdChapter),
-    chapterNumber: mdChapterNumber(mdChapter),
-    currentChapterId: chapterId,
-    chapters: feed.data.map((item) => ({
-      id: item.id,
-      label: mdChapterLabel(item),
-    })),
-    pages: reader.pages.map((file) => ({
-      id: file,
-      image: chapterPageUrl(reader.baseUrl || UPLOADS, reader.hash, file),
-    })),
-    prevHref: prev ? `/read/${mangaId}/${prev.id}` : null,
-    nextHref: next ? `/read/${mangaId}/${next.id}` : null,
-  };
+return {
+     mangaId: manga.id,
+     mangaTitle: manga.title,
+     mangaCoverUrl: manga.coverUrl ?? null,
+     mangaHref: `/manga/${manga.id}`,
+     chapterLabel: mdChapterLabel(mdChapter),
+     chapterNumber: mdChapterNumber(mdChapter),
+     currentChapterId: chapterId,
+     chapters: feed.data.map((item) => ({
+       id: item.id,
+       label: mdChapterLabel(item),
+     })),
+     pages: reader.pages.map((file) => ({
+       id: file,
+       image: chapterPageUrl(reader.baseUrl || UPLOADS, reader.hash, file),
+     })),
+     prevHref: prev ? `/read/${manga.id}/${prev.id}` : null,
+     nextHref: next ? `/read/${manga.id}/${next.id}` : null,
+   };
 }

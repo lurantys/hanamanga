@@ -248,7 +248,7 @@ function normalizeManga(api: ApiManga): Manga {
       .filter((value): value is string => Boolean(value)),
     description: pickDescription(attrs.description) || undefined,
     coverUrl: coverFile
-      ? `${UPLOADS}/covers/${api.id}/${coverFile}.512.jpg`
+      ? `${UPLOADS}/covers/${api.id}/${coverFile}.256.jpg`
       : null,
     genres: (attrs.tags ?? [])
       .map((tag) => tag.attributes?.name?.en)

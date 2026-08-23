@@ -168,19 +168,43 @@ export async function searchCatalog(
   return { data, total: data.length, offset: 0, limit };
 }
 
+/**
+ * MangaDex records carry no banner and serve watermarked covers. When the
+ * record links to an AniList entry we fetch it and overlay its banner, cover
+ * and description. This runs at the catalog data layer so every consumer —
+ * detail pages, the home hero, library and continue-reading — gets the clean
+ * media, not just the detail page. Skips manga that already have a banner and
+ * falls back silently when AniList is unreachable.
+ */
+export async function enhanceWithAniList(manga: Manga): Promise<Manga> {
+  if (manga.bannerUrl || !manga.links?.al) return manga;
+  try {
+    const al = await fetchAniListById(manga.links.al);
+    return {
+      ...manga,
+      bannerUrl: al.bannerUrl ?? manga.bannerUrl,
+      coverUrl: al.coverUrl ?? manga.coverUrl,
+      description: al.description ?? manga.description,
+    };
+  } catch {
+    return manga;
+  }
+}
+
 const cachedCatalogManga = unstable_cache(
   async (id: string, withStats: boolean): Promise<Manga> => {
     const { source, ref } = parseMangaId(id);
+    let manga: Manga;
     if (source === "atsu") {
-      return atsuToManga(await fetchAtsuManga(ref));
+      manga = atsuToManga(await fetchAtsuManga(ref));
+    } else if (source === "al") {
+      manga = await fetchAniListById(ref);
+    } else {
+      manga = await fetchMangaById(ref, { withStats });
+      const cleanCover = await resolveCleanCover(manga);
+      if (cleanCover) manga.coverUrl = cleanCover;
     }
-    if (source === "al") {
-      return fetchAniListById(ref);
-    }
-    const manga = await fetchMangaById(ref, { withStats });
-    const cleanCover = await resolveCleanCover(manga);
-    if (cleanCover) manga.coverUrl = cleanCover;
-    return manga;
+    return enhanceWithAniList(manga);
   },
   ["catalog-manga"],
   { revalidate: 300 },

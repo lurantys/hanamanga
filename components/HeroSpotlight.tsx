@@ -1,4 +1,5 @@
 import { getTrending, pickHero } from "@/lib/read";
+import { enhanceWithAniList } from "@/lib/catalog";
 import { HeroSpotlightClient } from "./HeroSpotlightClient";
 
 function HeroFallback() {
@@ -25,7 +26,8 @@ export async function HeroSpotlight() {
   } catch {
     data = null;
   }
-  const hero = data ? pickHero(data.data) : null;
-  if (!hero) return <HeroFallback />;
+  const picked = data ? pickHero(data.data) : null;
+  if (!picked) return <HeroFallback />;
+  const hero = await enhanceWithAniList(picked);
   return <HeroSpotlightClient initial={hero} />;
 }

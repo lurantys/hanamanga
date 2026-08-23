@@ -131,7 +131,10 @@ if (atsuReader && atsuReader.pages.length > 0) {
 
   if (source === "atsu") notFound();
 
-  const mdRef = source === "mangadex" ? ref : await mdRefForManga(manga);
+  const mdRefPromise =
+    source === "mangadex"
+      ? Promise.resolve(ref)
+      : mdRefForManga(manga).catch(() => null);
 
   let weebReader: {
     chapterLabel: string;
@@ -141,9 +144,14 @@ if (atsuReader && atsuReader.pages.length > 0) {
     prevHref: string | null;
     nextHref: string | null;
   } | null = null;
+  let mdRef: string | null = null;
 
   try {
-    const lookup = await getWeebLookup(manga);
+    const [lookup, resolvedMdRef] = await Promise.all([
+      getWeebLookup(manga),
+      mdRefPromise,
+    ]);
+    mdRef = resolvedMdRef;
     if (lookup.manga && lookup.chapters.length > 0) {
       let current =
         lookup.chapters.find((chapter) => chapter.id === chapterId) ?? null;
@@ -182,6 +190,7 @@ prevHref: prev ? `/read/${manga.id}/${prev.id}` : null,
   } catch {
     // WeebCentral unavailable — fall through to MangaKatana.
   }
+  if (mdRef === null) mdRef = await mdRefPromise;
 
 if (weebReader) {
      return {

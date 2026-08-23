@@ -102,7 +102,6 @@ export function SearchResults({
           alt="A clueless anime girl, searching for something that is not there"
           width={200}
           height={216}
-          priority
           unoptimized
           className="h-52 w-auto shrink-0 rounded-2xl object-cover"
         />

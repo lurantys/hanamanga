@@ -624,7 +624,6 @@ export default function LibraryPage() {
               alt="A sleepy dog, dozing off in an empty library"
               width={200}
               height={216}
-              priority
               unoptimized
               className="h-52 w-auto shrink-0 rounded-2xl object-cover"
             />

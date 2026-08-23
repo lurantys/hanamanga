@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import Link from "next/link";
 import type { Manga } from "@/lib/mangadex";
 
 type WipModalProps = {
@@ -77,13 +78,13 @@ export function WipModal({ open, media, onClose }: WipModalProps) {
             </p>
           </div>
           <div className="flex flex-wrap justify-center gap-3 pt-2">
-            <button
-              type="button"
+            <Link
+              href="/browse"
               onClick={onClose}
               className="rounded-lg bg-emerald-500 px-6 py-2.5 text-sm font-bold text-zinc-950 transition active:scale-[0.97] hover:bg-emerald-400"
             >
               Back to Catalog
-            </button>
+            </Link>
             <button
               type="button"
               onClick={onClose}

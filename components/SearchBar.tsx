@@ -109,7 +109,7 @@ export function SearchBar() {
             placeholder="Search manga…"
             aria-label="Search manga"
             enterKeyHint="search"
-            className="w-40 bg-transparent text-sm text-zinc-50 outline-none placeholder:text-zinc-500 sm:w-56 lg:w-64"
+            className="min-w-0 flex-1 bg-transparent text-sm text-zinc-50 outline-none placeholder:text-zinc-500 sm:w-56 sm:flex-none lg:w-64"
           />
           <button
             type="button"

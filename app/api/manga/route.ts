@@ -43,11 +43,14 @@ const cachedProviderFetch = unstable_cache(
     ];
     if (withBanners) {
       await Promise.all(
-        data.map(async (manga) => {
+        data.map(async (manga, index) => {
           const enhanced = await enhanceWithAniList(manga);
-          manga.bannerUrl = enhanced.bannerUrl;
-          manga.coverUrl = enhanced.coverUrl;
-          manga.description = enhanced.description ?? manga.description;
+          data[index] = {
+            ...manga,
+            bannerUrl: enhanced.bannerUrl,
+            coverUrl: enhanced.coverUrl,
+            description: enhanced.description ?? manga.description,
+          };
         }),
       );
     }

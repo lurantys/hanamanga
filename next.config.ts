@@ -5,7 +5,6 @@ const nextConfig: NextConfig = {
     ? { output: "standalone" as const }
     : {}),
   images: {
-    unoptimized: true,
     dangerouslyAllowLocalIP: true,
     remotePatterns: [
       { protocol: "https", hostname: "uploads.mangadex.org" },

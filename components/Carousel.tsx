@@ -51,9 +51,21 @@ export function Carousel({ title, ariaLabel, children, headerRight }: CarouselPr
   useEffect(() => {
     const el = scrollerRef.current;
     if (!el) return;
-    const max = el.scrollWidth - el.clientWidth;
-    setAtStart(el.scrollLeft <= 1);
-    setAtEnd(el.scrollLeft >= max - 1);
+
+    const updateBoundaries = () => {
+      const max = Math.max(0, el.scrollWidth - el.clientWidth);
+      setAtStart(el.scrollLeft <= 1);
+      setAtEnd(el.scrollLeft >= max - 1);
+    };
+
+    updateBoundaries();
+    el.addEventListener("scroll", updateBoundaries, { passive: true });
+    const resizeObserver = new ResizeObserver(updateBoundaries);
+    resizeObserver.observe(el);
+    return () => {
+      el.removeEventListener("scroll", updateBoundaries);
+      resizeObserver.disconnect();
+    };
   }, []);
 
   const scrollBy = (dir: 1 | -1) => {

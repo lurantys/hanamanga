@@ -39,7 +39,6 @@ export default function Error({ error, reset }: ErrorProps) {
             alt="A clueless anime girl, lost and confused"
             width={250}
             height={270}
-            priority
             unoptimized
             className="h-[20.8rem] w-auto shrink-0 rounded-2xl object-cover"
           />

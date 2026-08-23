@@ -264,7 +264,7 @@ function ReaderImage({
 }) {
   const [loaded, setLoaded] = useState(false);
   return (
-    <div className="relative">
+    <div className={`relative ${width && height ? "" : "min-h-[50vh]"}`}>
       {!loaded && (
         <div
           className={`absolute inset-0 ${placeholderClassName} animate-pulse rounded-lg bg-zinc-900`}

@@ -17,7 +17,7 @@ export const revalidate = 300;
 function RowUnavailable({ title }: { title: string }) {
   return (
     <section aria-label={title}>
-      <h2 className="mb-3 px-4 text-lg font-bold tracking-tight text-zinc-700 md:px-10">
+      <h2 className="mb-3 px-4 text-lg font-bold tracking-tight text-zinc-400 md:px-10">
         {title}
       </h2>
       <div className="px-4 py-4 md:px-10">
@@ -80,7 +80,7 @@ async function ManhuaRow() {
 function RowSkeleton({ title }: { title: string }) {
   return (
     <section aria-hidden>
-      <h2 className="mb-3 px-4 text-lg font-bold tracking-tight text-zinc-700 md:px-10">
+      <h2 className="mb-3 px-4 text-lg font-bold tracking-tight text-zinc-400 md:px-10">
         {title}
       </h2>
       <div className="flex gap-3 overflow-hidden px-4 py-2 md:px-10">

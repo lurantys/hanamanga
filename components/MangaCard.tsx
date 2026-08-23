@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { StarRating } from "./StarRating";
 import { statusLabel, type Manga } from "@/lib/mangadex";
+import { ratingTextClass, ratingTier } from "@/lib/rating";
 
 type MangaCardProps = {
   manga: Manga;
@@ -15,7 +16,7 @@ export function MangaCard({ manga, className = "" }: MangaCardProps) {
   const genres = (manga.genres ?? []).slice(0, 2);
   const rating = manga.rating ?? 0;
   const match = Math.round(rating * 10);
-  const isTopRated = rating >= 9;
+  const ratingClass = ratingTextClass[ratingTier(rating)];
   const [loaded, setLoaded] = useState(false);
 
   return (
@@ -75,13 +76,9 @@ export function MangaCard({ manga, className = "" }: MangaCardProps) {
         <div className="mt-1 flex items-center gap-1.5">
           {rating > 0 && (
             <>
-              <StarRating
-                className={isTopRated ? "text-amber-300" : "text-white"}
-              />
+              <StarRating className={ratingClass} />
               <span
-                className={`text-xs font-semibold ${
-                  isTopRated ? "text-amber-300" : "text-zinc-300"
-                }`}
+                className={`text-xs font-semibold ${ratingClass}`}
               >
                 {rating.toFixed(1)}
               </span>

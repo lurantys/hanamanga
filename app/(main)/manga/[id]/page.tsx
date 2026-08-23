@@ -17,6 +17,7 @@ import {
   truncate,
   type Chapter,
 } from "@/lib/mangadex";
+import { ratingBadgeClass, ratingTextClass, ratingTier } from "@/lib/rating";
 import {
   chaptersOfScanlator,
   primaryScanlator,
@@ -136,7 +137,9 @@ export default async function MangaPage({ params }: MangaPageProps) {
 
   const rating = manga.rating ?? 0;
   const match = rating.toFixed(1);
-  const isTopRated = rating >= 9;
+  const ratingBadge = rating > 0
+    ? ratingBadgeClass[ratingTier(rating)]
+    : "bg-zinc-500/15 text-zinc-300";
   const showRating =
     Boolean(manga.description) && rating > 0 && match !== "0.0";
   const links = externalLinks(manga.links);
@@ -197,11 +200,7 @@ export default async function MangaPage({ params }: MangaPageProps) {
           <div className="flex-1 space-y-4 pb-2">
             <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
               <span
-                className={`inline-flex items-center gap-2 rounded-md px-2.5 py-1 text-sm font-bold ${
-                  isTopRated
-                    ? "bg-amber-400/15 text-amber-300"
-                    : "bg-emerald-500/15 text-emerald-400"
-                }`}
+                className={`inline-flex items-center gap-2 rounded-md px-2.5 py-1 text-sm font-bold ${ratingBadge}`}
               >
                 {showRating ? `${match} / 10` : "New"}
               </span>
@@ -305,12 +304,10 @@ export default async function MangaPage({ params }: MangaPageProps) {
               <div className="flex items-center gap-1.5">
                 <StarRating
                   sizeClass="h-4 w-4"
-                  className={isTopRated ? "text-amber-300" : "text-white"}
+                  className={ratingTextClass[ratingTier(rating)]}
                 />
                 <span
-                  className={`text-sm font-semibold ${
-                    isTopRated ? "text-amber-300" : "text-zinc-300"
-                  }`}
+                  className={`text-sm font-semibold ${ratingTextClass[ratingTier(rating)]}`}
                 >
                   {rating.toFixed(1)}
                 </span>

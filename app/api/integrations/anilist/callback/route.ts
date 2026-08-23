@@ -13,6 +13,8 @@ const ANILIST_API = "https://graphql.anilist.co";
 
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get("code");
+  const state = request.nextUrl.searchParams.get("state");
+  const storedState = request.cookies.get("anilist_oauth_state")?.value;
 
   const supabase = await createClient();
   const {
@@ -24,6 +26,12 @@ export async function GET(request: NextRequest) {
     );
   }
   const userId = session.user.id;
+
+  if (!code || !state || !storedState || storedState !== state) {
+    return NextResponse.redirect(
+      `${SITE_URL}/account?error=anilist_state_failed`,
+    );
+  }
 
   const tokenRes = await fetch(ANILIST_TOKEN_URL, {
     method: "POST",
@@ -46,7 +54,11 @@ export async function GET(request: NextRequest) {
       status: tokenRes.status,
       body: tokenJson,
     });
-    return NextResponse.redirect(`${SITE_URL}/account?error=anilist_token_failed`);
+    const res = NextResponse.redirect(
+      `${SITE_URL}/account?error=anilist_token_failed`,
+    );
+    res.cookies.delete("anilist_oauth_state");
+    return res;
   }
 
   const expiresAt = tokenJson.expires_in
@@ -76,7 +88,9 @@ export async function GET(request: NextRequest) {
     ok: "1",
     count: String(importResult.imported),
   });
-  return NextResponse.redirect(`${SITE_URL}/account?${query.toString()}`);
+  const res = NextResponse.redirect(`${SITE_URL}/account?${query.toString()}`);
+  res.cookies.delete("anilist_oauth_state");
+  return res;
 }
 
 type AniListMediaList = {

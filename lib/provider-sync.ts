@@ -15,7 +15,14 @@ export type ProviderName = "anilist" | "mal";
 
 export type ProviderState = Record<
   string,
-  { status?: string; progress?: number; syncedAt?: number; error?: string } | undefined
+  {
+    status?: string;
+    progress?: number;
+    /** Last progress value we successfully wrote to the provider. */
+    pushedProgress?: number;
+    syncedAt?: number;
+    error?: string;
+  } | undefined
 >;
 
 export type ProviderSyncResult = {
@@ -398,10 +405,24 @@ async function pushToProvider(
         }
         await setProviderState(userId, row.manga_id, {
           ...state,
-          [provider]: { status, progress: progress ?? undefined, syncedAt: Date.now() },
+          [provider]: {
+            status,
+            progress: progress ?? undefined,
+            pushedProgress: progress ?? undefined,
+            syncedAt: Date.now(),
+          },
         });
         additions++;
-      } else if (progress != null && existing.progress !== progress) {
+      } else if (
+        progress != null &&
+        progress !== existing.pushedProgress &&
+        // Push only when the local value moved since our last write and the
+        // provider hasn't changed on its own (or we would regress it). A
+        // conflict where both sides advanced resolves toward the higher
+        // progress so remote edits are never silently reverted.
+        (existing.progress === existing.pushedProgress ||
+          progress > (existing.progress ?? Number.NEGATIVE_INFINITY))
+      ) {
         const status = existing.status ?? (provider === "anilist" ? "CURRENT" : "reading");
         if (provider === "anilist") {
           await saveAniListEntry(token, mediaId, status, progress);
@@ -410,7 +431,7 @@ async function pushToProvider(
         }
         await setProviderState(userId, row.manga_id, {
           ...state,
-          [provider]: { ...existing, progress, syncedAt: Date.now() },
+          [provider]: { ...existing, progress, pushedProgress: progress, syncedAt: Date.now() },
         });
         progressUpdates++;
       }
@@ -500,6 +521,7 @@ async function pullFromProvider(
         [provider]: {
           status: entry.status ?? prev?.status,
           progress: entry.progress ?? prev?.progress,
+          pushedProgress: prev?.pushedProgress,
           syncedAt,
         },
       },
@@ -745,19 +767,26 @@ async function syncProvider(
   };
   let pushResult = { additions: 0, progressUpdates: 0 };
   let error: string | undefined;
+  let pullFailed = false;
 
   try {
     pullResult = await pullFromProvider(userId, provider, token, syncedAt);
   } catch (err) {
     console.error(`[provider-sync] ${provider} pull failed`, err);
     error = err instanceof Error ? err.message : "pull failed";
+    pullFailed = true;
   }
 
-  try {
-    pushResult = await pushToProvider(userId, provider, token);
-  } catch (err) {
-    console.error(`[provider-sync] ${provider} push failed`, err);
-    error ??= err instanceof Error ? err.message : "push failed";
+  // Never push on the heels of a failed pull: stale provider_state (e.g. right
+  // after a fresh connect, where state is empty) would re-add entries with
+  // default statuses and clobber the provider-side library.
+  if (!pullFailed) {
+    try {
+      pushResult = await pushToProvider(userId, provider, token);
+    } catch (err) {
+      console.error(`[provider-sync] ${provider} push failed`, err);
+      error ??= err instanceof Error ? err.message : "push failed";
+    }
   }
 
   if (!error) {

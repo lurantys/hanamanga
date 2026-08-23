@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ErrorPage } from "@/components/ErrorPage";
 import {
   fetchAniListCharacters,
   isAniListDownError,
@@ -132,6 +133,30 @@ export default async function CharactersPage({
     anilistDown = isAniListDownError(error);
   }
 
+  if (anilistDown) {
+    return (
+      <ErrorPage
+        eyebrow="Error"
+        title="AniList is down"
+        description="Character data comes from AniList, which has been temporarily disabled due to severe stability issues. Please try again in a little while."
+        className="pb-24 pt-32"
+      >
+        <Link
+          href={`/manga/${rawId}`}
+          className="inline-flex items-center justify-center rounded-full border border-white/15 px-6 py-2.5 text-sm font-semibold text-zinc-300 transition-colors hover:border-white/40 hover:text-white"
+        >
+          ← Back to {mangaTitle}
+        </Link>
+        <Link
+          href="/"
+          className="inline-flex items-center justify-center rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-white/80"
+        >
+          Back to Home
+        </Link>
+      </ErrorPage>
+    );
+  }
+
   return (
     <main className="mx-auto max-w-5xl px-5 pb-16 pt-32 md:px-10 md:pt-36">
       <Link
@@ -142,17 +167,7 @@ export default async function CharactersPage({
       </Link>
       <h1 className="mt-6 text-2xl font-bold text-white">Characters</h1>
 
-      {anilistDown ? (
-        <div className="mt-6 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-6 py-8 text-center">
-          <p className="text-sm font-semibold text-amber-300">
-            AniList is temporarily down
-          </p>
-          <p className="mx-auto mt-2 max-w-md text-sm text-zinc-400">
-            Character data comes from AniList, which is unavailable right now.
-            Please try again in a little while.
-          </p>
-        </div>
-      ) : characters.length === 0 ? (
+      {characters.length === 0 ? (
         <p className="mt-3 text-sm text-zinc-400">
           No characters listed for this title.
         </p>

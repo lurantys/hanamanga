@@ -108,7 +108,7 @@ export default async function CharactersPage({
 
   if (!alId) {
     return (
-      <main className="mx-auto max-w-5xl px-5 py-16 md:px-10">
+      <main className="mx-auto max-w-5xl px-5 pb-16 pt-32 md:px-10 md:pt-36">
         <Link
           href={`/manga/${rawId}`}
           className="text-sm text-zinc-400 transition-colors hover:text-white"
@@ -126,7 +126,7 @@ export default async function CharactersPage({
   const characters = await fetchAniListCharacters(alId);
 
   return (
-    <main className="mx-auto max-w-5xl px-5 py-16 md:px-10">
+    <main className="mx-auto max-w-5xl px-5 pb-16 pt-32 md:px-10 md:pt-36">
       <Link
         href={`/manga/${rawId}`}
         className="text-sm text-zinc-400 transition-colors hover:text-white"

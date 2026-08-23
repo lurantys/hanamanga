@@ -103,7 +103,7 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
   return (
     <section
       key={`${hero.id}:${imageSrc ?? "none"}`}
-      className="animate-hero-in relative w-full overflow-hidden bg-zinc-950 md:h-[80dvh] md:min-h-[480px]"
+      className="animate-hero-in relative w-full overflow-hidden bg-zinc-950 h-[65vh] min-h-[420px] md:h-[80dvh] md:min-h-[480px]"
     >
       {imageSrc ? (
         <Image
@@ -113,7 +113,7 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
           fill
           sizes="(min-width:768px) 100vw, 512px"
           onLoad={() => setImageLoaded(true)}
-          className={`object-cover object-top transition-opacity duration-700 ${
+          className={`object-cover object-center md:object-top transition-opacity duration-700 ${
             bannerSrc ? "" : "scale-125 blur-2xl"
           } ${ready ? "opacity-100" : "opacity-0"}`}
         />
@@ -143,7 +143,7 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
       <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/25 to-zinc-950/60" />
       <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/50 to-transparent" />
 
-      <div className="relative z-10 px-5 pb-8 pt-32 md:absolute md:inset-x-0 md:bottom-0 md:px-10 md:pb-20 md:pt-0 lg:px-16">
+      <div className="absolute inset-x-0 bottom-0 z-10 px-5 pb-8 pt-10 md:px-10 md:pb-20 md:pt-0 lg:px-16">
         <div className="flex items-start gap-4 md:items-end md:gap-8">
           {hero.coverUrl && (
             <Link

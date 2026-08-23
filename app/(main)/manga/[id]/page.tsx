@@ -161,7 +161,7 @@ export default async function MangaPage({ params }: MangaPageProps) {
 
   return (
     <main className="bg-zinc-950 pb-24">
-      <div className="relative h-[46dvh] min-h-[320px] w-full overflow-hidden">
+      <div className="relative h-[34dvh] min-h-[260px] w-full overflow-hidden md:h-[46dvh] md:min-h-[320px]">
         {headerImage ? (
           <Image
             src={headerImage}
@@ -177,7 +177,7 @@ export default async function MangaPage({ params }: MangaPageProps) {
         <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/70 to-zinc-950/30" />
       </div>
 
-      <div className="relative z-10 mx-auto -mt-52 max-w-5xl px-5 md:px-10">
+      <div className="relative z-10 mx-auto -mt-40 max-w-5xl px-5 md:-mt-52 md:px-10">
         <div className="flex flex-col gap-8 md:flex-row md:items-start">
           <div className="relative w-44 shrink-0 md:w-56">
             <div className="aspect-[2/3] overflow-hidden rounded-xl border border-zinc-800 bg-zinc-900 shadow-2xl shadow-zinc-950/70">

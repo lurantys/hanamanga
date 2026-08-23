@@ -198,12 +198,20 @@ export default function AccountContent() {
         .filter((p) => p.unmatched)
         .map((p) => `${p.provider}: ${p.unmatched}`);
       if (errors.length) {
+        const anilistError = providers.find(
+          (p) => p.provider === "anilist" && p.error,
+        )?.error;
+        const isDown = anilistError
+          ? /temporarily disabled|severe stability issues/i.test(anilistError)
+          : false;
         setSyncResult(
-          `Synced, but ${errors
-            .map((p) =>
-              `${p.provider === "mal" ? "MAL" : "AniList"} failed: ${p.error}`,
-            )
-            .join(", ")}.`,
+          isDown
+            ? "AniList is temporarily down due to stability issues. Your local library is safe — sync will work again once AniList is back."
+            : `Synced, but ${errors
+                .map((p) =>
+                  `${p.provider === "mal" ? "MAL" : "AniList"} failed: ${p.error}`,
+                )
+                .join(", ")}.`,
         );
       } else if (unmatched.length) {
         setSyncResult(

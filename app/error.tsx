@@ -14,6 +14,10 @@ export default function Error({ error, reset }: ErrorProps) {
     console.error(error);
   }, [error]);
 
+  const anilistDown = /temporarily disabled|severe stability issues/i.test(
+    error?.message ?? "",
+  );
+
   return (
     <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-zinc-950 px-6 py-16">
       <div className="relative flex w-full max-w-4xl flex-col">
@@ -47,11 +51,12 @@ export default function Error({ error, reset }: ErrorProps) {
               Error
             </p>
             <h1 className="mt-3 text-5xl font-black leading-tight tracking-tight text-white">
-              Something went wrong
+              {anilistDown ? "AniList is down" : "Something went wrong"}
             </h1>
             <p className="mt-4 text-sm leading-relaxed text-zinc-400">
-              The manga catalog couldn&apos;t be loaded right now. The source
-              may be busy — give it a moment, or head home to keep browsing.
+              {anilistDown
+                ? "The AniList API has been temporarily disabled due to severe stability issues. Some catalog data is unavailable right now — please try again in a little while."
+                : "The manga catalog couldn't be loaded right now. The source may be busy — give it a moment, or head home to keep browsing."}
             </p>
             <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row md:justify-start">
               <button

@@ -202,6 +202,18 @@ export class AniListError extends Error {
   }
 }
 
+export const ANILIST_DOWN_MESSAGE =
+  "The AniList API has been temporarily disabled due to severe stability issues.";
+
+export function isAniListDownError(error: unknown): boolean {
+  if (!error) return false;
+  const message = error instanceof Error ? error.message : String(error);
+  return (
+    /temporarily disabled|severe stability issues/i.test(message) ||
+    (error instanceof AniListError && error.status === 403)
+  );
+}
+
 async function queryAnilistAuth<T>(
   token: string,
   query: string,

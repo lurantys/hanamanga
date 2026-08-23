@@ -4,6 +4,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   fetchAniListCharacters,
+  isAniListDownError,
   type AniListCharacter,
 } from "@/lib/anilist";
 import { fetchCatalogMangaWithFallback, isNotFoundError } from "@/lib/catalog";
@@ -123,7 +124,13 @@ export default async function CharactersPage({
     );
   }
 
-  const characters = await fetchAniListCharacters(alId);
+  let characters: AniListCharacter[] = [];
+  let anilistDown = false;
+  try {
+    characters = await fetchAniListCharacters(alId);
+  } catch (error) {
+    anilistDown = isAniListDownError(error);
+  }
 
   return (
     <main className="mx-auto max-w-5xl px-5 pb-16 pt-32 md:px-10 md:pt-36">
@@ -135,7 +142,17 @@ export default async function CharactersPage({
       </Link>
       <h1 className="mt-6 text-2xl font-bold text-white">Characters</h1>
 
-      {characters.length === 0 ? (
+      {anilistDown ? (
+        <div className="mt-6 rounded-2xl border border-amber-500/30 bg-amber-500/10 px-6 py-8 text-center">
+          <p className="text-sm font-semibold text-amber-300">
+            AniList is temporarily down
+          </p>
+          <p className="mx-auto mt-2 max-w-md text-sm text-zinc-400">
+            Character data comes from AniList, which is unavailable right now.
+            Please try again in a little while.
+          </p>
+        </div>
+      ) : characters.length === 0 ? (
         <p className="mt-3 text-sm text-zinc-400">
           No characters listed for this title.
         </p>

@@ -1,11 +1,10 @@
 import { NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
 import { fetchMangaList, type Manga } from "@/lib/mangadex";
-import { atsuToManga } from "@/lib/catalog";
+import { atsuToManga, enhanceWithAniList } from "@/lib/catalog";
 import { fetchAtsuManga } from "@/lib/atsu";
 import { splitMangaIds } from "@/lib/source";
 import { fetchAniListByIds } from "@/lib/anilist";
-import { bannerForManga } from "@/lib/banner";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -45,11 +44,10 @@ const cachedProviderFetch = unstable_cache(
     if (withBanners) {
       await Promise.all(
         data.map(async (manga) => {
-          if (manga.bannerUrl) return;
-          manga.bannerUrl = await bannerForManga({
-            title: manga.title,
-            anilistId: manga.links?.al,
-          });
+          const enhanced = await enhanceWithAniList(manga);
+          manga.bannerUrl = enhanced.bannerUrl;
+          manga.coverUrl = enhanced.coverUrl;
+          manga.description = enhanced.description ?? manga.description;
         }),
       );
     }

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { ErrorPage } from "@/components/ErrorPage";
 import { AtsuChapterList } from "@/components/AtsuChapterList";
 import { ExternalLinkLogo } from "@/components/BrandIcons";
 import { ContinueReadingButton } from "@/components/ContinueReadingButton";
@@ -29,6 +30,10 @@ import {
   isNotFoundError,
 } from "@/lib/catalog";
 import { getAtsuMatch, getKatanaLookup, getMdAggregate, getMdFeed, getWeebLookup, mdRefForManga } from "@/lib/read";
+import {
+  ANILIST_DOWN_MESSAGE,
+  isAniListDownError,
+} from "@/lib/anilist";
 import { parseMangaId } from "@/lib/source";
 import { toCatalogChapter } from "@/lib/mangakatana";
 import { toWeebCatalogChapter } from "@/lib/weebcentral";
@@ -45,6 +50,12 @@ export async function generateMetadata({
   try {
     manga = await fetchCatalogMangaWithFallback(id);
   } catch (error) {
+    if (isAniListDownError(error)) {
+      return {
+        title: "AniList unavailable — Hana",
+        description: ANILIST_DOWN_MESSAGE,
+      };
+    }
     if (isNotFoundError(error)) notFound();
     throw error;
   }
@@ -67,7 +78,25 @@ export default async function MangaPage({ params }: MangaPageProps) {
     manga = await fetchCatalogMangaWithFallback(id);
   } catch (error) {
     if (isNotFoundError(error)) notFound();
-    throw error;
+    else if (isAniListDownError(error)) {
+      return (
+        <ErrorPage
+          eyebrow="Error"
+          title="AniList is down"
+          description={`${ANILIST_DOWN_MESSAGE} Character and catalog data from AniList is unavailable right now. Please try again in a little while.`}
+          className="pb-24 pt-32"
+        >
+          <Link
+            href="/"
+            className="inline-flex items-center justify-center rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-white/80"
+          >
+            Back to Home
+          </Link>
+        </ErrorPage>
+      );
+    } else {
+      throw error;
+    }
   }
 
   let atsuMatch: AtsuMatch | null = null;

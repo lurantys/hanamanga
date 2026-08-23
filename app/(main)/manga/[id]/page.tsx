@@ -16,6 +16,7 @@ import {
   statusLabel,
   truncate,
   type Chapter,
+  type Manga,
 } from "@/lib/mangadex";
 import { ratingBadgeClass, ratingTextClass, ratingTier } from "@/lib/rating";
 import {
@@ -28,6 +29,7 @@ import {
   fetchCatalogMangaWithFallback,
   isNotFoundError,
 } from "@/lib/catalog";
+import { fetchAniListById } from "@/lib/anilist";
 import { getAtsuMatch, getKatanaLookup, getMdAggregate, getMdFeed, getWeebLookup, mdRefForManga } from "@/lib/read";
 import { parseMangaId } from "@/lib/source";
 import { toCatalogChapter } from "@/lib/mangakatana";
@@ -37,6 +39,29 @@ type MangaPageProps = {
   params: Promise<{ id: string }>;
 };
 
+/**
+ * MangaDex pages lack a banner and serve watermarked covers. When the MangaDex
+ * record links to an AniList entry we fetch it and overlay its banner, cover
+ * and description — keeping the MangaDex id so library tracking and exact
+ * chapter resolution are unaffected. Falls back silently if AniList is down.
+ */
+async function preferAniListMedia(id: string, manga: Manga): Promise<Manga> {
+  if (parseMangaId(id).source !== "mangadex") return manga;
+  const alId = manga.links?.al;
+  if (!alId) return manga;
+  try {
+    const al = await fetchAniListById(alId);
+    return {
+      ...manga,
+      bannerUrl: al.bannerUrl ?? manga.bannerUrl,
+      coverUrl: al.coverUrl ?? manga.coverUrl,
+      description: al.description ?? manga.description,
+    };
+  } catch {
+    return manga;
+  }
+}
+
 export async function generateMetadata({
   params,
 }: MangaPageProps): Promise<Metadata> {
@@ -44,6 +69,7 @@ export async function generateMetadata({
   let manga;
   try {
     manga = await fetchCatalogMangaWithFallback(id);
+    manga = await preferAniListMedia(id, manga);
   } catch (error) {
     if (isNotFoundError(error)) notFound();
     throw error;
@@ -65,6 +91,7 @@ export default async function MangaPage({ params }: MangaPageProps) {
   let manga;
   try {
     manga = await fetchCatalogMangaWithFallback(id);
+    manga = await preferAniListMedia(id, manga);
   } catch (error) {
     if (isNotFoundError(error)) notFound();
     throw error;

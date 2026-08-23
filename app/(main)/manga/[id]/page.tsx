@@ -162,7 +162,7 @@ export default async function MangaPage({ params }: MangaPageProps) {
             priority
             fill
             sizes="100vw"
-            className={manga.bannerUrl ? "object-contain object-top opacity-40" : "object-cover object-top opacity-40"}
+            className="object-cover object-top opacity-40"
           />
         ) : (
           <div className="absolute inset-0 bg-zinc-900" />

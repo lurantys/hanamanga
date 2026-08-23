@@ -2,75 +2,143 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useSyncExternalStore, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   CONTINUE_HERO_EVENT,
   CONTINUE_HERO_STORAGE_KEY,
   getContinueList,
-  invalidateContinueHero,
   readContinueHero,
   saveContinueHero,
+  PROGRESS_EVENT,
 } from "@/lib/progress";
+import { getLibraryList, LIBRARY_EVENT } from "@/lib/library";
 import { statusLabel, truncate, type Manga } from "@/lib/mangadex";
 
 type HeroSpotlightClientProps = {
   initial: Manga;
 };
 
-function subscribe(onChange: () => void): () => void {
-  const onStorage = (event: StorageEvent) => {
-    if (event.key === CONTINUE_HERO_STORAGE_KEY) invalidateContinueHero();
-    onChange();
-  };
-  window.addEventListener("storage", onStorage);
-  window.addEventListener(CONTINUE_HERO_EVENT, onChange);
-  return () => {
-    window.removeEventListener("storage", onStorage);
-    window.removeEventListener(CONTINUE_HERO_EVENT, onChange);
-  };
-}
+type HeroState = {
+  manga: Manga;
+  isContinue: boolean;
+  chapterId?: string;
+  chapterLabel?: string;
+  mangaFraction?: number;
+  scrollFraction?: number;
+};
 
 export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
-  const snapshot = useSyncExternalStore(subscribe, readContinueHero, () => null);
+  const [hero, setHero] = useState<HeroState | null>(null);
   const [imageLoaded, setImageLoaded] = useState(false);
 
-  const hero = snapshot?.manga ?? initial;
-  const bannerSrc = hero.bannerUrl ?? null;
-  const imageSrc: string | null = bannerSrc ?? hero.coverUrl ?? null;
+  const displayHero = hero?.manga ?? initial;
+  const isContinue = hero?.isContinue ?? false;
+  const chapterId = hero?.chapterId;
+  const chapterLabel = hero?.chapterLabel;
+  const bannerSrc = displayHero.bannerUrl ?? null;
+  const imageSrc: string | null = bannerSrc ?? displayHero.coverUrl ?? null;
 
   const ready = !imageSrc || imageLoaded;
 
   useEffect(() => {
-    const entry = getContinueList(1)[0];
-    if (!entry) return;
-    fetch(`/api/manga?ids=${encodeURIComponent(entry.mangaId)}&banners=1`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((json) => {
-        const manga = json?.data?.[0];
-        if (!manga) return;
-        saveContinueHero({
-          manga,
-          chapterId: entry.chapterId,
-          chapterLabel: entry.chapterLabel,
-          scrollFraction: entry.scrollFraction,
-          mangaFraction: entry.mangaFraction,
-          updatedAt: entry.updatedAt,
+    let active = true;
+
+    function apply() {
+      if (!active) return;
+      const continueEntry = getContinueList(1)[0];
+      if (continueEntry) {
+        const snapshot = readContinueHero();
+        if (snapshot && snapshot.manga.id === continueEntry.mangaId) {
+          setHero({
+            manga: snapshot.manga as Manga,
+            isContinue: true,
+            chapterId: snapshot.chapterId,
+            chapterLabel: snapshot.chapterLabel,
+            mangaFraction: snapshot.mangaFraction,
+            scrollFraction: snapshot.scrollFraction,
+          });
+          return;
+        }
+        setHero({
+          manga: {
+            id: continueEntry.mangaId,
+            title: continueEntry.mangaTitle,
+            coverUrl: continueEntry.coverUrl,
+            bannerUrl: null,
+            genres: [],
+            availableLanguages: [],
+          },
+          isContinue: true,
+          chapterId: continueEntry.chapterId,
+          chapterLabel: continueEntry.chapterLabel,
+          mangaFraction: continueEntry.mangaFraction,
+          scrollFraction: continueEntry.scrollFraction,
         });
-      })
-      .catch(() => {});
+        fetch(`/api/manga?ids=${encodeURIComponent(continueEntry.mangaId)}&banners=1`)
+          .then((res) => (res.ok ? res.json() : null))
+          .then((json) => {
+            const manga = json?.data?.[0];
+            if (!manga || !active) return;
+            setHero({
+              manga,
+              isContinue: true,
+              chapterId: continueEntry.chapterId,
+              chapterLabel: continueEntry.chapterLabel,
+              mangaFraction: continueEntry.mangaFraction,
+              scrollFraction: continueEntry.scrollFraction,
+            });
+            saveContinueHero({
+              manga,
+              chapterId: continueEntry.chapterId,
+              chapterLabel: continueEntry.chapterLabel,
+              scrollFraction: continueEntry.scrollFraction,
+              mangaFraction: continueEntry.mangaFraction,
+              updatedAt: continueEntry.updatedAt,
+            });
+          })
+          .catch(() => {});
+        return;
+      }
+
+      const libraryEntry = getLibraryList(1)[0];
+      if (libraryEntry) {
+        setHero({ manga: libraryEntry.manga, isContinue: false });
+        return;
+      }
+
+      setHero(null);
+    }
+
+    apply();
+
+    const onStorage = (event: StorageEvent) => {
+      if (event.key === CONTINUE_HERO_STORAGE_KEY) apply();
+    };
+    window.addEventListener("storage", onStorage);
+    window.addEventListener(CONTINUE_HERO_EVENT, apply);
+    window.addEventListener(PROGRESS_EVENT, apply);
+    window.addEventListener(LIBRARY_EVENT, apply);
+    return () => {
+      active = false;
+      window.removeEventListener("storage", onStorage);
+      window.removeEventListener(CONTINUE_HERO_EVENT, apply);
+      window.removeEventListener(PROGRESS_EVENT, apply);
+      window.removeEventListener(LIBRARY_EVENT, apply);
+    };
   }, []);
 
-  const rating = hero.rating ?? 0;
+  const rating = displayHero.rating ?? 0;
   const match = rating.toFixed(1);
   const showRating =
-    Boolean(hero.description) && rating > 0 && match !== "0.0";
-  const description = truncate(hero.description, 400);
-  const pct = snapshot
-    ? Math.round((snapshot.mangaFraction ?? snapshot.scrollFraction) * 100)
+    Boolean(displayHero.description) && rating > 0 && match !== "0.0";
+  const description = truncate(displayHero.description, 400);
+  const pct = isContinue
+    ? Math.round((hero?.mangaFraction ?? hero?.scrollFraction ?? 0) * 100)
+
     : null;
-  const primaryHref = snapshot
-    ? `/read/${hero.id}/${snapshot.chapterId}`
-    : `/read/${hero.id}`;
+  const primaryHref = isContinue && chapterId
+    ? `/read/${displayHero.id}/${chapterId}`
+    : `/read/${displayHero.id}`;
 
   const actionButtons = (
     <>
@@ -82,17 +150,17 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
           <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
         </svg>
         <span className="flex flex-col items-start leading-tight">
-          {snapshot ? "Continue" : "Read Now"}
-          {snapshot && (
+          {isContinue ? "Continue" : "Read Now"}
+          {isContinue && (
             <span className="text-[11px] font-semibold text-zinc-500">
-              {snapshot.chapterLabel}
+              {chapterLabel}
               {pct !== null && pct > 0 ? ` · ${pct}%` : ""}
             </span>
           )}
         </span>
       </Link>
       <Link
-        href={`/manga/${hero.id}`}
+        href={`/manga/${displayHero.id}`}
         className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-zinc-500/50 px-4 py-2.5 text-sm font-bold text-white transition active:scale-[0.97] hover:bg-zinc-500/30 md:flex-none md:px-6"
       >
         More Info
@@ -102,7 +170,7 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
 
   return (
     <section
-      key={`${hero.id}:${imageSrc ?? "none"}`}
+      key={`${displayHero.id}:${imageSrc ?? "none"}`}
       className="animate-hero-in relative w-full overflow-hidden bg-zinc-950 h-[65vh] min-h-[420px] md:h-[80dvh] md:min-h-[480px]"
     >
       {imageSrc ? (
@@ -145,14 +213,14 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
 
       <div className="absolute inset-x-0 bottom-0 z-10 px-5 pb-8 pt-10 md:px-10 md:pb-20 md:pt-0 lg:px-16">
         <div className="flex items-start gap-4 md:items-end md:gap-8">
-          {hero.coverUrl && (
+          {displayHero.coverUrl && (
             <Link
-              href={`/manga/${hero.id}`}
-              aria-label={hero.title}
+              href={`/manga/${displayHero.id}`}
+              aria-label={displayHero.title}
               className="shrink-0"
             >
               <Image
-                src={hero.coverUrl}
+                src={displayHero.coverUrl}
                 alt=""
                 priority
                 width={224}
@@ -173,20 +241,20 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
                 </span>
               ) : null}
               <span className="rounded-md border border-zinc-500/60 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-zinc-200">
-                {statusLabel(hero.status)}
+                {statusLabel(displayHero.status)}
               </span>
-              {hero.year && (
-                <span className="text-sm text-zinc-300">{hero.year}</span>
+              {displayHero.year && (
+                <span className="text-sm text-zinc-300">{displayHero.year}</span>
               )}
-              {hero.follows ? (
+              {displayHero.follows ? (
                 <span className="text-sm text-zinc-400">
-                  {hero.follows.toLocaleString()} followers
+                  {displayHero.follows.toLocaleString()} followers
                 </span>
               ) : null}
             </div>
 
             <h1 className="line-clamp-3 max-w-3xl text-3xl font-extrabold leading-tight tracking-tight text-white drop-shadow-lg md:line-clamp-2 md:text-6xl">
-              {hero.title}
+              {displayHero.title}
             </h1>
 
             {description && (

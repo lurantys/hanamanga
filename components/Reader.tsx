@@ -1140,7 +1140,7 @@ export function Reader({
         <link key={url} rel="preload" as="image" href={url} />
       ))}
 
-      <header className={`sticky top-0 z-20 border-b border-white/10 bg-zinc-950/80 backdrop-blur-xl transition-all duration-300 ${uiHidden ? "pointer-events-none -translate-y-full opacity-0" : ""}`}>
+      <header className={`sticky top-[env(safe-area-inset-top)] z-20 border-b border-white/10 bg-zinc-950/80 backdrop-blur-xl transition-all duration-300 ${uiHidden ? "pointer-events-none -translate-y-full opacity-0" : ""}`}>
         <div aria-hidden className="absolute inset-x-0 top-0 h-[3px] bg-white/5">
           <div
             className="h-full bg-red-500 transition-[width] duration-150 ease-out"

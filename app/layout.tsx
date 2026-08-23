@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono, Zen_Kaku_Gothic_New } from "next/font/google";
 import { WipProvider } from "@/components/WipProvider";
 import { AuthProvider } from "@/lib/auth";
@@ -57,6 +57,13 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     images: ["/logo-v2.png"],
   },
+};
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#09090b",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

@@ -48,26 +48,18 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
       const continueEntry = getContinueList(1)[0];
       if (continueEntry) {
         const snapshot = readContinueHero();
-        if (snapshot && snapshot.manga.id === continueEntry.mangaId) {
-          setHero({
-            manga: snapshot.manga as Manga,
-            isContinue: true,
-            chapterId: snapshot.chapterId,
-            chapterLabel: snapshot.chapterLabel,
-            mangaFraction: snapshot.mangaFraction,
-            scrollFraction: snapshot.scrollFraction,
-          });
-          return;
-        }
+        const placeholder = snapshot
+          ? (snapshot.manga as Manga)
+          : {
+              id: continueEntry.mangaId,
+              title: continueEntry.mangaTitle,
+              coverUrl: continueEntry.coverUrl,
+              bannerUrl: null,
+              genres: [],
+              availableLanguages: [],
+            };
         setHero({
-          manga: {
-            id: continueEntry.mangaId,
-            title: continueEntry.mangaTitle,
-            coverUrl: continueEntry.coverUrl,
-            bannerUrl: null,
-            genres: [],
-            availableLanguages: [],
-          },
+          manga: placeholder,
           isContinue: true,
           chapterId: continueEntry.chapterId,
           chapterLabel: continueEntry.chapterLabel,

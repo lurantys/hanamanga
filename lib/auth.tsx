@@ -8,11 +8,16 @@ import {
   handleAuthStateChange,
   pushAll,
 } from "@/lib/sync";
-import { invalidateLibrary } from "@/lib/library";
-import { invalidateProgressCache, invalidateContinueHero } from "@/lib/progress";
-import { invalidateReadState } from "@/lib/read-state";
-import { invalidateReaderSettings } from "@/lib/reader-settings";
-import { invalidateScanlatorPreference } from "@/lib/scanlator-preference";
+import { invalidateLibrary, LIBRARY_EVENT } from "@/lib/library";
+import {
+  invalidateProgressCache,
+  invalidateContinueHero,
+  PROGRESS_EVENT,
+  CONTINUE_HERO_EVENT,
+} from "@/lib/progress";
+import { invalidateReadState, READ_EVENT } from "@/lib/read-state";
+import { invalidateReaderSettings, READER_SETTINGS_EVENT } from "@/lib/reader-settings";
+import { invalidateScanlatorPreference, SCANLATOR_PREFERENCE_EVENT } from "@/lib/scanlator-preference";
 
 export function clearLocalData(): void {
   if (typeof window === "undefined") return;
@@ -26,6 +31,13 @@ export function clearLocalData(): void {
   invalidateReadState();
   invalidateReaderSettings();
   invalidateScanlatorPreference();
+  // Notify subscribers so the UI drops the signed-out user's data immediately.
+  window.dispatchEvent(new CustomEvent(LIBRARY_EVENT));
+  window.dispatchEvent(new CustomEvent(PROGRESS_EVENT));
+  window.dispatchEvent(new CustomEvent(CONTINUE_HERO_EVENT));
+  window.dispatchEvent(new CustomEvent(READ_EVENT));
+  window.dispatchEvent(new CustomEvent(READER_SETTINGS_EVENT));
+  window.dispatchEvent(new CustomEvent(SCANLATOR_PREFERENCE_EVENT));
 }
 
 export function getDisplayName(user: User | null): string | null {

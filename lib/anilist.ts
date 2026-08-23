@@ -28,6 +28,31 @@ export type AniListMedia = {
   countryOfOrigin?: string | null;
   isAdult?: boolean | null;
   updatedAt?: number | null;
+  staff?: {
+    edges?: {
+      role?: string | null;
+      node?: {
+        id?: number | null;
+        name?: { full?: string | null } | null;
+        image?: { large?: string | null } | null;
+      } | null;
+    }[] | null;
+  } | null;
+};
+
+export type AniListStaffMember = {
+  id: number;
+  name: string;
+  role?: string;
+  imageUrl?: string | null;
+};
+
+export type AniListCharacter = {
+  id: number;
+  name: string;
+  imageUrl?: string | null;
+  role?: string;
+  voiceActor?: { name: string; imageUrl?: string | null } | null;
 };
 
 export const ANILIST_MEDIA_FIELDS = /* GraphQL */ `
@@ -92,6 +117,38 @@ const MEDIA_QUERY = /* GraphQL */ `
   query CatalogMedia($id: Int) {
     Media(id: $id, type: MANGA) {
       ${ANILIST_MEDIA_FIELDS}
+      staff {
+        edges {
+          role
+          node {
+            id
+            name { full }
+            image { large }
+          }
+        }
+      }
+    }
+  }
+`;
+
+const CHARACTERS_QUERY = /* GraphQL */ `
+  query MangaCharacters($id: Int) {
+    Media(id: $id, type: MANGA) {
+      characters(sort: ROLE) {
+        edges {
+          role
+          node {
+            id
+            name { full }
+            image { large }
+          }
+          voiceActors(language: JAPANESE) {
+            id
+            name { full }
+            image { large }
+          }
+        }
+      }
     }
   }
 `;
@@ -321,6 +378,20 @@ export function anilistToManga(media: AniListMedia): Manga {
   const links: Record<string, string> = { al: String(media.id) };
   if (media.idMal) links.mal = String(media.idMal);
 
+  const staffEdges = media.staff?.edges ?? [];
+  const authors = staffEdges.length
+    ? staffEdges
+        .filter(
+          (edge): edge is NonNullable<typeof edge> =>
+            Boolean(edge?.node?.name?.full),
+        )
+        .map((edge) => ({
+          name: edge.node!.name!.full!,
+          role: edge.role ?? undefined,
+          imageUrl: edge.node?.image?.large ?? null,
+        }))
+    : undefined;
+
   return {
     id: toMangaId("al", String(media.id)),
     title,
@@ -340,6 +411,7 @@ export function anilistToManga(media: AniListMedia): Manga {
     links,
     type: typeFromAniList(media.format, media.countryOfOrigin),
     source: sourceFromAniList(media.source),
+    authors,
   };
 }
 
@@ -444,4 +516,50 @@ export async function fetchAniListByMalIds(malIds: number[]): Promise<Manga[]> {
     result.push(...(data.Page?.media ?? []).map(anilistToManga));
   }
   return result;
+}
+
+export async function fetchAniListCharacters(
+  id: string,
+): Promise<AniListCharacter[]> {
+  const parsed = Number(id);
+  const data = await queryAnilist<{
+    Media?: {
+      characters?: {
+        edges?: {
+          role?: string | null;
+          node?: {
+            id?: number | null;
+            name?: { full?: string | null } | null;
+            image?: { large?: string | null } | null;
+          } | null;
+          voiceActors?: {
+            id?: number | null;
+            name?: { full?: string | null } | null;
+            image?: { large?: string | null } | null;
+          }[] | null;
+        }[] | null;
+      } | null;
+    } | null;
+  }>(CHARACTERS_QUERY, { id: parsed });
+
+  const edges = data.Media?.characters?.edges ?? [];
+  return edges
+    .filter((edge): edge is NonNullable<typeof edge> =>
+      Boolean(edge?.node?.name?.full),
+    )
+    .map((edge) => {
+      const voice = edge.voiceActors?.[0];
+      return {
+        id: edge.node!.id ?? 0,
+        name: edge.node!.name!.full!,
+        imageUrl: edge.node?.image?.large ?? null,
+        role: edge.role ?? undefined,
+        voiceActor: voice?.name?.full
+          ? {
+              name: voice.name.full,
+              imageUrl: voice.image?.large ?? null,
+            }
+          : null,
+      };
+    });
 }

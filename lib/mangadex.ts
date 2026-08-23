@@ -22,6 +22,7 @@ export type Manga = {
   links?: Record<string, string>;
   type?: "Manga" | "Manhwa" | "Manhua" | "Novel" | "One-shot";
   source?: "Original" | "Manga" | "Light novel" | "Web novel" | "Visual novel" | "Other";
+  authors?: { name: string; role?: string; imageUrl?: string | null }[];
 };
 
 export type Chapter = {

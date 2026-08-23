@@ -245,6 +245,34 @@ export default async function MangaPage({ params }: MangaPageProps) {
               </div>
             )}
 
+            {manga.authors && manga.authors.length > 0 && (
+              <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <span className="text-[11px] font-semibold uppercase tracking-widest text-zinc-500">
+                  {manga.authors.length > 1 ? "Creators" : "Creator"}
+                </span>
+                {manga.authors.map((author, index) => (
+                  <span key={`${author.name}-${index}`} className="text-sm text-zinc-300">
+                    {author.name}
+                    {author.role ? (
+                      <span className="text-zinc-500"> · {author.role}</span>
+                    ) : null}
+                    {index < manga.authors!.length - 1 ? (
+                      <span className="text-zinc-600">,</span>
+                    ) : null}
+                  </span>
+                ))}
+              </div>
+            )}
+
+            {manga.links?.al && (
+              <Link
+                href={`/manga/${id}/characters`}
+                className="inline-flex w-fit items-center gap-1.5 rounded-full border border-white/10 bg-zinc-800/60 px-3 py-1 text-xs font-medium text-zinc-200 transition-colors hover:border-emerald-400/40 hover:text-white"
+              >
+                Characters
+              </Link>
+            )}
+
             {links.length > 0 && (
               <div className="flex flex-wrap items-center gap-1.5">
                 <span className="text-[11px] font-semibold uppercase tracking-widest text-zinc-500">

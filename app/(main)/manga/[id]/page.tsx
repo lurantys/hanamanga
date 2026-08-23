@@ -141,6 +141,10 @@ export default async function MangaPage({ params }: MangaPageProps) {
     Boolean(manga.description) && rating > 0 && match !== "0.0";
   const links = externalLinks(manga.links);
   const headerImage = manga.bannerUrl ?? manga.coverUrl;
+  const primaryAuthor = manga.authors?.length
+    ? manga.authors.find((author) => /story|art/i.test(author.role ?? "")) ??
+      manga.authors[0]
+    : undefined;
 
   const volumesByKey = new Map<string | null, Chapter[]>();
   for (const chapter of fallbackChapters) {
@@ -245,22 +249,15 @@ export default async function MangaPage({ params }: MangaPageProps) {
               </div>
             )}
 
-            {manga.authors && manga.authors.length > 0 && (
+            {primaryAuthor && (
               <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
                 <span className="text-[11px] font-semibold uppercase tracking-widest text-zinc-500">
-                  {manga.authors.length > 1 ? "Creators" : "Creator"}
+                  Mangaka
                 </span>
-                {manga.authors.map((author, index) => (
-                  <span key={`${author.name}-${index}`} className="text-sm text-zinc-300">
-                    {author.name}
-                    {author.role ? (
-                      <span className="text-zinc-500"> · {author.role}</span>
-                    ) : null}
-                    {index < manga.authors!.length - 1 ? (
-                      <span className="text-zinc-600">,</span>
-                    ) : null}
-                  </span>
-                ))}
+                <span className="text-sm text-zinc-200">{primaryAuthor.name}</span>
+                {primaryAuthor.role && !/story & art/i.test(primaryAuthor.role) ? (
+                  <span className="text-zinc-500"> · {primaryAuthor.role}</span>
+                ) : null}
               </div>
             )}
 

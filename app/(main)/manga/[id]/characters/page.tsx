@@ -95,11 +95,12 @@ export default async function CharactersPage({
   params,
 }: CharactersPageProps) {
   const { id } = await params;
-  const alId = await resolveAniListId(id);
+  const rawId = decodeURIComponent(id);
+  const alId = await resolveAniListId(rawId);
 
   let mangaTitle = "this title";
   try {
-    const manga = await fetchCatalogMangaWithFallback(id);
+    const manga = await fetchCatalogMangaWithFallback(rawId);
     mangaTitle = manga.title;
   } catch {
     // keep default
@@ -109,7 +110,7 @@ export default async function CharactersPage({
     return (
       <main className="mx-auto max-w-5xl px-5 py-16 md:px-10">
         <Link
-          href={`/manga/${id}`}
+          href={`/manga/${rawId}`}
           className="text-sm text-zinc-400 transition-colors hover:text-white"
         >
           ← Back to {mangaTitle}
@@ -127,7 +128,7 @@ export default async function CharactersPage({
   return (
     <main className="mx-auto max-w-5xl px-5 py-16 md:px-10">
       <Link
-        href={`/manga/${id}`}
+        href={`/manga/${rawId}`}
         className="text-sm text-zinc-400 transition-colors hover:text-white"
       >
         ← Back to {mangaTitle}

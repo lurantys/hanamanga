@@ -360,6 +360,14 @@ function sourceFromAniList(source?: string | null): Manga["source"] | undefined 
   }
 }
 
+function isCreatorRole(role?: string | null): boolean {
+  if (!role) return true;
+  const lower = role.toLowerCase();
+  return !/translat|letter|touch-?up|proofread|retouch|publish|typeset|edit|adapt/.test(
+    lower,
+  );
+}
+
 export function anilistToManga(media: AniListMedia): Manga {
   const title =
     media.title?.english ??
@@ -383,7 +391,7 @@ export function anilistToManga(media: AniListMedia): Manga {
     ? staffEdges
         .filter(
           (edge): edge is NonNullable<typeof edge> =>
-            Boolean(edge?.node?.name?.full),
+            Boolean(edge?.node?.name?.full) && isCreatorRole(edge.role),
         )
         .map((edge) => ({
           name: edge.node!.name!.full!,

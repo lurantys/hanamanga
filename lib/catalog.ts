@@ -12,6 +12,7 @@ import {
   atsuPosterUrl,
   fetchAtsuManga,
   findAtsuCandidateByAniListId,
+  findAtsuManga,
   listAtsuManga,
   searchAtsu,
   type AtsuCandidate,
@@ -176,7 +177,10 @@ const cachedCatalogManga = unstable_cache(
     if (source === "al") {
       return fetchAniListById(ref);
     }
-    return fetchMangaById(ref, { withStats });
+    const manga = await fetchMangaById(ref, { withStats });
+    const cleanCover = await resolveCleanCover(manga);
+    if (cleanCover) manga.coverUrl = cleanCover;
+    return manga;
   },
   ["catalog-manga"],
   { revalidate: 300 },
@@ -212,6 +216,20 @@ async function catalogMangaResilient(
     const stale = staleMangaStore.get(id)?.value;
     if (stale) return stale;
     throw error;
+  }
+}
+
+/**
+ * MangaDex now serves watermarked cover art from uploads.mangadex.org. When an
+ * Atsumaru record matches the same title we swap in its (clean) poster so the
+ * detail page, library and reader header don't show the watermarked image.
+ */
+async function resolveCleanCover(manga: Manga): Promise<string | null> {
+  try {
+    const match = await findAtsuManga({ title: manga.title, links: manga.links });
+    return match ? atsuPosterUrl(match.manga.poster ?? null) : null;
+  } catch {
+    return null;
   }
 }
 

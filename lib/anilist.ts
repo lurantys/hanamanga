@@ -125,6 +125,12 @@ const STATUS_TO_ANILIST: Record<string, string> = {
 };
 
 const CACHE_TTL = 60_000;
+const MAX_RETRIES = 3;
+
+function retryDelay(attempt: number): number {
+  return 1000 * 2 ** attempt;
+}
+
 const anilistCache = new Map<
   string,
   { expires: number; promise: Promise<unknown> }
@@ -143,6 +149,7 @@ async function queryAnilistAuth<T>(
   token: string,
   query: string,
   variables: Record<string, unknown>,
+  attempt = 0,
 ): Promise<T> {
   const res = await fetch(API, {
     method: "POST",
@@ -155,8 +162,11 @@ async function queryAnilistAuth<T>(
     signal: AbortSignal.timeout(15_000),
   });
   if (res.status === 429) {
-    await new Promise((resolve) => setTimeout(resolve, 1000));
-    return queryAnilistAuth<T>(token, query, variables);
+    if (attempt >= MAX_RETRIES) {
+      throw new AniListError("AniList rate limited", 429);
+    }
+    await new Promise((resolve) => setTimeout(resolve, retryDelay(attempt)));
+    return queryAnilistAuth<T>(token, query, variables, attempt + 1);
   }
   const json = (await res.json().catch(() => null)) as {
     data?: T;
@@ -199,6 +209,7 @@ export async function fetchAniListViewerId(token: string): Promise<number> {
 async function queryAnilist<T>(
   query: string,
   variables: Record<string, unknown>,
+  attempt = 0,
 ): Promise<T> {
   const key = `${query}\n${JSON.stringify(variables)}`;
   const cached = anilistCache.get(key);
@@ -216,8 +227,11 @@ async function queryAnilist<T>(
       signal: AbortSignal.timeout(10_000),
     });
     if (res.status === 429) {
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-      return queryAnilist<T>(query, variables);
+      if (attempt >= MAX_RETRIES) {
+        throw new AniListError("AniList rate limited", 429);
+      }
+      await new Promise((resolve) => setTimeout(resolve, retryDelay(attempt)));
+      return queryAnilist<T>(query, variables, attempt + 1);
     }
     const json = (await res.json().catch(() => null)) as {
       data?: T;

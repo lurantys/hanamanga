@@ -11,10 +11,12 @@ import { AniListError, fetchAniListById, searchAniList } from "./anilist";
 import {
   atsuPosterUrl,
   fetchAtsuManga,
+  findAtsuCandidateByAniListId,
   listAtsuManga,
   searchAtsu,
   type AtsuCandidate,
 } from "./atsu";
+import { createClient } from "@/lib/supabase/server";
 import { parseMangaId, toMangaId } from "./source";
 import { normalizeTitleKey, titleHits } from "./title";
 
@@ -180,10 +182,104 @@ const cachedCatalogManga = unstable_cache(
   { revalidate: 300 },
 );
 
+/**
+ * Last-known-good copies of catalog manga. When an upstream provider goes
+ * down past the revalidate window (unstable_cache throws on failed
+ * regeneration), these keep pages working for everyone — guests included.
+ */
+const STALE_MANGA_LIMIT = 1000;
+const staleMangaStore = new Map<string, { value: Manga; storedAt: number }>();
+
+function rememberManga(id: string, manga: Manga): void {
+  if (staleMangaStore.size >= STALE_MANGA_LIMIT && !staleMangaStore.has(id)) {
+    const oldest = staleMangaStore.keys().next().value;
+    if (oldest !== undefined) staleMangaStore.delete(oldest);
+  }
+  staleMangaStore.delete(id);
+  staleMangaStore.set(id, { value: manga, storedAt: Date.now() });
+}
+
+async function catalogMangaResilient(
+  id: string,
+  withStats: boolean,
+): Promise<Manga> {
+  try {
+    const manga = await cachedCatalogManga(id, withStats);
+    rememberManga(id, manga);
+    return manga;
+  } catch (error) {
+    if (isNotFoundError(error)) throw error;
+    const stale = staleMangaStore.get(id)?.value;
+    if (stale) return stale;
+    throw error;
+  }
+}
+
 export const fetchCatalogManga = cache(
   (id: string, options: { withStats?: boolean } = {}): Promise<Manga> =>
-    cachedCatalogManga(id, options.withStats ?? false),
+    catalogMangaResilient(id, options.withStats ?? false),
 );
+
+/**
+ * Stored copy of a manga from the user's library. Serves as the fallback
+ * metadata source when the upstream provider (e.g. AniList) is unreachable,
+ * so library entries keep working without re-resolving anything.
+ */
+export async function fetchStoredManga(id: string): Promise<Manga | null> {
+  try {
+    const supabase = await createClient();
+    const { data } = await supabase.auth.getUser();
+    if (!data.user) return null;
+    const { data: rows } = await supabase
+      .from("hana_library")
+      .select("manga_id, manga")
+      .eq("user_id", data.user.id)
+      .eq("manga_id", id)
+      .limit(1);
+    const row = (
+      rows as { manga_id: string; manga: Manga | null }[] | null
+    )?.[0];
+    const manga = row?.manga;
+    if (!manga || typeof manga !== "object" || !manga.title) return null;
+    return manga.id === row.manga_id ? manga : { ...manga, id: row.manga_id };
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchCatalogMangaWithFallback(
+  id: string,
+  options: { withStats?: boolean } = {},
+): Promise<Manga> {
+  try {
+    return await fetchCatalogManga(id, options);
+  } catch (error) {
+    if (isNotFoundError(error)) throw error;
+    const stored = await fetchStoredManga(id);
+    if (stored) {
+      rememberManga(id, stored);
+      return stored;
+    }
+    // No library copy: resolve `al:<id>` via Atsumaru's link index so
+    // guests aren't stranded when AniList is down.
+    const { source, ref } = parseMangaId(id);
+    if (source === "al") {
+      try {
+        const candidate = await findAtsuCandidateByAniListId(ref);
+        if (candidate) {
+          // Keep the original `al:` id — the atsu id would break reader
+          // and library URLs.
+          const manga = { ...atsuToManga(candidate), id };
+          rememberManga(id, manga);
+          return manga;
+        }
+      } catch {
+        // Atsumaru unreachable too — rethrow the original error below.
+      }
+    }
+    throw error;
+  }
+}
 
 const cachedAtsuRow = unstable_cache(
   async (type: string, limit: number): Promise<Manga[]> => {

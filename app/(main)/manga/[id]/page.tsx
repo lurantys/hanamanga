@@ -23,7 +23,10 @@ import {
   type AtsuChapter,
   type AtsuMatch,
 } from "@/lib/atsu";
-import { fetchCatalogManga, isNotFoundError } from "@/lib/catalog";
+import {
+  fetchCatalogMangaWithFallback,
+  isNotFoundError,
+} from "@/lib/catalog";
 import { getAtsuMatch, getKatanaLookup, getMdAggregate, getMdFeed, getWeebLookup, mdRefForManga } from "@/lib/read";
 import { parseMangaId } from "@/lib/source";
 import { toCatalogChapter } from "@/lib/mangakatana";
@@ -39,7 +42,7 @@ export async function generateMetadata({
   const { id } = await params;
   let manga;
   try {
-    manga = await fetchCatalogManga(id);
+    manga = await fetchCatalogMangaWithFallback(id);
   } catch (error) {
     if (isNotFoundError(error)) notFound();
     throw error;
@@ -60,7 +63,7 @@ export default async function MangaPage({ params }: MangaPageProps) {
 
   let manga;
   try {
-    manga = await fetchCatalogManga(id);
+    manga = await fetchCatalogMangaWithFallback(id);
   } catch (error) {
     if (isNotFoundError(error)) notFound();
     throw error;

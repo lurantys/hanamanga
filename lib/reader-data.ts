@@ -7,7 +7,10 @@ import {
   type Chapter,
 } from "@/lib/mangadex";
 import { buildAtsuReader } from "@/lib/atsu";
-import { fetchCatalogManga, isNotFoundError } from "@/lib/catalog";
+import {
+  fetchCatalogMangaWithFallback,
+  isNotFoundError,
+} from "@/lib/catalog";
 import {
   getAtsuMatch,
   getKatanaLookup,
@@ -88,7 +91,7 @@ async function buildReaderPropsUncached(
   let atsuMatchData: Awaited<ReturnType<typeof getAtsuMatch>>;
   try {
     [manga, atsuMatchData] = await Promise.all([
-      fetchCatalogManga(mangaId, { withStats: false }),
+      fetchCatalogMangaWithFallback(mangaId, { withStats: false }),
       getAtsuMatch(mangaId),
     ]);
   } catch (error) {

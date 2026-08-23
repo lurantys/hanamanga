@@ -159,6 +159,28 @@ export async function searchAtsu(
   );
 }
 
+/**
+ * Look up an Atsumaru record by its AniList ID directly. Used to resolve
+ * `al:<id>` URLs when AniList itself is unreachable, so guests keep access
+ * to metadata and chapters from other providers.
+ */
+export async function findAtsuCandidateByAniListId(
+  anilistId: string,
+): Promise<AtsuCandidate | null> {
+  const json = await atsuFetch<{ hits?: { document: Record<string, unknown> }[] }>(
+    "/collections/manga/documents/search",
+    {
+      q: "*",
+      query_by: "title",
+      filter_by: `hidden:!=true && anilistId:=${anilistId}`,
+      per_page: 1,
+      page: 1,
+    },
+  );
+  const doc = json.hits?.[0]?.document;
+  return doc ? atsuCandidateFromDocument(doc) : null;
+}
+
 export async function listAtsuManga(opts: {
   type?: string;
   limit?: number;

@@ -1,7 +1,7 @@
 import { unstable_cache } from "next/cache";
 import { ImageResponse } from "next/og";
 import { statusLabel, truncate } from "@/lib/mangadex";
-import { fetchCatalogManga } from "@/lib/catalog";
+import { fetchCatalogMangaWithFallback } from "@/lib/catalog";
 
 export const alt = "Manga page on Hana";
 export const size = { width: 1200, height: 630 };
@@ -35,7 +35,7 @@ async function fetchCoverDataUrl(url: string): Promise<string | null> {
 
 const cachedMangaCard = unstable_cache(
   async (id: string): Promise<OgMangaCard> => {
-    const manga = await fetchCatalogManga(id, { withStats: false });
+    const manga = await fetchCatalogMangaWithFallback(id, { withStats: false });
     let cover: string | null = null;
     const coverUrl = manga.coverUrl ? rasterizableCoverUrl(manga.coverUrl) : null;
     if (coverUrl) cover = await fetchCoverDataUrl(coverUrl);

@@ -10,6 +10,8 @@ type SearchLiveResultsProps = {
   onPick: () => void;
 };
 
+type AuthorHit = { id: number; name: string };
+
 function ListSkeleton() {
   return (
     <div className="space-y-2">
@@ -28,6 +30,7 @@ function ListSkeleton() {
 
 export function SearchLiveResults({ query, onPick }: SearchLiveResultsProps) {
   const [data, setData] = useState<Manga[] | null>(null);
+  const [authors, setAuthors] = useState<AuthorHit[]>([]);
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
@@ -46,6 +49,16 @@ export function SearchLiveResults({ query, onPick }: SearchLiveResultsProps) {
         }
         setFailed(false);
         setData(json.data);
+        setAuthors(
+          Array.isArray(json.authors)
+            ? (json.authors as AuthorHit[]).filter(
+                (author) =>
+                  author &&
+                  typeof author.id === "number" &&
+                  typeof author.name === "string",
+              )
+            : [],
+        );
       })
       .catch((error) => {
         if (error?.name === "AbortError" || controller.signal.aborted) return;
@@ -84,6 +97,62 @@ export function SearchLiveResults({ query, onPick }: SearchLiveResultsProps) {
 
   return (
     <div>
+      {authors.length > 0 && (
+        <div className="mb-2">
+          <p className="px-2 pb-1 text-[11px] font-semibold uppercase tracking-wider text-zinc-500">
+            By author
+          </p>
+          <div className="space-y-0.5">
+            {authors.map((author) => (
+              <Link
+                key={author.id}
+                href={`/search?author=${encodeURIComponent(author.name)}`}
+                prefetch={false}
+                onClick={onPick}
+                aria-label={`Manga by ${author.name}. Open search results.`}
+                className="group flex items-center gap-3 rounded-xl px-2 py-1.5 transition-colors hover:bg-zinc-900/70"
+              >
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-zinc-400 transition-colors group-hover:bg-zinc-700 group-hover:text-zinc-200">
+                  <svg
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className="h-4 w-4"
+                    aria-hidden
+                  >
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                    <circle cx="12" cy="7" r="4" />
+                  </svg>
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="block truncate text-sm font-semibold text-zinc-200">
+                    {author.name}
+                  </span>
+                  <span className="block truncate text-xs text-zinc-500">
+                    Author
+                  </span>
+                </span>
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-4 w-4 shrink-0 text-zinc-600 transition-colors group-hover:text-zinc-400"
+                  aria-hidden
+                >
+                  <path d="M9 6l6 6-6 6" />
+                </svg>
+              </Link>
+            ))}
+          </div>
+          {data.length > 0 && <div className="mx-2 mt-2 border-t border-white/5" />}
+        </div>
+      )}
       <div className="max-h-[55vh] space-y-0.5 overflow-y-auto pr-1">
         {data.map((manga) => {
           const rating = manga.rating ?? 0;

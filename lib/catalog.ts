@@ -7,7 +7,12 @@ import {
   type Manga,
   type MangaListResult,
 } from "./mangadex";
-import { AniListError, fetchAniListById, searchAniList } from "./anilist";
+import {
+  AniListError,
+  fetchAniListById,
+  searchAniList,
+  searchAniListByAuthor,
+} from "./anilist";
 import {
   atsuPosterUrl,
   fetchAtsuManga,
@@ -166,6 +171,46 @@ export async function searchCatalog(
   }
 
   return { data, total: data.length, offset: 0, limit };
+}
+
+export type AuthorSearchResult = MangaListResult & {
+  /** Canonical staff name AniList matched, when it found one. */
+  authorName?: string;
+};
+
+/**
+ * Author search. Backed entirely by AniList (staff lookup + staffMedia), so
+ * errors propagate — callers treat them as "AniList is down" and fall back
+ * to plain title search. Atsumaru hits are appended when their linked
+ * AniList id or title matches an AniList result, so readers land on
+ * chapter-carrying records where possible.
+ */
+export async function searchCatalogByAuthor(
+  author: string,
+  limit = 60,
+): Promise<AuthorSearchResult> {
+  const al = await searchAniListByAuthor(author, limit);
+  const atsu = await searchAtsu(author, 24).catch(() => [] as AtsuCandidate[]);
+
+  const data: Manga[] = [];
+  const alIds = new Set<string>();
+  const titleKeys = new Set<string>();
+  for (const manga of al.data) {
+    if (manga.links?.al) alIds.add(manga.links.al);
+    titleKeys.add(normalizeTitleKey(manga.title));
+    data.push(manga);
+  }
+
+  for (const candidate of atsu) {
+    const manga = atsuToManga(candidate);
+    const matchesAl =
+      (manga.links?.al ? alIds.has(manga.links.al) : false) ||
+      titleKeys.has(normalizeTitleKey(manga.title));
+    if (!matchesAl) continue;
+    data.push(manga);
+  }
+
+  return { data, total: data.length, offset: 0, limit, authorName: al.authorName };
 }
 
 /**

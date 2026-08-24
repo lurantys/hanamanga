@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { SearchResults } from "@/components/SearchResults";
-import { searchCatalog } from "@/lib/catalog";
+import { searchCatalog, searchCatalogByAuthor } from "@/lib/catalog";
 import type { Manga } from "@/lib/mangadex";
 
 export const metadata: Metadata = {
@@ -18,9 +18,13 @@ export default async function SearchPage({
 }) {
   const params = await searchParams;
   const rawQuery = Array.isArray(params.q) ? params.q[0] : params.q;
+  const rawAuthor = Array.isArray(params.author)
+    ? params.author[0]
+    : params.author;
   const query = rawQuery?.trim() ?? "";
+  const author = rawAuthor?.trim() ?? "";
 
-  if (!query) {
+  if (!query && !author) {
     return (
       <main className="bg-zinc-950 pb-24">
         <div className="px-5 pt-28 md:px-10">
@@ -48,12 +52,28 @@ export default async function SearchPage({
   let initialData: Manga[] = [];
   let total = 0;
   let errored = false;
+  let authorName: string | undefined;
+  // Author search is AniList-only; when AniList is unreachable we silently
+  // fall back to a plain title search with the same terms.
+  let fellBackToTitle = false;
   try {
-    const pool = await searchCatalog(query, POOL);
-    initialData = pool.data.slice(0, FIRST_PAGE);
-    total = pool.data.length;
+    if (author) {
+      const pool = await searchCatalogByAuthor(author, POOL);
+      initialData = pool.data.slice(0, FIRST_PAGE);
+      total = pool.data.length;
+      authorName = pool.authorName;
+    }
   } catch {
-    errored = true;
+    fellBackToTitle = true;
+  }
+  if (!author || fellBackToTitle) {
+    try {
+      const pool = await searchCatalog(fellBackToTitle ? author : query, POOL);
+      initialData = pool.data.slice(0, FIRST_PAGE);
+      total = pool.data.length;
+    } catch {
+      errored = true;
+    }
   }
 
   return (
@@ -63,8 +83,10 @@ export default async function SearchPage({
           Search Results
         </h1>
         <SearchResults
-          key={query}
-          query={query}
+          key={fellBackToTitle ? `title:${author}` : author ? `author:${author}` : query}
+          query={fellBackToTitle ? author : query}
+          author={fellBackToTitle ? undefined : author || undefined}
+          authorName={authorName}
           initialData={initialData}
           total={total}
           errored={errored}

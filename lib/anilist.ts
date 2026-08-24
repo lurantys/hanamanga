@@ -168,6 +168,31 @@ const IDMAL_QUERY = /* GraphQL */ `
   }
 `;
 
+const STAFF_SEARCH_QUERY = /* GraphQL */ `
+  query StaffSearch($search: String, $perPage: Int) {
+    Page(page: 1, perPage: $perPage) {
+      staff(search: $search, sort: [SEARCH_MATCH]) {
+        id
+        name { full }
+      }
+    }
+  }
+`;
+
+const AUTHOR_MEDIA_QUERY = /* GraphQL */ `
+  query AuthorMedia($staffId: Int, $perPage: Int) {
+    Staff(id: $staffId) {
+      name { full }
+      staffMedia(type: MANGA, perPage: $perPage, sort: [POPULARITY_DESC]) {
+        pageInfo { total }
+        nodes {
+          ${ANILIST_MEDIA_FIELDS}
+        }
+      }
+    }
+  }
+`;
+
 const SORT_TO_ANILIST: Record<AniListSort, string> = {
   popular: "POPULARITY_DESC",
   trending: "TRENDING_DESC",
@@ -500,6 +525,66 @@ export async function searchAniList(
     total: data.Page?.pageInfo?.total ?? media.length,
     offset: 0,
     limit,
+  };
+}
+
+type AniListStaffHit = { id: number; name: string };
+
+/**
+ * Find staff whose name matches the query (most relevant matches first).
+ * Throws when AniList is unreachable — callers use that as the signal that
+ * author search is unavailable and fall back to plain title search.
+ */
+export async function searchAniListStaff(
+  query: string,
+  limit = 3,
+): Promise<AniListStaffHit[]> {
+  const trimmed = query.trim();
+  if (!trimmed) return [];
+  const data = await queryAnilist<{
+    Page?: {
+      staff?: ({ id?: number | null; name?: { full?: string | null } | null } | null)[] | null;
+    };
+  }>(STAFF_SEARCH_QUERY, { search: trimmed, perPage: limit });
+  return (data.Page?.staff ?? [])
+    .filter(
+      (staff): staff is { id: number; name: { full: string } } =>
+        Boolean(staff?.id && staff.name?.full),
+    )
+    .map((staff) => ({ id: staff.id, name: staff.name.full }));
+}
+
+/**
+ * Manga by a specific staff member, most popular first. Author search relies
+ * entirely on AniList, so errors propagate (unlike title search).
+ */
+export async function searchAniListByAuthor(
+  author: string,
+  limit = 24,
+): Promise<MangaListResult & { authorName?: string }> {
+  const staff = await searchAniListStaff(author, 1);
+  const match = staff[0];
+  if (!match) {
+    return { data: [], total: 0, offset: 0, limit, authorName: undefined };
+  }
+  const data = await queryAnilist<{
+    Staff?: {
+      name?: { full?: string | null } | null;
+      staffMedia?: {
+        pageInfo?: { total?: number | null } | null;
+        nodes?: AniListMedia[] | null;
+      } | null;
+    } | null;
+  }>(AUTHOR_MEDIA_QUERY, { staffId: match.id, perPage: limit });
+  const media = (data.Staff?.staffMedia?.nodes ?? [])
+    .filter((node) => !node.isAdult)
+    .map(anilistToManga);
+  return {
+    data: media,
+    total: data.Staff?.staffMedia?.pageInfo?.total ?? media.length,
+    offset: 0,
+    limit,
+    authorName: data.Staff?.name?.full ?? match.name,
   };
 }
 

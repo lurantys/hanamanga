@@ -9,6 +9,10 @@ import type { Manga } from "@/lib/mangadex";
 
 type SearchResultsProps = {
   query: string;
+  /** When set, results are manga by this author (AniList staff search). */
+  author?: string;
+  /** Canonical name AniList matched for the author, when known. */
+  authorName?: string;
   initialData: Manga[];
   total: number;
   errored: boolean;
@@ -16,6 +20,8 @@ type SearchResultsProps = {
 
 export function SearchResults({
   query,
+  author,
+  authorName,
   initialData,
   total,
   errored,
@@ -35,9 +41,10 @@ export function SearchResults({
       loadingRef.current = true;
       setLoading(true);
       try {
-        const res = await fetch(
-          `/api/search?q=${encodeURIComponent(query)}&page=${targetPage}`,
-        );
+        const param = author
+          ? `author=${encodeURIComponent(author)}`
+          : `q=${encodeURIComponent(query)}`;
+        const res = await fetch(`/api/search?${param}&page=${targetPage}`);
         const json = await res.json();
         if (!res.ok || json.error) throw new Error("request failed");
         const next = (json.data as Manga[]) ?? [];
@@ -51,7 +58,7 @@ export function SearchResults({
         loadingRef.current = false;
       }
     },
-    [query],
+    [query, author],
   );
 
   useEffect(() => {
@@ -110,11 +117,14 @@ export function SearchResults({
             No results
           </p>
           <h2 className="mt-3 text-4xl font-black leading-tight tracking-tight text-white">
-            Nothing found for “{query}”
+            {author
+              ? `No manga found by “${authorName ?? author}”`
+              : `Nothing found for “${query}”`}
           </h2>
           <p className="mt-4 text-sm leading-relaxed text-zinc-400">
-            Try a different title, or check your spelling. Manga catalogs are
-            constantly growing.
+            {author
+              ? "Check the spelling, or try their romanized name (e.g. “Eiichirou Oda”)."
+              : "Try a different title, or check your spelling. Manga catalogs are constantly growing."}
           </p>
           <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row">
             <Link
@@ -142,8 +152,19 @@ export function SearchResults({
   return (
     <>
       <p className="mb-4 text-sm text-zinc-400">
-        {total.toLocaleString()} {total === 1 ? "result" : "results"} for{" "}
-        <span className="font-semibold text-zinc-200">“{query}”</span>
+        {author ? (
+          <>
+            {total.toLocaleString()} {total === 1 ? "work" : "works"} by{" "}
+            <span className="font-semibold text-zinc-200">
+              {authorName ?? author}
+            </span>
+          </>
+        ) : (
+          <>
+            {total.toLocaleString()} {total === 1 ? "result" : "results"} for{" "}
+            <span className="font-semibold text-zinc-200">“{query}”</span>
+          </>
+        )}
       </p>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">

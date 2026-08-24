@@ -106,7 +106,7 @@ export function SearchBar() {
             type="text"
             value={query}
             onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search manga…"
+            placeholder="Search manga or author…"
             aria-label="Search manga"
             enterKeyHint="search"
             className="min-w-0 flex-1 bg-transparent text-sm text-zinc-50 outline-none placeholder:text-zinc-500 sm:w-56 sm:flex-none lg:w-64"

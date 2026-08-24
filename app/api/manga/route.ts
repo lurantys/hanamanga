@@ -34,7 +34,7 @@ const cachedProviderFetch = unstable_cache(
           }
         }),
       ),
-      fetchAniListByIds(al).catch(() => [] as Manga[]),
+      fetchAniListByIds(al),
     ]);
     const data = [
       ...mdData,
@@ -57,7 +57,7 @@ const cachedProviderFetch = unstable_cache(
     }
     return data;
   },
-  ["api-manga"],
+  ["api-manga-v2"],
   { revalidate: 300 },
 );
 

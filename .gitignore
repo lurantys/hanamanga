@@ -52,3 +52,6 @@ next-env.d.ts
 /src-tauri/app-icon.png
 /src-tauri/icons/
 /dist/
+
+# local ops scripts (not committed)
+/scripts/anilist_status.py

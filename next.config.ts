@@ -5,6 +5,9 @@ const nextConfig: NextConfig = {
     ? { output: "standalone" as const }
     : {}),
   images: {
+    // Vercel Image Optimization is unavailable on the current deployment plan.
+    // Serve approved remote images directly so uncached media still renders.
+    unoptimized: true,
     dangerouslyAllowLocalIP: true,
     remotePatterns: [
       { protocol: "https", hostname: "uploads.mangadex.org" },

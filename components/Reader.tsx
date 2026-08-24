@@ -477,15 +477,25 @@ export function Reader({
   useEffect(() => {
     if (mode !== "webtoon") return;
     let saveTimer = 0;
+    let progressRaf = 0;
+    let latestProgress = 0;
     function onScroll() {
       hideChrome();
       const doc = document.documentElement;
       const max = doc.scrollHeight - doc.clientHeight;
       const value = max > 0 ? Math.min(1, Math.max(0, doc.scrollTop / max)) : 0;
-      setProgress(value);
-      if (value >= 0.95) {
-        markChapterRead(mangaId, currentChapterId);
-        markFinishedIfLastChapter(mangaId, currentChapterId, chapters);
+      latestProgress = value;
+      // Coalesce progress updates to one per animation frame so sustained
+      // scrolling doesn't re-render the whole reader on every scroll event.
+      if (!progressRaf) {
+        progressRaf = window.requestAnimationFrame(() => {
+          progressRaf = 0;
+          setProgress(latestProgress);
+          if (latestProgress >= 0.95) {
+            markChapterRead(mangaId, currentChapterId);
+            markFinishedIfLastChapter(mangaId, currentChapterId, chapters);
+          }
+        });
       }
       window.clearTimeout(saveTimer);
       saveTimer = window.setTimeout(() => {
@@ -533,6 +543,7 @@ export function Reader({
     return () => {
       window.removeEventListener("scroll", onScroll);
       window.clearTimeout(saveTimer);
+      if (progressRaf) window.cancelAnimationFrame(progressRaf);
       stopAdvance();
     };
   }, [
@@ -675,6 +686,7 @@ export function Reader({
     function onScroll() {
       if (!raf) raf = requestAnimationFrame(computeCurrentPage);
     }
+    pageRefs.current.length = pages.length;
     computeCurrentPage();
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll, { passive: true });
@@ -701,6 +713,34 @@ export function Reader({
     chapterNumber !== null && chapterNumber !== undefined
       ? `Chapter ${chapterNumber}`
       : null;
+
+  // Memoize the webtoon page list so scrolling (which only changes `progress`
+  // state) doesn't re-create and reconcile every <img> element each frame.
+  // `content-visibility: auto` lets the browser skip rendering/painting of
+  // off-screen pages and reclaim their memory, keeping a long chapter light.
+  const webtoonPageElements = useMemo(
+    () =>
+      pages.map((page, index) => (
+        <div
+          key={page.id}
+          ref={(el) => {
+            pageRefs.current[index] = el;
+          }}
+          style={{ contentVisibility: "auto", containIntrinsicSize: "auto 1000px" }}
+        >
+          <ReaderImage
+            src={page.image}
+            alt={`${chapterPrefix ? `${chapterPrefix} · ` : ""}Page ${index + 1}`}
+            width={page.width ?? undefined}
+            height={page.height ?? undefined}
+            loading={index === 0 ? "eager" : "lazy"}
+            className="block h-auto w-full"
+            placeholderClassName="min-h-[60vh]"
+          />
+        </div>
+      )),
+    [pages, chapterPrefix],
+  );
 
   const nextIndex = chapters.findIndex((chapter) => chapter.id === currentChapterId) + 1;
   const nextChapterLabel =
@@ -1012,7 +1052,7 @@ export function Reader({
     )
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (!cancelled && data?.pages?.length) setPreloadUrls(data.pages);
+        if (!cancelled && data?.pages?.length) setPreloadUrls(data.pages.slice(0, 2));
       })
       .catch(() => {});
     return () => {
@@ -1289,24 +1329,7 @@ export function Reader({
               gap: settings.webtoonLayout === "continuous" ? 0 : "var(--reader-page-gap)",
             }}
           >
-              {pages.map((page, index) => (
-                <div
-                  key={page.id}
-                  ref={(el) => {
-                    pageRefs.current[index] = el;
-                  }}
-                >
-                  <ReaderImage
-                    src={page.image}
-                    alt={`${chapterPrefix ? `${chapterPrefix} · ` : ""}Page ${index + 1}`}
-                    width={page.width ?? undefined}
-                    height={page.height ?? undefined}
-                    loading={index === 0 ? "eager" : "lazy"}
-                    className="block h-auto w-full"
-                    placeholderClassName="min-h-[60vh]"
-                  />
-                </div>
-              ))}
+              {webtoonPageElements}
           </div>
 
           <nav className="mx-auto mt-10 flex max-w-4xl flex-wrap items-center justify-center gap-3 px-4">

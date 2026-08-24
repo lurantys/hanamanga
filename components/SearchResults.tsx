@@ -13,6 +13,8 @@ type SearchResultsProps = {
   author?: string;
   /** Canonical name AniList matched for the author, when known. */
   authorName?: string;
+  /** Profile image from AniList, when available. */
+  authorImageUrl?: string | null;
   initialData: Manga[];
   total: number;
   errored: boolean;
@@ -22,6 +24,7 @@ export function SearchResults({
   query,
   author,
   authorName,
+  authorImageUrl,
   initialData,
   total,
   errored,
@@ -153,12 +156,28 @@ export function SearchResults({
     <>
       <p className="mb-4 text-sm text-zinc-400">
         {author ? (
-          <>
+          <span className="inline-flex items-center gap-2">
+            {authorImageUrl ? (
+              <Image
+                src={authorImageUrl}
+                alt=""
+                width={24}
+                height={24}
+                className="h-6 w-6 rounded-full object-cover"
+              />
+            ) : (
+              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-zinc-800">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3 text-zinc-500" aria-hidden>
+                  <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                  <circle cx="12" cy="7" r="4" />
+                </svg>
+              </span>
+            )}
             {total.toLocaleString()} {total === 1 ? "work" : "works"} by{" "}
             <span className="font-semibold text-zinc-200">
               {authorName ?? author}
             </span>
-          </>
+          </span>
         ) : (
           <>
             {total.toLocaleString()} {total === 1 ? "result" : "results"} for{" "}

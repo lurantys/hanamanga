@@ -53,6 +53,7 @@ export default async function SearchPage({
   let total = 0;
   let errored = false;
   let authorName: string | undefined;
+  let authorImageUrl: string | null | undefined;
   // Author search is AniList-only; when AniList is unreachable we silently
   // fall back to a plain title search with the same terms.
   let fellBackToTitle = false;
@@ -62,6 +63,7 @@ export default async function SearchPage({
       initialData = pool.data.slice(0, FIRST_PAGE);
       total = pool.data.length;
       authorName = pool.authorName;
+      authorImageUrl = pool.authorImageUrl;
     }
   } catch {
     fellBackToTitle = true;
@@ -87,6 +89,7 @@ export default async function SearchPage({
           query={fellBackToTitle ? author : query}
           author={fellBackToTitle ? undefined : author || undefined}
           authorName={authorName}
+          authorImageUrl={authorImageUrl}
           initialData={initialData}
           total={total}
           errored={errored}

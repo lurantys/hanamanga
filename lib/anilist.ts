@@ -174,6 +174,7 @@ const STAFF_SEARCH_QUERY = /* GraphQL */ `
       staff(search: $search, sort: [SEARCH_MATCH]) {
         id
         name { full }
+        image { large }
       }
     }
   }
@@ -183,6 +184,7 @@ const AUTHOR_MEDIA_QUERY = /* GraphQL */ `
   query AuthorMedia($staffId: Int, $perPage: Int) {
     Staff(id: $staffId) {
       name { full }
+      image { large }
       staffMedia(type: MANGA, perPage: $perPage, sort: [POPULARITY_DESC]) {
         pageInfo { total }
         nodes {
@@ -528,7 +530,7 @@ export async function searchAniList(
   };
 }
 
-type AniListStaffHit = { id: number; name: string };
+type AniListStaffHit = { id: number; name: string; imageUrl?: string | null };
 
 /**
  * Find staff whose name matches the query (most relevant matches first).
@@ -543,15 +545,15 @@ export async function searchAniListStaff(
   if (!trimmed) return [];
   const data = await queryAnilist<{
     Page?: {
-      staff?: ({ id?: number | null; name?: { full?: string | null } | null } | null)[] | null;
+      staff?: ({ id?: number | null; name?: { full?: string | null } | null; image?: { large?: string | null } | null } | null)[] | null;
     };
   }>(STAFF_SEARCH_QUERY, { search: trimmed, perPage: limit });
   return (data.Page?.staff ?? [])
     .filter(
-      (staff): staff is { id: number; name: { full: string } } =>
+      (staff): staff is { id: number; name: { full: string }; image?: { large?: string | null } | null } =>
         Boolean(staff?.id && staff.name?.full),
     )
-    .map((staff) => ({ id: staff.id, name: staff.name.full }));
+    .map((staff) => ({ id: staff.id, name: staff.name.full, imageUrl: staff.image?.large ?? null }));
 }
 
 /**
@@ -561,15 +563,16 @@ export async function searchAniListStaff(
 export async function searchAniListByAuthor(
   author: string,
   limit = 24,
-): Promise<MangaListResult & { authorName?: string }> {
+): Promise<MangaListResult & { authorName?: string; authorImageUrl?: string | null }> {
   const staff = await searchAniListStaff(author, 1);
   const match = staff[0];
   if (!match) {
-    return { data: [], total: 0, offset: 0, limit, authorName: undefined };
+    return { data: [], total: 0, offset: 0, limit, authorName: undefined, authorImageUrl: undefined };
   }
   const data = await queryAnilist<{
     Staff?: {
       name?: { full?: string | null } | null;
+      image?: { large?: string | null } | null;
       staffMedia?: {
         pageInfo?: { total?: number | null } | null;
         nodes?: AniListMedia[] | null;
@@ -585,6 +588,7 @@ export async function searchAniListByAuthor(
     offset: 0,
     limit,
     authorName: data.Staff?.name?.full ?? match.name,
+    authorImageUrl: match.imageUrl ?? data.Staff?.image?.large ?? null,
   };
 }
 

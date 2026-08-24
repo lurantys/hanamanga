@@ -25,7 +25,7 @@ const cachedStaffSearch = unstable_cache(
 const cachedAuthorSearch = unstable_cache(
   async (author: string) => {
     const result = await searchCatalogByAuthor(author, POOL);
-    return { data: result.data, authorName: result.authorName ?? null };
+    return { data: result.data, authorName: result.authorName ?? null, authorImageUrl: result.authorImageUrl ?? null };
   },
   ["api-search-author"],
   { revalidate: 300 },
@@ -43,7 +43,7 @@ export async function GET(request: Request) {
       const start = (page - 1) * PAGE_LIMIT;
       const data = pool.data.slice(start, start + PAGE_LIMIT);
       return NextResponse.json(
-        { data, total: pool.data.length, page, authorName: pool.authorName },
+        { data, total: pool.data.length, page, authorName: pool.authorName, authorImageUrl: pool.authorImageUrl },
         {
           headers: {
             "Cache-Control": "public, max-age=300, stale-while-revalidate=600",

@@ -176,6 +176,8 @@ export async function searchCatalog(
 export type AuthorSearchResult = MangaListResult & {
   /** Canonical staff name AniList matched, when it found one. */
   authorName?: string;
+  /** Profile image from AniList, when available. */
+  authorImageUrl?: string | null;
 };
 
 /**
@@ -210,7 +212,7 @@ export async function searchCatalogByAuthor(
     data.push(manga);
   }
 
-  return { data, total: data.length, offset: 0, limit, authorName: al.authorName };
+  return { data, total: data.length, offset: 0, limit, authorName: al.authorName, authorImageUrl: al.authorImageUrl };
 }
 
 /**

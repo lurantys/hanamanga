@@ -10,7 +10,7 @@ type SearchLiveResultsProps = {
   onPick: () => void;
 };
 
-type AuthorHit = { id: number; name: string };
+type AuthorHit = { id: number; name: string; imageUrl?: string | null };
 
 function ListSkeleton() {
   return (
@@ -112,21 +112,31 @@ export function SearchLiveResults({ query, onPick }: SearchLiveResultsProps) {
                 aria-label={`Manga by ${author.name}. Open search results.`}
                 className="group flex items-center gap-3 rounded-xl px-2 py-1.5 transition-colors hover:bg-zinc-900/70"
               >
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-zinc-400 transition-colors group-hover:bg-zinc-700 group-hover:text-zinc-200">
-                  <svg
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    className="h-4 w-4"
-                    aria-hidden
-                  >
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
-                    <circle cx="12" cy="7" r="4" />
-                  </svg>
-                </span>
+                {author.imageUrl ? (
+                  <Image
+                    src={author.imageUrl}
+                    alt=""
+                    width={32}
+                    height={32}
+                    className="h-8 w-8 shrink-0 rounded-full object-cover"
+                  />
+                ) : (
+                  <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-zinc-800 text-zinc-400 transition-colors group-hover:bg-zinc-700 group-hover:text-zinc-200">
+                    <svg
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="2"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      className="h-4 w-4"
+                      aria-hidden
+                    >
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+                      <circle cx="12" cy="7" r="4" />
+                    </svg>
+                  </span>
+                )}
                 <span className="min-w-0 flex-1">
                   <span className="block truncate text-sm font-semibold text-zinc-200">
                     {author.name}

@@ -282,7 +282,24 @@ export default async function MangaPage({ params }: MangaPageProps) {
                 <span className="text-[11px] font-semibold uppercase tracking-widest text-zinc-500">
                   Mangaka
                 </span>
-                <span className="text-sm text-zinc-200">{primaryAuthor.name}</span>
+                <Link
+                  href={`/search?author=${encodeURIComponent(primaryAuthor.name)}`}
+                  className="group inline-flex items-center gap-2 rounded-full text-sm text-zinc-200 transition-colors hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+                  aria-label={`View manga by ${primaryAuthor.name}`}
+                >
+                  {primaryAuthor.imageUrl ? (
+                    <Image
+                      src={primaryAuthor.imageUrl}
+                      alt=""
+                      width={28}
+                      height={28}
+                      className="h-7 w-7 rounded-full object-cover ring-1 ring-white/10 transition group-hover:ring-white/30"
+                    />
+                  ) : null}
+                  <span className="underline decoration-white/20 underline-offset-4 group-hover:decoration-white/60">
+                    {primaryAuthor.name}
+                  </span>
+                </Link>
                 {primaryAuthor.role && !/story & art/i.test(primaryAuthor.role) ? (
                   <span className="text-zinc-500"> · {primaryAuthor.role}</span>
                 ) : null}

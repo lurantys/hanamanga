@@ -168,6 +168,16 @@ const IDMAL_QUERY = /* GraphQL */ `
   }
 `;
 
+const ID_LIST_QUERY = /* GraphQL */ `
+  query CatalogByIds($ids: [Int]) {
+    Page(page: 1, perPage: 50) {
+      media(type: MANGA, id_in: $ids, isAdult: false) {
+        ${ANILIST_MEDIA_FIELDS}
+      }
+    }
+  }
+`;
+
 const STAFF_SEARCH_QUERY = /* GraphQL */ `
   query StaffSearch($search: String, $perPage: Int) {
     Page(page: 1, perPage: $perPage) {
@@ -610,7 +620,7 @@ export async function fetchAniListByIds(ids: string[]): Promise<Manga[]> {
   if (!numeric.length) return [];
   const data = await queryAnilist<{
     Page?: { media?: AniListMedia[] | null };
-  }>(LIST_QUERY, { page: 1, perPage: numeric.length, ids: numeric });
+  }>(ID_LIST_QUERY, { ids: numeric });
   return (data.Page?.media ?? []).map(anilistToManga);
 }
 

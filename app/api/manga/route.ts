@@ -50,6 +50,7 @@ const cachedProviderFetch = unstable_cache(
             bannerUrl: enhanced.bannerUrl,
             coverUrl: enhanced.coverUrl,
             description: enhanced.description ?? manga.description,
+            rating: enhanced.rating ?? manga.rating,
           };
         }),
       );

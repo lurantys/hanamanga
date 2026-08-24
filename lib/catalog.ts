@@ -265,6 +265,8 @@ export async function enhanceWithAniList(manga: Manga): Promise<Manga> {
       bannerUrl: al.bannerUrl ?? manga.bannerUrl,
       coverUrl: al.coverUrl ?? manga.coverUrl,
       description: al.description ?? manga.description,
+      rating: al.rating ?? manga.rating,
+      authors: al.authors ?? manga.authors,
     };
   } catch {
     return manga;

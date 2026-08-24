@@ -94,39 +94,51 @@ export function SearchBar() {
   return (
     <div ref={containerRef} className="relative flex items-center">
       {open ? (
-        <form
-          onSubmit={onSubmit}
-          role="search"
-          className="search-form search-expanded flex items-center gap-2 rounded-full border border-zinc-700/60 bg-zinc-900/80 py-2 pl-3.5 pr-1.5 shadow-[0_8px_30px_rgba(0,0,0,0.4)] backdrop-blur-2xl transition-colors focus-within:border-red-400/40"
-        >
-          <SearchIcon className="h-4 w-4 shrink-0 text-zinc-500" />
-          <input
-            ref={inputRef}
-            autoFocus
-            type="text"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder="Search manga or author…"
-            aria-label="Search manga"
-            enterKeyHint="search"
-            className="min-w-0 flex-1 bg-transparent text-sm text-zinc-50 outline-none placeholder:text-zinc-500 sm:w-56 sm:flex-none lg:w-64"
-          />
-          <button
-            type="button"
-            onClick={() => {
-              if (query) {
-                setQuery("");
-                inputRef.current?.focus();
-              } else {
-                close();
-              }
-            }}
-            aria-label={query ? "Clear search" : "Close search"}
-            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
+        <div className="search-expanded relative flex items-center">
+          <form
+            onSubmit={onSubmit}
+            role="search"
+            className="search-form flex items-center gap-2 rounded-full border border-zinc-700/60 bg-zinc-900/80 py-2 pl-3.5 pr-1.5 shadow-[0_8px_30px_rgba(0,0,0,0.4)] backdrop-blur-2xl transition-colors focus-within:border-red-400/40"
           >
-            <XIcon className="h-4 w-4" />
-          </button>
-        </form>
+            <SearchIcon className="h-4 w-4 shrink-0 text-zinc-500" />
+            <input
+              ref={inputRef}
+              autoFocus
+              type="text"
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Search manga or author…"
+              aria-label="Search manga"
+              enterKeyHint="search"
+              className="min-w-0 flex-1 bg-transparent text-sm text-zinc-50 outline-none placeholder:text-zinc-500 sm:w-56 sm:flex-none lg:w-64"
+            />
+            <button
+              type="button"
+              onClick={() => {
+                if (query) {
+                  setQuery("");
+                  inputRef.current?.focus();
+                } else {
+                  close();
+                }
+              }}
+              aria-label={query ? "Clear search" : "Close search"}
+              className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-zinc-400 transition-colors hover:bg-zinc-800 hover:text-zinc-100"
+            >
+              <XIcon className="h-4 w-4" />
+            </button>
+          </form>
+
+          {debouncedQuery && (
+            <div className="glass-in absolute right-0 top-[calc(100%+12px)] z-50 w-[min(24rem,calc(100vw-2rem))] overflow-hidden rounded-[2rem] border border-white/10 bg-zinc-950/95 p-4 shadow-[0_24px_60px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.08)] ring-1 ring-inset ring-white/10 backdrop-blur-2xl">
+              <SearchLiveResults
+                key={debouncedQuery}
+                query={debouncedQuery}
+                onPick={close}
+              />
+            </div>
+          )}
+        </div>
       ) : (
         <button
           type="button"
@@ -136,16 +148,6 @@ export function SearchBar() {
         >
           <SearchIcon className="h-4 w-4" />
         </button>
-      )}
-
-      {open && debouncedQuery && (
-        <div className="glass-in absolute left-1/2 top-[calc(100%+12px)] z-50 w-[min(24rem,calc(100vw-2rem))] -translate-x-1/2 overflow-hidden rounded-[2rem] border border-white/10 bg-zinc-950/95 p-4 shadow-[0_24px_60px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.08)] ring-1 ring-inset ring-white/10 backdrop-blur-2xl">
-          <SearchLiveResults
-            key={debouncedQuery}
-            query={debouncedQuery}
-            onPick={close}
-          />
-        </div>
       )}
     </div>
   );

@@ -20,18 +20,39 @@ function Footer() {
             />
             <span className="font-bold text-zinc-50">Hana</span>
           </div>
-          <p className="max-w-xl text-xs leading-relaxed text-zinc-500">
-            Hana is a reader app only — it does not host, store, or distribute
-            any manga. All titles, chapters, and images are sourced directly
-            from third-party providers at the moment you open them, and all
-            rights remain with their creators and publishers.
-          </p>
+          <div className="max-w-xl space-y-2 text-xs leading-relaxed text-zinc-500">
+            <p>
+              <span className="font-semibold text-zinc-400">
+                Hana by Hanamanga
+              </span>{" "}
+              — read manga, manhwa, manhua, and webtoons online at{" "}
+              <a
+                href="https://hanamanga.online"
+                className="text-zinc-400 hover:text-white"
+              >
+                hanamanga.online
+              </a>
+              .
+            </p>
+            <p>
+              Hana is a reader app only — it does not host, store, or distribute
+              any manga. All titles, chapters, and images are sourced directly
+              from third-party providers at the moment you open them, and all
+              rights remain with their creators and publishers.
+            </p>
+          </div>
           <nav className="flex items-center gap-4 text-sm">
             <Link
               href="/browse"
               className="text-zinc-400 transition-colors hover:text-white"
             >
               Browse
+            </Link>
+            <Link
+              href="/about"
+              className="text-zinc-400 transition-colors hover:text-white"
+            >
+              About
             </Link>
             <Link
               href="/library"

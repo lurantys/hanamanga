@@ -17,6 +17,11 @@ const STATIC_ROUTES: MetadataRoute.Sitemap = [
     changeFrequency: "weekly",
     priority: 0.8,
   },
+  {
+    url: `${SITE_URL}/about`,
+    changeFrequency: "monthly",
+    priority: 0.6,
+  },
 ];
 
 const TOP_MANGA_PAGES = 5;

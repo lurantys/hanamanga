@@ -1070,8 +1070,10 @@ export function Reader({
     preloadUrls.length,
   ]);
 
+  const pageFit = isMobile ? "width" : settings.fit;
+
   const fitStyle =
-    settings.fit === "height"
+    pageFit === "height"
       ? {
           maxHeight: "calc(100dvh - 9rem)",
           maxWidth: "calc(100vw - 2rem)",
@@ -1079,13 +1081,13 @@ export function Reader({
         }
       : {
           maxHeight: "calc(100dvh - 9rem)",
-          maxWidth: "calc(100vw - 2rem)",
+          maxWidth: "100vw",
           width: "100%",
           height: "auto",
         };
 
   const twoPageFitStyle =
-    settings.fit === "height"
+    pageFit === "height"
       ? {
           maxHeight: "calc(100dvh - 9rem)",
           maxWidth: "calc(50vw - 1.5rem)",
@@ -1320,7 +1322,7 @@ export function Reader({
 
           <div
             ref={contentRef}
-            className="mx-auto mt-5 flex max-w-4xl flex-col px-3 sm:px-4"
+            className="mx-auto mt-5 flex max-w-4xl flex-col px-0 sm:px-4"
             onClick={toggleControls}
             style={{
               transform: `scale(${settings.zoom})`,
@@ -1368,7 +1370,7 @@ export function Reader({
           onTouchEnd={onTouchEnd}
           onClick={onViewportClick}
         >
-          <div className="flex min-h-full items-center justify-center px-4 pb-16 pt-20">
+          <div className="flex min-h-full items-center justify-center px-0 pb-16 pt-20 sm:px-4">
             {isTwoPage ? (
               <div
                 className={`flex items-center justify-center gap-2 sm:gap-3 ${

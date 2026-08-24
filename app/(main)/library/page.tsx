@@ -15,6 +15,7 @@ import {
   subscribeFinished,
 } from "@/lib/read-state";
 import {
+  clearProgress,
   getContinueList,
   getAllProgress,
   subscribeProgress,
@@ -119,6 +120,7 @@ function CardMenu({
   isRead,
   onToggleRead,
   onRemove,
+  removeLabel = "Remove from library",
   buttonClassName,
   iconClassName,
   wrapperClassName,
@@ -126,8 +128,9 @@ function CardMenu({
 }: {
   title: string;
   isRead: boolean;
-  onToggleRead: () => void;
+  onToggleRead?: () => void;
   onRemove: () => void;
+  removeLabel?: string;
   buttonClassName: string;
   iconClassName: string;
   wrapperClassName?: string;
@@ -178,19 +181,23 @@ function CardMenu({
           aria-label={`${title} actions`}
           className="glass-in absolute right-0 top-full z-30 mt-1.5 w-44 overflow-hidden rounded-xl border border-white/10 bg-zinc-900 shadow-xl shadow-zinc-950/60"
         >
-          <button
-            type="button"
-            role="menuitem"
-            onClick={() => {
-              setOpen(false);
-              onToggleRead();
-            }}
-            className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-sm font-medium text-zinc-200 transition-colors hover:bg-zinc-800 hover:text-white"
-          >
-            <CheckIcon className="h-4 w-4 shrink-0 text-emerald-400" />
-            {isRead ? "Mark as unread" : "Mark as read"}
-          </button>
-          <div role="separator" className="h-px bg-white/10" />
+          {onToggleRead && (
+            <>
+              <button
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setOpen(false);
+                  onToggleRead();
+                }}
+                className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-sm font-medium text-zinc-200 transition-colors hover:bg-zinc-800 hover:text-white"
+              >
+                <CheckIcon className="h-4 w-4 shrink-0 text-emerald-400" />
+                {isRead ? "Mark as unread" : "Mark as read"}
+              </button>
+              <div role="separator" className="h-px bg-white/10" />
+            </>
+          )}
           <button
             type="button"
             role="menuitem"
@@ -201,7 +208,7 @@ function CardMenu({
             className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-500/10 hover:text-red-200"
           >
             <TrashIcon className="h-4 w-4 shrink-0" />
-            Remove from library
+            {removeLabel}
           </button>
         </div>
       )}
@@ -219,6 +226,7 @@ function GridCard({
   isRead,
   onToggleRead,
   onRemove,
+  removeLabel,
 }: {
   title: string;
   coverUrl?: string | null;
@@ -229,6 +237,7 @@ function GridCard({
   isRead: boolean;
   onToggleRead?: () => void;
   onRemove?: () => void;
+  removeLabel?: string;
 }) {
   return (
     <div className="group relative">
@@ -280,12 +289,13 @@ function GridCard({
         </div>
       </Link>
 
-      {onRemove && onToggleRead && (
+      {onRemove && (
         <CardMenu
           title={title}
           isRead={isRead}
           onToggleRead={onToggleRead}
           onRemove={onRemove}
+          removeLabel={removeLabel}
           wrapperClassName="absolute right-1 top-1 z-10"
           revealOnHover
           buttonClassName="flex h-5 w-5 items-center justify-center rounded-full border border-white/20 bg-zinc-950/80 text-zinc-300 transition-all duration-200 hover:border-white/40 hover:text-white"
@@ -313,6 +323,7 @@ function ListCard({
   isRead,
   onToggleRead,
   onRemove,
+  removeLabel,
 }: {
   title: string;
   coverUrl?: string | null;
@@ -323,6 +334,7 @@ function ListCard({
   isRead: boolean;
   onToggleRead?: () => void;
   onRemove?: () => void;
+  removeLabel?: string;
 }) {
   return (
     <div className="group relative flex items-center gap-3.5 rounded-xl border border-white/10 bg-zinc-900/50 p-2.5 transition-colors hover:border-white/20 hover:bg-zinc-900/80">
@@ -375,12 +387,13 @@ function ListCard({
         </span>
       )}
 
-      {onRemove && onToggleRead && (
+      {onRemove && (
         <CardMenu
           title={title}
           isRead={isRead}
           onToggleRead={onToggleRead}
           onRemove={onRemove}
+          removeLabel={removeLabel}
           buttonClassName="flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-white/10 text-zinc-400 transition-colors hover:border-white/25 hover:bg-zinc-800 hover:text-white"
           iconClassName="h-4 w-4"
         />
@@ -792,6 +805,8 @@ export default function LibraryPage() {
                     progressPct={pct}
                     meta={`Continue · ${entry.chapterLabel}`}
                     isRead={false}
+                    onRemove={() => clearProgress(entry.mangaId)}
+                    removeLabel="Remove from Continue Reading"
                   />
                 );
               })}
@@ -859,6 +874,8 @@ export default function LibraryPage() {
                     progressPct={pct}
                     meta={`Continue · ${entry.chapterLabel}`}
                     isRead={false}
+                    onRemove={() => clearProgress(entry.mangaId)}
+                    removeLabel="Remove from Continue Reading"
                   />
                 );
               })}

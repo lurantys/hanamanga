@@ -8,6 +8,7 @@ import {
   CONTINUE_HERO_EVENT,
   PROGRESS_EVENT,
   getContinueList,
+  clearProgress,
   invalidateProgressCache,
   type ProgressEntry,
 } from "@/lib/progress";
@@ -70,46 +71,68 @@ export function ContinueRow() {
           (entry.mangaFraction ?? entry.scrollFraction) * 100,
         );
         return (
-          <Link
-            key={entry.mangaId}
-            href={`/read/${entry.mangaId}/${entry.chapterId}`}
-            prefetch={false}
-            aria-label={`${title} — ${entry.chapterLabel}, ${pct}% of the manga read. Continue reading.`}
-            className="group w-36 shrink-0 rounded-lg text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60 md:w-44"
-          >
-            <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-zinc-800 transition-transform duration-200 group-hover:scale-[1.03] group-active:scale-[1.03]">
-              {coverUrl ? (
-                <Image
-                  src={coverUrl}
-                  alt=""
-                  fill
-                  sizes="(max-width: 768px) 144px, 176px"
-                  className="object-cover"
-                />
-              ) : (
-                <span className="flex h-full w-full items-center justify-center p-3 text-center text-sm text-zinc-500">
-                  {title}
+          <div key={entry.mangaId} className="group relative w-36 shrink-0 md:w-44">
+            <Link
+              href={`/read/${entry.mangaId}/${entry.chapterId}`}
+              prefetch={false}
+              aria-label={`${title} — ${entry.chapterLabel}, ${pct}% of the manga read. Continue reading.`}
+              className="block rounded-lg text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
+            >
+              <div className="relative aspect-[2/3] overflow-hidden rounded-lg bg-zinc-800 transition-transform duration-200 group-hover:scale-[1.03] group-active:scale-[1.03]">
+                {coverUrl ? (
+                  <Image
+                    src={coverUrl}
+                    alt=""
+                    fill
+                    sizes="(max-width: 768px) 144px, 176px"
+                    className="object-cover"
+                  />
+                ) : (
+                  <span className="flex h-full w-full items-center justify-center p-3 text-center text-sm text-zinc-500">
+                    {title}
+                  </span>
+                )}
+                <span className="absolute right-1.5 top-1.5 rounded bg-zinc-950/80 px-1.5 py-0.5 text-[10px] font-semibold text-white">
+                  {pct}%
                 </span>
-              )}
-              <span className="absolute right-1.5 top-1.5 rounded bg-zinc-950/80 px-1.5 py-0.5 text-[10px] font-semibold text-white">
-                {pct}%
-              </span>
-              <div className="absolute inset-x-0 bottom-0 h-1 bg-white/10">
-                <div
-                  className="h-full bg-red-500"
-                  style={{ width: `${pct}%` }}
-                />
+                <div className="absolute inset-x-0 bottom-0 h-1 bg-white/10">
+                  <div
+                    className="h-full bg-red-500"
+                    style={{ width: `${pct}%` }}
+                  />
+                </div>
               </div>
-            </div>
-            <div className="mt-2 px-0.5">
-              <p className="line-clamp-1 text-sm font-semibold text-zinc-200">
-                {title}
-              </p>
-              <p className="mt-0.5 line-clamp-1 text-xs text-zinc-500">
-                {entry.chapterLabel}
-              </p>
-            </div>
-          </Link>
+              <div className="mt-2 px-0.5">
+                <p className="line-clamp-1 text-sm font-semibold text-zinc-200">
+                  {title}
+                </p>
+                <p className="mt-0.5 line-clamp-1 text-xs text-zinc-500">
+                  {entry.chapterLabel}
+                </p>
+              </div>
+            </Link>
+            <button
+              type="button"
+              aria-label={`Remove ${title} from Continue Reading`}
+              title="Remove from Continue Reading"
+              onClick={() => clearProgress(entry.mangaId)}
+              className="absolute left-1.5 top-1.5 inline-flex h-7 w-7 items-center justify-center rounded-full bg-zinc-950/85 text-zinc-300 opacity-100 shadow-lg transition hover:bg-red-500 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100"
+            >
+              <svg
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                className="h-3.5 w-3.5"
+                aria-hidden
+              >
+                <path d="M18 6 6 18" />
+                <path d="m6 6 12 12" />
+              </svg>
+            </button>
+          </div>
         );
       })}
     </Carousel>

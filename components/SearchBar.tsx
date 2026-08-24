@@ -94,11 +94,11 @@ export function SearchBar() {
   return (
     <div ref={containerRef} className="relative flex items-center">
       {open ? (
-        <div className="search-expanded relative flex w-[min(20rem,calc(100vw-2.5rem))] flex-col items-stretch sm:w-72 md:w-80 lg:w-96">
+        <div className="search-expanded relative flex items-center">
           <form
             onSubmit={onSubmit}
             role="search"
-            className="search-form w-full flex items-center gap-2 rounded-full border border-zinc-700/60 bg-zinc-900/80 py-2 pl-3.5 pr-1.5 shadow-[0_8px_30px_rgba(0,0,0,0.4)] backdrop-blur-2xl transition-colors focus-within:border-red-400/40"
+            className="search-form flex items-center gap-2 rounded-full border border-zinc-700/60 bg-zinc-900/80 py-2 pl-3.5 pr-1.5 shadow-[0_8px_30px_rgba(0,0,0,0.4)] backdrop-blur-2xl transition-colors focus-within:border-red-400/40"
           >
             <SearchIcon className="h-4 w-4 shrink-0 text-zinc-500" />
             <input

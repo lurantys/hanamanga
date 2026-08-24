@@ -82,7 +82,7 @@ export function SearchLiveResults({ query, onPick }: SearchLiveResultsProps) {
     );
   }
 
-  if (!data.length) {
+  if (!data.length && !authors.length) {
     return (
       <div className="px-2 py-6 text-center">
         <p className="text-sm font-medium text-zinc-300">
@@ -201,27 +201,29 @@ export function SearchLiveResults({ query, onPick }: SearchLiveResultsProps) {
         })}
       </div>
 
-      <div className="mt-2 border-t border-white/5 pt-2">
-        <Link
-          href={`/search?q=${encodeURIComponent(query)}`}
-          onClick={onPick}
-          className="flex items-center justify-between rounded-xl px-2 py-2 text-sm font-semibold text-red-300 transition-colors hover:bg-zinc-900/70 hover:text-red-200"
-        >
-          <span className="truncate">See all results for “{query}”</span>
-          <svg
-            viewBox="0 0 24 24"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="h-4 w-4 shrink-0"
-            aria-hidden
+      {data.length > 0 && (
+        <div className="mt-2 border-t border-white/5 pt-2">
+          <Link
+            href={`/search?q=${encodeURIComponent(query)}`}
+            onClick={onPick}
+            className="flex items-center justify-between rounded-xl px-2 py-2 text-sm font-semibold text-red-300 transition-colors hover:bg-zinc-900/70 hover:text-red-200"
           >
-            <path d="M9 6l6 6-6 6" />
-          </svg>
-        </Link>
-      </div>
+            <span className="truncate">See all results for “{query}”</span>
+            <svg
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              className="h-4 w-4 shrink-0"
+              aria-hidden
+            >
+              <path d="M9 6l6 6-6 6" />
+            </svg>
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

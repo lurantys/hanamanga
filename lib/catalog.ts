@@ -10,6 +10,7 @@ import {
 import {
   AniListError,
   fetchAniListById,
+  fetchAniListByIds,
   searchAniList,
   searchAniListByAuthor,
 } from "./anilist";
@@ -170,7 +171,37 @@ export async function searchCatalog(
     data.push(manga);
   }
 
+  await enrichAtsuBatch(data);
+
   return { data, total: data.length, offset: 0, limit };
+}
+
+/**
+ * Batch-enrich Atsu-only entries that have an AniList link but lack
+ * AniList metadata (rating, banner, description). Silently skips entries
+ * that already have a rating, and entries without an AniList link.
+ */
+async function enrichAtsuBatch(data: Manga[]): Promise<void> {
+  const alIds = data
+    .filter((m) => m.rating == null && m.links?.al)
+    .map((m) => m.links!.al!);
+  if (!alIds.length) return;
+  const alMetas = await fetchAniListByIds(alIds).catch(() => []);
+  const metaByAl = Object.fromEntries(
+    alMetas.map((m) => [m.links?.al, m]),
+  );
+  for (let i = 0; i < data.length; i++) {
+    const alId = data[i].links?.al;
+    if (!alId) continue;
+    const meta = metaByAl[alId];
+    if (!meta) continue;
+    data[i] = {
+      ...data[i],
+      rating: data[i].rating ?? meta.rating,
+      bannerUrl: data[i].bannerUrl ?? meta.bannerUrl,
+      description: data[i].description ?? meta.description,
+    };
+  }
 }
 
 export type AuthorSearchResult = MangaListResult & {
@@ -211,6 +242,8 @@ export async function searchCatalogByAuthor(
     if (!matchesAl) continue;
     data.push(manga);
   }
+
+  await enrichAtsuBatch(data);
 
   return { data, total: data.length, offset: 0, limit, authorName: al.authorName, authorImageUrl: al.authorImageUrl };
 }

@@ -35,6 +35,7 @@ import {
   isAniListDownError,
 } from "@/lib/anilist";
 import { parseMangaId } from "@/lib/source";
+import { SITE_URL } from "@/lib/site";
 import { toCatalogChapter } from "@/lib/mangakatana";
 import { toWeebCatalogChapter } from "@/lib/weebcentral";
 
@@ -61,11 +62,38 @@ export async function generateMetadata({
   }
   const status = statusLabel(manga.status);
   const metaBits = [status, ...(manga.genres ?? []).slice(0, 3)].filter(Boolean);
+  const description = manga.description
+    ? truncate(manga.description, 160)
+    : `Read ${manga.title} on Hana.${metaBits.length ? ` ${metaBits.join(", ")}.` : ""} Track your library and pick up right where you left off.`;
+  const title = `${manga.title} — Hana`;
+
+  // When the manga has a banner, use it raw for link embeds so it shows
+  // fully visible with no blur or overlays. Without one, fall back to the
+  // file-convention opengraph-image card.
+  if (manga.bannerUrl) {
+    return {
+      title,
+      description,
+      openGraph: {
+        type: "website",
+        url: `${SITE_URL}/manga/${id}`,
+        siteName: "Hana — Hanamanga",
+        title,
+        description,
+        images: [{ url: manga.bannerUrl, alt: `${manga.title} banner` }],
+      },
+      twitter: {
+        card: "summary_large_image",
+        title,
+        description,
+        images: [manga.bannerUrl],
+      },
+    };
+  }
+
   return {
-    title: `${manga.title} — Hana`,
-    description: manga.description
-      ? truncate(manga.description, 160)
-      : `Read ${manga.title} on Hana.${metaBits.length ? ` ${metaBits.join(", ")}.` : ""} Track your library and pick up right where you left off.`,
+    title,
+    description,
   };
 }
 

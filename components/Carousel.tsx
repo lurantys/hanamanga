@@ -123,7 +123,7 @@ export function Carousel({ title, ariaLabel, children, headerRight }: CarouselPr
       <div
         ref={scrollerRef}
         className="scrollbar-hide flex gap-3 overflow-x-auto px-4 py-2 md:px-10"
-        style={{ touchAction: "pan-x pinch-zoom", overscrollBehaviorX: "none" }}
+        style={{ overscrollBehaviorX: "none" }}
       >
         {children}
       </div>

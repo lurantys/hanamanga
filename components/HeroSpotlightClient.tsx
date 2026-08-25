@@ -13,6 +13,7 @@ import {
 } from "@/lib/progress";
 import { getLibraryList, LIBRARY_EVENT } from "@/lib/library";
 import { statusLabel, truncate, type Manga } from "@/lib/mangadex";
+import { ratingBadgeClass, ratingTier } from "@/lib/rating";
 
 type HeroSpotlightClientProps = {
   initial: Manga;
@@ -170,6 +171,7 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
 
   const rating = displayHero.rating ?? 0;
   const match = rating.toFixed(1);
+  const ratingClass = ratingBadgeClass[ratingTier(rating)];
   const showRating =
     Boolean(displayHero.description) && rating > 0 && match !== "0.0";
   const description = truncate(displayHero.description, 400);
@@ -274,7 +276,7 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
           <div className="flex min-w-0 flex-1 flex-col gap-3 md:gap-4">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 md:gap-x-4 md:gap-y-2">
               {showRating ? (
-                <span className="inline-flex items-center gap-2 rounded-md bg-emerald-500/15 px-2.5 py-1 text-sm font-bold text-emerald-400">
+                <span className={`inline-flex items-center gap-2 rounded-md px-2.5 py-1 text-sm font-bold ${ratingClass}`}>
                   <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4" aria-hidden>
                     <path d="M12 2l2.4 7.2H22l-6 4.6 2.3 7.2-6.3-4.5-6.3 4.5L8 13.8 2 9.2h7.6Z" />
                   </svg>

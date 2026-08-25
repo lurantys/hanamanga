@@ -76,7 +76,7 @@ async function appIconDataUrl(): Promise<string | null> {
   if (appIcon !== undefined) return appIcon;
   try {
     const bytes = await readFile(
-      path.join(process.cwd(), "public", "icon-192.png"),
+      path.join(process.cwd(), "public", "icon-180.png"),
     );
     appIcon = `data:image/png;base64,${bytes.toString("base64")}`;
   } catch {
@@ -211,9 +211,9 @@ export default async function Image({
                   <img
                     src={icon}
                     alt=""
-                    width={24}
-                    height={24}
-                    style={{ width: 24, height: 24, borderRadius: 4 }}
+                    width={48}
+                    height={48}
+                    style={{ width: 48, height: 48, borderRadius: 8 }}
                   />
                 ) : null}
                 <div
@@ -298,9 +298,9 @@ export default async function Image({
               <img
                 src={icon}
                 alt=""
-                width={28}
-                height={28}
-                style={{ width: 28, height: 28, borderRadius: 5 }}
+                width={56}
+                height={56}
+                style={{ width: 56, height: 56, borderRadius: 10 }}
               />
             ) : null}
             <div

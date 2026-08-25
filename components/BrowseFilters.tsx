@@ -72,7 +72,7 @@ function Select({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         aria-label={label}
-        className="appearance-none rounded-full border border-white/10 bg-zinc-900/60 py-2 pl-4 pr-9 text-sm font-medium text-zinc-200 outline-none backdrop-blur-xl transition-colors hover:border-white/25 focus:border-emerald-400/50"
+        className="appearance-none rounded-full border border-white/10 bg-zinc-900/60 py-2 pl-4 pr-9 text-sm font-medium text-zinc-200 outline-none backdrop-blur-xl transition-colors hover:border-white/25 focus:border-red-400/50"
       >
         {options.map((option) => (
           <option key={option.key} value={option.key}>
@@ -137,7 +137,7 @@ function YearInput({
       onBlur={commit}
       placeholder={placeholder}
       aria-label={ariaLabel}
-      className="w-24 rounded-lg border border-white/10 bg-zinc-900/60 py-2 pl-3 pr-2 text-sm text-zinc-100 outline-none transition-colors placeholder:text-zinc-500 focus:border-emerald-400/50"
+      className="w-24 rounded-lg border border-white/10 bg-zinc-900/60 py-2 pl-3 pr-2 text-sm text-zinc-100 outline-none transition-colors placeholder:text-zinc-500 focus:border-red-400/50"
     />
   );
 }
@@ -227,7 +227,7 @@ export function BrowseFilters({
           aria-expanded={drawerOpen}
           className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition active:scale-[0.97] ${
             activeFilterCount > 0 || drawerOpen
-              ? "border-emerald-400/60 bg-emerald-500/15 text-emerald-300"
+              ? "border-red-400/60 bg-red-500/15 text-red-300"
               : "border-white/10 bg-zinc-900/60 text-zinc-200 hover:border-white/25"
           }`}
         >
@@ -236,7 +236,7 @@ export function BrowseFilters({
           </svg>
           Filters
           {activeFilterCount > 0 && (
-            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-emerald-400 px-1 text-[11px] font-bold text-zinc-950">
+            <span className="flex h-5 min-w-5 items-center justify-center rounded-full bg-red-400 px-1 text-[11px] font-bold text-zinc-950">
               {activeFilterCount}
             </span>
           )}
@@ -261,7 +261,7 @@ export function BrowseFilters({
                       aria-pressed={selected}
                       className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
                         selected
-                          ? "border-emerald-400/60 bg-emerald-500/15 text-emerald-300"
+                          ? "border-red-400/60 bg-red-500/15 text-red-300"
                           : "border-white/10 bg-zinc-800/60 text-zinc-400 hover:text-white"
                       }`}
                     >
@@ -355,7 +355,7 @@ export function BrowseFilters({
               type="button"
               onClick={() => toggleGenre(genre)}
               aria-label={`Remove genre ${genre}`}
-              className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300 transition-colors hover:border-emerald-400/60 hover:text-white"
+              className="inline-flex items-center gap-1.5 rounded-full border border-red-400/40 bg-red-500/10 px-3 py-1 text-xs font-semibold text-red-300 transition-colors hover:border-red-400/60 hover:text-white"
             >
               {genre}
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3" aria-hidden>
@@ -368,7 +368,7 @@ export function BrowseFilters({
               type="button"
               onClick={() => push({ origin: "" })}
               aria-label="Remove origin filter"
-              className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300 transition-colors hover:border-emerald-400/60 hover:text-white"
+              className="inline-flex items-center gap-1.5 rounded-full border border-red-400/40 bg-red-500/10 px-3 py-1 text-xs font-semibold text-red-300 transition-colors hover:border-red-400/60 hover:text-white"
             >
               {originLabel ?? origin}
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3" aria-hidden>
@@ -381,7 +381,7 @@ export function BrowseFilters({
               type="button"
               onClick={() => push({ yearFrom: "", yearTo: "" })}
               aria-label="Remove year range filter"
-              className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300 transition-colors hover:border-emerald-400/60 hover:text-white"
+              className="inline-flex items-center gap-1.5 rounded-full border border-red-400/40 bg-red-500/10 px-3 py-1 text-xs font-semibold text-red-300 transition-colors hover:border-red-400/60 hover:text-white"
             >
               {yearFrom ? yearFrom : "…"}–{yearTo ? yearTo : "…"}
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3" aria-hidden>
@@ -394,7 +394,7 @@ export function BrowseFilters({
               type="button"
               onClick={() => push({ minScore: "" })}
               aria-label="Remove minimum score filter"
-              className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/40 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300 transition-colors hover:border-emerald-400/60 hover:text-white"
+              className="inline-flex items-center gap-1.5 rounded-full border border-red-400/40 bg-red-500/10 px-3 py-1 text-xs font-semibold text-red-300 transition-colors hover:border-red-400/60 hover:text-white"
             >
               {minScoreLabel ?? minScore}
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3" aria-hidden>

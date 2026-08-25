@@ -1,3 +1,5 @@
+import { readFile } from "node:fs/promises";
+import path from "node:path";
 import { unstable_cache } from "next/cache";
 import { ImageResponse } from "next/og";
 import { statusLabel, truncate } from "@/lib/mangadex";
@@ -68,12 +70,28 @@ function titleSize(title: string): number {
   return 58;
 }
 
+let appIcon: string | null | undefined;
+
+async function appIconDataUrl(): Promise<string | null> {
+  if (appIcon !== undefined) return appIcon;
+  try {
+    const bytes = await readFile(
+      path.join(process.cwd(), "public", "icon-192.png"),
+    );
+    appIcon = `data:image/png;base64,${bytes.toString("base64")}`;
+  } catch {
+    appIcon = null;
+  }
+  return appIcon;
+}
+
 export default async function Image({
   params,
 }: {
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
+  const icon = await appIconDataUrl();
   try {
     const card = await cachedMangaCard(id);
     return new ImageResponse(
@@ -184,14 +202,31 @@ export default async function Image({
             >
               <div
                 style={{
-                  color: "#ef4444",
-                  fontSize: 20,
-                  fontWeight: 700,
-                  letterSpacing: "0.35em",
-                  textTransform: "uppercase",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: 10,
                 }}
               >
-                Hana
+                {icon ? (
+                  <img
+                    src={icon}
+                    alt=""
+                    width={24}
+                    height={24}
+                    style={{ width: 24, height: 24, borderRadius: 4 }}
+                  />
+                ) : null}
+                <div
+                  style={{
+                    color: "#ef4444",
+                    fontSize: 20,
+                    fontWeight: 700,
+                    letterSpacing: "0.35em",
+                    textTransform: "uppercase",
+                  }}
+                >
+                  Hana
+                </div>
               </div>
               <div
                 style={{
@@ -254,14 +289,31 @@ export default async function Image({
         >
           <div
             style={{
-              color: "#ef4444",
-              fontSize: 28,
-              fontWeight: 700,
-              letterSpacing: "0.35em",
-              textTransform: "uppercase",
+              display: "flex",
+              alignItems: "center",
+              gap: 12,
             }}
           >
-            Hana
+            {icon ? (
+              <img
+                src={icon}
+                alt=""
+                width={28}
+                height={28}
+                style={{ width: 28, height: 28, borderRadius: 5 }}
+              />
+            ) : null}
+            <div
+              style={{
+                color: "#ef4444",
+                fontSize: 28,
+                fontWeight: 700,
+                letterSpacing: "0.35em",
+                textTransform: "uppercase",
+              }}
+            >
+              Hana
+            </div>
           </div>
           <div
             style={{

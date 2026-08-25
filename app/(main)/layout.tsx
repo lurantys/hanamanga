@@ -73,7 +73,7 @@ function Footer() {
 function Header() {
   return (
     <header className="fixed inset-x-0 top-[calc(1.5rem+env(safe-area-inset-top))] z-40 flex justify-center px-4">
-      <div className="flex w-fit max-w-[92vw] items-center justify-center gap-6 rounded-full border border-zinc-700/50 bg-zinc-950/70 py-3 px-3 shadow-[0_8px_40px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.06)] ring-1 ring-inset ring-white/10 backdrop-blur-xl md:px-4">
+      <div className="flex w-fit max-w-[calc(100vw-1rem)] items-center justify-center gap-3 rounded-full border border-zinc-700/50 bg-zinc-950/70 px-3 py-3 shadow-[0_8px_40px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.06)] ring-1 ring-inset ring-white/10 backdrop-blur-xl md:gap-6 md:px-4">
         <Link href="/" className="flex items-center gap-2" aria-label="Hana home">
           <Image
             src="/logo-v2.png"

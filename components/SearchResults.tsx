@@ -154,28 +154,32 @@ export function SearchResults({
 
   return (
     <>
-      <p className="mb-4 text-sm text-zinc-400">
+      <p className={`${author ? "pt-3" : ""} mb-5 text-sm text-zinc-400`}>
         {author ? (
-          <span className="inline-flex items-center gap-2">
+          <span className="inline-flex items-center gap-3">
             {authorImageUrl ? (
               <Image
                 src={authorImageUrl}
-                alt=""
-                width={24}
-                height={24}
-                className="h-6 w-6 rounded-full object-cover"
+                alt={authorName ?? author}
+                width={40}
+                height={40}
+                className="h-10 w-10 rounded-full object-cover ring-1 ring-white/15"
               />
             ) : (
-              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-zinc-800">
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-full bg-zinc-800">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-3 w-3 text-zinc-500" aria-hidden>
                   <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
                   <circle cx="12" cy="7" r="4" />
                 </svg>
               </span>
             )}
-            {total.toLocaleString()} {total === 1 ? "work" : "works"} by{" "}
-            <span className="font-semibold text-zinc-200">
-              {authorName ?? author}
+            <span className="flex min-w-0 flex-col">
+              <span className="truncate font-semibold text-zinc-100">
+                {authorName ?? author}
+              </span>
+              <span>
+                {total.toLocaleString()} {total === 1 ? "work" : "works"}
+              </span>
             </span>
           </span>
         ) : (

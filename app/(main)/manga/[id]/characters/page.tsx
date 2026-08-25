@@ -110,7 +110,7 @@ export default async function CharactersPage({
 
   if (!alId) {
     return (
-      <main className="mx-auto max-w-5xl px-5 pb-16 pt-32 md:px-10 md:pt-36">
+      <main className="mx-auto max-w-5xl px-5 pb-16 pt-40 md:px-10 md:pt-36">
         <Link
           href={`/manga/${rawId}`}
           className="text-sm text-zinc-400 transition-colors hover:text-white"
@@ -139,7 +139,7 @@ export default async function CharactersPage({
         eyebrow="Error"
         title="AniList is down"
         description="Character data comes from AniList, which has been temporarily disabled due to severe stability issues. Please try again in a little while."
-        className="pb-24 pt-32"
+        className="pb-24 pt-40 md:pt-32"
       >
         <Link
           href={`/manga/${rawId}`}
@@ -158,7 +158,7 @@ export default async function CharactersPage({
   }
 
   return (
-    <main className="mx-auto max-w-5xl px-5 pb-16 pt-32 md:px-10 md:pt-36">
+    <main className="mx-auto max-w-5xl px-5 pb-16 pt-40 md:px-10 md:pt-36">
       <Link
         href={`/manga/${rawId}`}
         className="text-sm text-zinc-400 transition-colors hover:text-white"

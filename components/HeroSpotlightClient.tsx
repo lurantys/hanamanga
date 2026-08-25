@@ -58,47 +58,46 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
               genres: [],
               availableLanguages: [],
             };
-        setHero({
+        const nextHero: HeroState = {
           manga: placeholder,
           isContinue: true,
           chapterId: continueEntry.chapterId,
           chapterLabel: continueEntry.chapterLabel,
           mangaFraction: continueEntry.mangaFraction,
           scrollFraction: continueEntry.scrollFraction,
+        };
+        setHero((current) => {
+          if (!current || current.manga.id !== nextHero.manga.id) return nextHero;
+          const currentHasMetadata = Boolean(
+            current.manga.bannerUrl || current.manga.description || current.manga.rating,
+          );
+          const nextHasMetadata = Boolean(
+            nextHero.manga.bannerUrl || nextHero.manga.description || nextHero.manga.rating,
+          );
+          if (currentHasMetadata && !nextHasMetadata) return current;
+          if (
+            current.chapterId === nextHero.chapterId &&
+            current.mangaFraction === nextHero.mangaFraction &&
+            current.scrollFraction === nextHero.scrollFraction
+          ) {
+            return current;
+          }
+          return nextHero;
         });
-        fetch(`/api/manga?ids=${encodeURIComponent(continueEntry.mangaId)}&banners=1`)
-          .then((res) => (res.ok ? res.json() : null))
-          .then((json) => {
-            const manga = json?.data?.[0];
-            if (!manga || !active) return;
-            setHero({
-              manga,
-              isContinue: true,
-              chapterId: continueEntry.chapterId,
-              chapterLabel: continueEntry.chapterLabel,
-              mangaFraction: continueEntry.mangaFraction,
-              scrollFraction: continueEntry.scrollFraction,
-            });
-            saveContinueHero({
-              manga,
-              chapterId: continueEntry.chapterId,
-              chapterLabel: continueEntry.chapterLabel,
-              scrollFraction: continueEntry.scrollFraction,
-              mangaFraction: continueEntry.mangaFraction,
-              updatedAt: continueEntry.updatedAt,
-            });
-          })
-          .catch(() => {});
         return;
       }
 
       const libraryEntry = getLibraryList(1)[0];
       if (libraryEntry) {
-        setHero({ manga: libraryEntry.manga, isContinue: false });
+        setHero((current) =>
+          current?.manga.id === libraryEntry.manga.id && !current.isContinue
+            ? current
+            : { manga: libraryEntry.manga, isContinue: false },
+        );
         return;
       }
 
-      setHero(null);
+      setHero((current) => (current === null ? current : null));
     }
 
     apply();
@@ -118,6 +117,56 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
       window.removeEventListener(LIBRARY_EVENT, apply);
     };
   }, []);
+
+  const heroId = hero?.manga.id ?? null;
+  const heroIsContinue = hero?.isContinue ?? false;
+  const heroKey = heroId
+    ? `${heroIsContinue ? "continue" : "library"}:${heroId}`
+    : null;
+  useEffect(() => {
+    if (!heroId || !heroKey) return;
+    const controller = new AbortController();
+    fetch(`/api/manga?ids=${encodeURIComponent(heroId)}&banners=1`, {
+      signal: controller.signal,
+    })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((json) => {
+        const manga = json?.data?.[0] as Manga | undefined;
+        if (
+          !manga ||
+          controller.signal.aborted
+        ) {
+          return;
+        }
+        setHero((current) => {
+          if (
+            !current ||
+            current.manga.id !== heroId ||
+            current.isContinue !== heroIsContinue
+          ) {
+            return current;
+          }
+          return { ...current, manga };
+        });
+
+        if (heroIsContinue) {
+          const entry = getContinueList(1)[0];
+          if (entry?.mangaId === heroId) {
+            saveContinueHero({
+              manga,
+              chapterId: entry.chapterId,
+              chapterLabel: entry.chapterLabel,
+              scrollFraction: entry.scrollFraction,
+              mangaFraction: entry.mangaFraction,
+              updatedAt: entry.updatedAt,
+            });
+          }
+        }
+      })
+      .catch(() => {});
+
+    return () => controller.abort();
+  }, [heroId, heroIsContinue, heroKey]);
 
   const rating = displayHero.rating ?? 0;
   const match = rating.toFixed(1);

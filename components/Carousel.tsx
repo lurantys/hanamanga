@@ -51,11 +51,22 @@ export function Carousel({ title, ariaLabel, children, headerRight }: CarouselPr
   useEffect(() => {
     const el = scrollerRef.current;
     if (!el) return;
+    let raf = 0;
 
     const updateBoundaries = () => {
-      const max = Math.max(0, el.scrollWidth - el.clientWidth);
-      setAtStart(el.scrollLeft <= 1);
-      setAtEnd(el.scrollLeft >= max - 1);
+      if (raf) return;
+      raf = window.requestAnimationFrame(() => {
+        raf = 0;
+        const max = Math.max(0, el.scrollWidth - el.clientWidth);
+        setAtStart((value) => {
+          const next = el.scrollLeft <= 1;
+          return value === next ? value : next;
+        });
+        setAtEnd((value) => {
+          const next = el.scrollLeft >= max - 1;
+          return value === next ? value : next;
+        });
+      });
     };
 
     updateBoundaries();
@@ -65,6 +76,7 @@ export function Carousel({ title, ariaLabel, children, headerRight }: CarouselPr
     return () => {
       el.removeEventListener("scroll", updateBoundaries);
       resizeObserver.disconnect();
+      if (raf) window.cancelAnimationFrame(raf);
     };
   }, []);
 

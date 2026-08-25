@@ -188,7 +188,9 @@ export function SearchResults({
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
         {items.map((manga) => (
-          <MangaCard key={manga.id} manga={manga} className="w-full!" />
+          <div key={manga.id} style={{ contentVisibility: "auto", containIntrinsicSize: "260px" }}>
+            <MangaCard manga={manga} className="w-full!" />
+          </div>
         ))}
       </div>
 

@@ -325,39 +325,28 @@ export function Reader({
   const [uiHidden, setUiHidden] = useState(false);
   const [preloadUrls, setPreloadUrls] = useState<string[]>([]);
   const readChapters = useReadChapters(mangaId);
-  const [prevChapter, setPrevChapter] = useState<{
-    mangaId: string;
-    chapterId: string;
-  } | null>(null);
+  const initializedChapterRef = useRef<string | null>(null);
   const lastRestoredAtRef = useRef(0);
   const chapterInitRef = useRef(false);
-
-  if (
-    prevChapter?.mangaId !== mangaId ||
-    prevChapter?.chapterId !== currentChapterId
-  ) {
-    setPrevChapter({ mangaId, chapterId: currentChapterId });
-    let initial = 0;
-    const saved = getProgress(mangaId);
-    if (
-      saved?.chapterId === currentChapterId &&
-      saved.scrollFraction &&
-      pages.length > 0
-    ) {
-      initial = Math.min(
-        pages.length - 1,
-        Math.round(saved.scrollFraction * (pages.length - 1)),
-      );
-    }
-    setPagedIndex(initial);
-    setProgress(0);
-  }
 
   useEffect(() => {
     const saved = getProgress(mangaId);
     lastRestoredAtRef.current = saved?.updatedAt ?? 0;
     chapterInitRef.current = false;
-  }, [mangaId, currentChapterId]);
+    const chapterKey = `${mangaId}:${currentChapterId}`;
+    if (initializedChapterRef.current === chapterKey) return;
+    initializedChapterRef.current = chapterKey;
+
+    const initial =
+      saved?.chapterId === currentChapterId && saved.scrollFraction && pages.length > 0
+        ? Math.min(
+            pages.length - 1,
+            Math.round(saved.scrollFraction * (pages.length - 1)),
+          )
+        : 0;
+    setPagedIndex(initial);
+    setProgress(0);
+  }, [mangaId, currentChapterId, pages.length]);
 
   const listRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -424,6 +413,7 @@ export function Reader({
     () => () => {
       if (advanceTimerRef.current) window.clearInterval(advanceTimerRef.current);
       advanceTimerRef.current = 0;
+      window.clearTimeout(controlsTimerRef.current);
     },
     [],
   );
@@ -480,6 +470,7 @@ export function Reader({
     let progressRaf = 0;
     let latestProgress = 0;
     function onScroll() {
+      if (document.visibilityState === "hidden") return;
       hideChrome();
       const doc = document.documentElement;
       const max = doc.scrollHeight - doc.clientHeight;
@@ -684,6 +675,7 @@ export function Reader({
       setCurrentPage(index);
     }
     function onScroll() {
+      if (document.visibilityState === "hidden") return;
       if (!raf) raf = requestAnimationFrame(computeCurrentPage);
     }
     pageRefs.current.length = pages.length;
@@ -1047,16 +1039,19 @@ export function Reader({
     if (preloadedChapterRef.current === nextChapterId) return;
     preloadedChapterRef.current = nextChapterId;
     let cancelled = false;
+    const controller = new AbortController();
     fetch(
       `/api/preload-chapter?mangaId=${encodeURIComponent(mangaId)}&chapterId=${encodeURIComponent(nextChapterId)}`,
+      { signal: controller.signal },
     )
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         if (!cancelled && data?.pages?.length) setPreloadUrls(data.pages.slice(0, 2));
       })
-      .catch(() => {});
+       .catch(() => {});
     return () => {
       cancelled = true;
+      controller.abort();
     };
   }, [
     mangaId,

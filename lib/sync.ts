@@ -433,7 +433,13 @@ function attachLocalListeners(): void {
   window.addEventListener(READ_EVENT, scheduleProviderSync);
   window.addEventListener("beforeunload", localPushFlush);
   const onVisibility = () => {
-    if (document.visibilityState === "hidden") localPushFlush();
+    if (document.visibilityState === "hidden") {
+      localPushFlush();
+      void stopRealtime();
+    } else if (currentUserId) {
+      setupRealtime(currentUserId);
+      scheduleProviderSync();
+    }
   };
   window.addEventListener("visibilitychange", onVisibility);
   localDisposers = [
@@ -446,6 +452,7 @@ function attachLocalListeners(): void {
 }
 
 function setupRealtime(userId: string): void {
+  if (realtimeChannel || document.visibilityState === "hidden") return;
   const supabase = createClient();
   realtimeChannel = supabase
     .channel(`hana-sync-${userId}`)
@@ -498,6 +505,12 @@ function setupRealtime(userId: string): void {
     .subscribe();
 }
 
+async function stopRealtime(): Promise<void> {
+  const channel = realtimeChannel;
+  realtimeChannel = null;
+  if (channel) await channel.unsubscribe();
+}
+
 let providerSyncTimer: ReturnType<typeof setTimeout> | undefined;
 let providerSyncLast = 0;
 
@@ -509,10 +522,12 @@ async function runProviderSync(): Promise<SyncSummary | null> {
 }
 
 function scheduleProviderSync(): void {
+  if (document.visibilityState === "hidden") return;
   if (providerSyncTimer) return;
   const wait = Math.max(1000, providerSyncLast + 60_000 - Date.now());
   providerSyncTimer = setTimeout(() => {
     providerSyncTimer = undefined;
+    if (document.visibilityState === "hidden") return;
     providerSyncLast = Date.now();
     void runProviderSync().catch(() => {});
   }, wait);
@@ -535,7 +550,7 @@ export async function handleAuthStateChange(
   userId: string | null,
 ): Promise<void> {
   if (userId === currentUserId) return;
-  if (realtimeChannel) await realtimeChannel.unsubscribe();
+  await stopRealtime();
   for (const dispose of localDisposers) dispose();
   localDisposers = [];
   currentUserId = userId;

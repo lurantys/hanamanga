@@ -115,14 +115,26 @@ function YearInput({
   placeholder: string;
   ariaLabel: string;
 }) {
+  const [draft, setDraft] = useState(value ?? "");
+
+  const commit = () => {
+    if (draft === "" || /^\d{4}$/.test(draft)) {
+      onChange(draft);
+    } else {
+      setDraft(value ?? "");
+    }
+  };
+
   return (
     <input
-      type="number"
+      type="text"
       min={1900}
       max={2100}
       inputMode="numeric"
-      value={value ?? ""}
-      onChange={(event) => onChange(event.target.value.replace(/\D/g, "").slice(0, 4))}
+      maxLength={4}
+      value={draft}
+      onChange={(event) => setDraft(event.target.value.replace(/\D/g, "").slice(0, 4))}
+      onBlur={commit}
       placeholder={placeholder}
       aria-label={ariaLabel}
       className="w-24 rounded-lg border border-white/10 bg-zinc-900/60 py-2 pl-3 pr-2 text-sm text-zinc-100 outline-none transition-colors placeholder:text-zinc-500 focus:border-emerald-400/50"
@@ -278,6 +290,7 @@ export function BrowseFilters({
                 <FilterSectionLabel>Release year</FilterSectionLabel>
                 <div className="flex items-center gap-2">
                   <YearInput
+                    key={`from-${yearFrom ?? ""}`}
                     value={yearFrom}
                     onChange={(value) => push({ yearFrom: value })}
                     placeholder="From"
@@ -285,6 +298,7 @@ export function BrowseFilters({
                   />
                   <span className="text-xs text-zinc-500">to</span>
                   <YearInput
+                    key={`to-${yearTo ?? ""}`}
                     value={yearTo}
                     onChange={(value) => push({ yearTo: value })}
                     placeholder="To"

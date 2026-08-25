@@ -214,7 +214,7 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
   return (
     <section
       key={`${displayHero.id}:${imageSrc ?? "none"}`}
-      className="animate-hero-in relative w-full overflow-hidden bg-zinc-950 h-[65vh] min-h-[420px] md:h-[80dvh] md:min-h-[480px]"
+      className="animate-hero-in relative w-full overflow-hidden bg-zinc-950 h-[65dvh] min-h-[420px] md:h-[80dvh] md:min-h-[480px]"
     >
       {imageSrc ? (
         <Image

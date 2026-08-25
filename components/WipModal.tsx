@@ -18,11 +18,17 @@ export function WipModal({ open, media, onClose }: WipModalProps) {
       if (event.key === "Escape") onClose();
     };
 
+    const onBeforeUnload = () => {
+      document.body.style.overflow = "";
+    };
+
     document.addEventListener("keydown", onKeyDown);
+    window.addEventListener("beforeunload", onBeforeUnload);
     document.body.style.overflow = "hidden";
 
     return () => {
       document.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("beforeunload", onBeforeUnload);
       document.body.style.overflow = "";
     };
   }, [open, onClose]);

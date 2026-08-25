@@ -945,10 +945,15 @@ export function Reader({
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") setSettingsOpen(false);
     };
+    const onBeforeUnload = () => {
+      document.body.style.overflow = "";
+    };
     document.addEventListener("keydown", onKeyDown);
+    window.addEventListener("beforeunload", onBeforeUnload);
     document.body.style.overflow = "hidden";
     return () => {
       document.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("beforeunload", onBeforeUnload);
       document.body.style.overflow = "";
     };
   }, [settingsOpen]);
@@ -1360,7 +1365,7 @@ export function Reader({
         </>
       ) : (
         <div
-          className="fixed inset-0 z-0 overflow-auto bg-zinc-950"
+          className="fixed inset-0 z-0 overflow-hidden bg-zinc-950"
           onTouchStart={onTouchStart}
           onTouchEnd={onTouchEnd}
           onClick={onViewportClick}

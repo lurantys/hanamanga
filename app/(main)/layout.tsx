@@ -74,7 +74,7 @@ function Header() {
   return (
     <header className="fixed inset-x-0 top-[calc(1.5rem+env(safe-area-inset-top))] z-40 flex justify-center px-4">
       <div className="flex w-fit max-w-[calc(100vw-1rem)] items-center justify-center gap-3 rounded-full border border-zinc-700/50 bg-zinc-950/70 px-3 py-3 shadow-[0_8px_40px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.08)] ring-1 ring-inset ring-white/10 backdrop-blur-xl md:gap-6 md:px-4">
-        <Link href="/" className="relative top-0.5 flex h-12 items-center gap-2" aria-label="Hana home">
+        <Link href="/" className="flex h-12 items-center gap-2" aria-label="Hana home">
           <Image
             src="/logo-v2.png"
             alt="Hana"
@@ -86,7 +86,7 @@ function Header() {
             Hana
           </span>
         </Link>
-        <nav className="hidden h-12 items-center gap-5 text-sm font-medium leading-none text-zinc-300 lg:flex">
+        <nav className="hidden h-12 items-center gap-5 font-heading text-sm font-medium leading-none text-zinc-300 lg:flex">
           <Link
             href="/"
             className="relative text-zinc-50 transition-colors duration-200 after:absolute after:inset-x-0 after:-bottom-1.5 after:h-0.5 after:origin-left after:scale-x-0 after:rounded-full after:bg-red-500 after:transition-transform after:duration-200 hover:after:scale-x-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"

@@ -320,6 +320,7 @@ export function Reader({
   const [progress, setProgress] = useState(0);
   const [currentPage, setCurrentPage] = useState(0);
   const [pagedIndex, setPagedIndex] = useState(0);
+  const [slideDir, setSlideDir] = useState<1 | -1 | null>(null);
   const [advanceCount, setAdvanceCount] = useState<number | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [controlsVisible, setControlsVisible] = useState(true);
@@ -355,6 +356,7 @@ export function Reader({
             Math.round(saved.scrollFraction * (pages.length - 1)),
           )
         : 0;
+    setSlideDir(null);
     setPagedIndex(initial);
     setProgress(0);
   }, [mangaId, currentChapterId, pages.length]);
@@ -784,21 +786,23 @@ export function Reader({
 
   const pageNext = useCallback(() => {
     if (pagedIndex < pages.length - pageStep) {
+      setSlideDir(settings.direction === "rtl" ? -1 : 1);
       setPagedIndex(Math.min(pagedIndex + pageStep, pages.length - 1));
       hideChrome();
     } else if (nextHrefRef.current) {
       scheduleAdvance();
     }
-  }, [pagedIndex, pages.length, pageStep, scheduleAdvance, hideChrome]);
+  }, [pagedIndex, pages.length, pageStep, scheduleAdvance, hideChrome, settings.direction]);
 
   const pagePrev = useCallback(() => {
     if (pagedIndex > 0) {
+      setSlideDir(settings.direction === "rtl" ? 1 : -1);
       setPagedIndex(Math.max(pagedIndex - pageStep, 0));
       hideChrome();
     } else if (prevHref) {
       router.push(prevHref);
     }
-  }, [pagedIndex, pageStep, prevHref, router, hideChrome]);
+  }, [pagedIndex, pageStep, prevHref, router, hideChrome, settings.direction]);
 
   const zoneNext = useCallback(() => {
     if (settings.direction === "rtl") pagePrev();
@@ -1393,8 +1397,12 @@ export function Reader({
           onTouchEnd={onTouchEnd}
           onClick={onViewportClick}
         >
-          <div className="flex items-center justify-center">
-            {isTwoPage ? (
+          <div
+            key={`${pagedIndex}-${isTwoPage ? "two" : "one"}`}
+            className={slideDir === 1 ? "animate-page-next" : slideDir === -1 ? "animate-page-prev" : ""}
+          >
+            <div className="flex items-center justify-center">
+              {isTwoPage ? (
               <div
                 className={`flex items-center justify-center gap-2 sm:gap-3 ${
                   settings.direction === "rtl" ? "flex-row-reverse" : ""
@@ -1453,6 +1461,7 @@ export function Reader({
                 />
               </div>
             )}
+          </div>
           </div>
 
           {isTwoPage

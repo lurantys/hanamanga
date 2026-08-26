@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Image from "next/image";
 import { SearchResults } from "@/components/SearchResults";
+import { SearchField } from "@/components/SearchField";
 import { EmptyState } from "@/components/EmptyState";
 import { ctaPrimary } from "@/lib/ui";
 import { searchCatalog, searchCatalogByAuthor } from "@/lib/catalog";
@@ -30,14 +32,21 @@ export default async function SearchPage({
     return (
       <main className="bg-zinc-950 pb-24">
         <div className="mx-auto max-w-7xl px-5 pt-header md:px-10">
+          <div className="mb-8 lg:hidden">
+            <SearchField />
+          </div>
           <EmptyState
             art={
-              <span className="text-5xl" aria-hidden>
-                🔍
-              </span>
+              <Image
+                src="/conansearch.png"
+                alt="Detective Conan on the case, searching the catalog"
+                width={498}
+                height={501}
+                className="h-44 w-auto object-contain"
+              />
             }
             title="Search the catalog"
-            description="Type a title in the search box above to discover manga from the Hana catalog."
+            description="Type a title to discover manga from the Hana catalog."
             action={
               <Link href="/" className={`${ctaPrimary} mt-2`}>
                 Back to Catalog
@@ -84,6 +93,9 @@ export default async function SearchPage({
         <h1 className="mb-1 text-2xl font-extrabold tracking-tight text-white md:text-3xl">
           Search Results
         </h1>
+        <div className="mb-6 mt-4 lg:hidden">
+          <SearchField initialQuery={query} />
+        </div>
         <SearchResults
           key={fellBackToTitle ? `title:${author}` : author ? `author:${author}` : query}
           query={fellBackToTitle ? author : query}

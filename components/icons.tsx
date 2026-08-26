@@ -78,6 +78,25 @@ export function SearchIcon({ className = "h-4 w-4", ...props }: IconProps) {
   );
 }
 
+export function BrowseIcon({ className = "h-4 w-4", ...props }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" {...strokeDefaults} className={className} aria-hidden {...props}>
+      <rect x="3" y="3" width="7" height="7" rx="1.5" />
+      <rect x="14" y="3" width="7" height="7" rx="1.5" />
+      <rect x="3" y="14" width="7" height="7" rx="1.5" />
+      <rect x="14" y="14" width="7" height="7" rx="1.5" />
+    </svg>
+  );
+}
+
+export function LibraryIcon({ className = "h-4 w-4", ...props }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" {...strokeDefaults} className={className} aria-hidden {...props}>
+      <path d="m19 21-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+    </svg>
+  );
+}
+
 export function StarIcon({
   className = "h-3.5 w-3.5",
   ...props

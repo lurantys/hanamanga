@@ -19,10 +19,16 @@ h3 {
   font-family: var(--font-zen-kaku), Arial, Helvetica, sans-serif;
 }
 
-/* Page top padding that clears the fixed floating pill header on any
-   device (header offset = 1.5rem + safe-area + ~72px tall pill). */
+/* Page top padding that clears the fixed floating pill header on lg+
+   screens (header offset = 1.5rem + safe-area + ~72px tall pill). Below
+   lg the pill is replaced by the bottom tab bar, so pages only need a
+   small top inset. */
 @utility pt-header {
-  padding-top: calc(7.5rem + env(safe-area-inset-top));
+  padding-top: calc(1.5rem + env(safe-area-inset-top));
+
+  @media (min-width: 64rem) {
+    padding-top: calc(7.5rem + env(safe-area-inset-top));
+  }
 }
 
 @utility scrollbar-hide {

@@ -3,6 +3,7 @@ import Image from "next/image";
 import { Suspense } from "react";
 import { AuthButton } from "@/components/AuthButton";
 import { BackToTop } from "@/components/BackToTop";
+import { MobileTabBar } from "@/components/MobileTabBar";
 import { SearchBar } from "@/components/SearchBar";
 
 function Footer() {
@@ -72,7 +73,7 @@ function Footer() {
 
 function Header() {
   return (
-    <header className="fixed inset-x-0 top-[calc(1.5rem+env(safe-area-inset-top))] z-40 flex justify-center px-4">
+    <header className="fixed inset-x-0 top-[calc(1.5rem+env(safe-area-inset-top))] z-40 hidden justify-center px-4 lg:flex">
       <div className="flex w-fit max-w-[calc(100vw-1rem)] items-center justify-center gap-3 rounded-full border border-zinc-700/50 bg-zinc-950/70 px-3 py-3 shadow-[0_8px_40px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.08)] ring-1 ring-inset ring-white/10 backdrop-blur-xl md:gap-6 md:px-4">
         <Link href="/" className="-translate-y-0.5 flex h-12 items-center gap-2" aria-label="Hana home">
           <Image
@@ -124,6 +125,11 @@ export default function MainLayout({ children }: LayoutProps<"/">) {
       {children}
       <Footer />
       <BackToTop />
+      <MobileTabBar />
+      <div
+        aria-hidden
+        className="h-[calc(6rem+env(safe-area-inset-bottom))] lg:hidden"
+      />
     </>
   );
 }

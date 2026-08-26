@@ -173,7 +173,7 @@ h3 {
 @keyframes page-slide-next {
   from {
     opacity: 0;
-    transform: translateX(40px);
+    transform: translateX(72px);
   }
   to {
     opacity: 1;
@@ -184,7 +184,7 @@ h3 {
 @keyframes page-slide-prev {
   from {
     opacity: 0;
-    transform: translateX(-40px);
+    transform: translateX(-72px);
   }
   to {
     opacity: 1;
@@ -192,17 +192,17 @@ h3 {
   }
 }
 
-@utility animate-page-next {
-  animation: page-slide-next 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+.animate-page-next {
+  animation: page-slide-next 380ms cubic-bezier(0.22, 1, 0.36, 1) both;
   will-change: transform, opacity;
 }
 
-@utility animate-page-prev {
-  animation: page-slide-prev 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+.animate-page-prev {
+  animation: page-slide-prev 380ms cubic-bezier(0.22, 1, 0.36, 1) both;
   will-change: transform, opacity;
 }
 
-/* Disable slide on mobile — request is PC only; also respect touch */
+/* Disable slide on mobile — request is PC only */
 @media (max-width: 639px) {
   .animate-page-next,
   .animate-page-prev {

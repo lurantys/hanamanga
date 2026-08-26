@@ -169,7 +169,7 @@ h3 {
   --reader-page-gap: 2rem;
 }
 
-/* Reader paged / 2-page slide — desktop only (PC) */
+/* Reader paged / 2-page slide */
 @keyframes page-slide-next {
   from {
     opacity: 0;
@@ -200,14 +200,6 @@ h3 {
 .animate-page-prev {
   animation: page-slide-prev 380ms cubic-bezier(0.22, 1, 0.36, 1) both;
   will-change: transform, opacity;
-}
-
-/* Disable slide on mobile — request is PC only */
-@media (max-width: 639px) {
-  .animate-page-next,
-  .animate-page-prev {
-    animation: none !important;
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

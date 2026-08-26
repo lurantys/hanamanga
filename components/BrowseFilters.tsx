@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   GENRES,
   MIN_SCORE_OPTIONS,
@@ -12,6 +12,7 @@ import {
   STATUS_OPTIONS,
   type SortKey,
 } from "@/lib/genres";
+import { selectField, focusRing } from "@/lib/ui";
 
 type BrowseFiltersProps = {
   sort: SortKey;
@@ -72,7 +73,7 @@ function Select({
         value={value}
         onChange={(event) => onChange(event.target.value)}
         aria-label={label}
-        className="appearance-none rounded-full border border-white/10 bg-zinc-900/60 py-2 pl-4 pr-9 text-sm font-medium text-zinc-200 outline-none backdrop-blur-xl transition-colors hover:border-white/25 focus:border-red-400/50"
+        className={`${selectField} py-2 pl-4 pr-9 ${focusRing}`}
       >
         {options.map((option) => (
           <option key={option.key} value={option.key}>
@@ -154,6 +155,29 @@ export function BrowseFilters({
 }: BrowseFiltersProps) {
   const router = useRouter();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!drawerOpen) return;
+    const previous =
+      document.activeElement instanceof HTMLElement
+        ? document.activeElement
+        : null;
+    panelRef.current?.focus();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setDrawerOpen(false);
+    };
+    const onPointerDown = (event: PointerEvent) => {
+      if (!panelRef.current?.contains(event.target as Node)) setDrawerOpen(false);
+    };
+    document.addEventListener("keydown", onKeyDown);
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => {
+      document.removeEventListener("keydown", onKeyDown);
+      document.removeEventListener("pointerdown", onPointerDown);
+      if (previous && document.contains(previous)) previous.focus();
+    };
+  }, [drawerOpen]);
 
   const base = { sort, genres, status, rating, origin, yearFrom, yearTo, minScore };
 
@@ -196,6 +220,7 @@ export function BrowseFilters({
               key={option.key}
               href={hrefFor({ ...base, sort: option.key })}
               prefetch={false}
+              aria-current={sort === option.key ? "page" : undefined}
               className={`rounded-full px-4 py-1.5 text-sm font-medium transition active:scale-[0.97] ${
                 sort === option.key
                   ? "bg-zinc-100 text-zinc-950"
@@ -225,7 +250,8 @@ export function BrowseFilters({
           type="button"
           onClick={() => setDrawerOpen((value) => !value)}
           aria-expanded={drawerOpen}
-          className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition active:scale-[0.97] ${
+          aria-controls="browse-filters-panel"
+          className={`inline-flex items-center gap-2 rounded-full border px-4 py-2 text-sm font-medium transition duration-200 active:scale-[0.97] ${
             activeFilterCount > 0 || drawerOpen
               ? "border-red-400/60 bg-red-500/15 text-red-300"
               : "border-white/10 bg-zinc-900/60 text-zinc-200 hover:border-white/25"
@@ -244,7 +270,14 @@ export function BrowseFilters({
       </div>
 
       {drawerOpen && (
-        <div className="animate-modal-in rounded-2xl border border-zinc-800 bg-zinc-900/80 p-5 backdrop-blur-xl">
+        <div
+          id="browse-filters-panel"
+          ref={panelRef}
+          role="region"
+          aria-label="Advanced filters"
+          tabIndex={-1}
+          className="glass-in rounded-2xl border border-zinc-800 bg-zinc-900/80 p-5 backdrop-blur-xl outline-none"
+        >
           <div className="grid gap-6 md:grid-cols-2">
             <div>
               <FilterSectionLabel>
@@ -259,11 +292,11 @@ export function BrowseFilters({
                       type="button"
                       onClick={() => toggleGenre(genre.name)}
                       aria-pressed={selected}
-                      className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+                      className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors duration-200 ${
                         selected
                           ? "border-red-400/60 bg-red-500/15 text-red-300"
                           : "border-white/10 bg-zinc-800/60 text-zinc-400 hover:text-white"
-                      }`}
+                      } ${focusRing}`}
                     >
                       {genre.name}
                     </button>
@@ -330,7 +363,7 @@ export function BrowseFilters({
                 <button
                   type="button"
                   onClick={clearAll}
-                  className="rounded-lg border border-white/10 bg-zinc-800/60 px-4 py-2 text-sm font-semibold text-zinc-300 transition-colors hover:border-red-400/40 hover:text-white"
+                  className={`rounded-lg border border-white/10 bg-zinc-800/60 px-4 py-2 text-sm font-semibold text-zinc-300 transition-colors duration-200 hover:border-red-400/40 hover:text-white ${focusRing}`}
                 >
                   Clear all
                 </button>
@@ -338,7 +371,7 @@ export function BrowseFilters({
               <button
                 type="button"
                 onClick={() => setDrawerOpen(false)}
-                className="rounded-lg bg-zinc-100 px-4 py-2 text-sm font-bold text-zinc-950 transition-colors hover:bg-white"
+                className={`rounded-lg bg-zinc-100 px-4 py-2 text-sm font-bold text-zinc-950 transition-colors duration-200 hover:bg-white ${focusRing}`}
               >
                 Done
               </button>

@@ -234,7 +234,7 @@ export default function AccountContent() {
 
   if (loading) {
     return (
-      <main className="flex min-h-screen items-center justify-center bg-zinc-950 pb-24 pt-32">
+      <main className="flex min-h-screen items-center justify-center bg-zinc-950 pb-24 pt-header">
         <div className="h-8 w-32 animate-pulse rounded bg-zinc-800" />
       </main>
     );
@@ -331,13 +331,13 @@ export default function AccountContent() {
                     autoFocus
                     value={nameValue}
                     onChange={(e) => setNameValue(e.target.value)}
-                    className="w-48 rounded-lg border border-zinc-700 bg-zinc-800 px-2 py-0.5 text-sm text-zinc-100 outline-none focus:border-zinc-500"
+                    className="w-48 rounded-lg border border-white/10 bg-zinc-900/60 px-2 py-1 text-sm text-zinc-100 outline-none transition-colors duration-200 placeholder:text-zinc-500 hover:border-white/25 focus:border-red-400/50"
                     placeholder="Display name"
                   />
                   <button
                     type="submit"
                     disabled={nameSaving}
-                    className="text-xs font-semibold text-emerald-400 hover:text-emerald-300"
+                    className="text-xs font-semibold text-red-400 transition-colors duration-200 hover:text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
                   >
                     {nameSaving ? "Saving…" : "Save"}
                   </button>
@@ -374,7 +374,7 @@ export default function AccountContent() {
                 } list. Please try again.`}
           </p>
         ) : importOk ? (
-          <p className="mt-6 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">
+          <p className="mt-6 rounded-lg border border-white/15 bg-zinc-900/60 px-3 py-2 text-sm text-zinc-100">
             {importedCount !== null && importedCount > 0
               ? `Imported ${importedCount} title${
                   importedCount === 1 ? "" : "s"
@@ -399,7 +399,7 @@ export default function AccountContent() {
           </p>
         )}
 
-        <section className="mt-6 rounded-2xl border border-white/10 bg-zinc-900/60 p-5 glass-in" style={{ animationDelay: '0ms' }}>
+        <section className="mt-6 rounded-2xl border border-white/10 bg-zinc-900/60 p-5 animate-page-in" style={{ animationDelay: '0ms' }}>
           <div className="flex items-center justify-between gap-4">
             <div className="flex items-start gap-3">
               <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-zinc-950/70 text-zinc-300">
@@ -415,7 +415,7 @@ export default function AccountContent() {
             <button
               onClick={handleSync}
               disabled={syncing}
-              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-white/15 px-4 py-2 text-sm font-semibold text-zinc-200 transition-colors hover:border-white/40 hover:text-white disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.985] active:transition-transform active:duration-80"
+              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-white/15 px-4 py-2 text-sm font-semibold text-zinc-200 transition-colors hover:border-white/40 hover:text-white disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
             >
               {syncing ? (
                 <>
@@ -450,13 +450,13 @@ export default function AccountContent() {
                       className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${
                         provider.error
                           ? "border-red-500/30 bg-red-500/10 text-red-300"
-                          : "border-emerald-400/30 bg-emerald-400/10 text-emerald-300"
+                          : "border-white/15 bg-zinc-900/60 text-zinc-200"
                       }`}
                     >
                       {provider.error ? (
                         <CheckIcon className="h-3 w-3 rotate-45 text-red-400" />
                       ) : (
-                        <CheckIcon className="h-3 w-3" />
+                        <CheckIcon className="h-3 w-3 text-red-400" />
                       )}
                       {provider.provider === "anilist"
                         ? "AniList"
@@ -479,7 +479,7 @@ export default function AccountContent() {
           )}
         </section>
 
-        <section className="mt-5 rounded-2xl border border-white/10 bg-zinc-900/60 p-5 glass-in" style={{ animationDelay: '60ms' }}>
+        <section className="mt-5 rounded-2xl border border-white/10 bg-zinc-900/60 p-5 animate-page-in" style={{ animationDelay: '60ms' }}>
           <div className="flex items-center gap-3">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-zinc-950/70 text-zinc-300">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>
@@ -504,7 +504,7 @@ export default function AccountContent() {
           </div>
         </section>
 
-        <section className="mt-5 rounded-2xl border border-white/10 bg-zinc-900/60 p-5 glass-in" style={{ animationDelay: '120ms' }}>
+        <section className="mt-5 rounded-2xl border border-white/10 bg-zinc-900/60 p-5 animate-page-in" style={{ animationDelay: '120ms' }}>
           <div className="flex items-center justify-between gap-4">
             <div>
               <h2 className="text-lg font-bold text-white">Sign out</h2>
@@ -517,7 +517,7 @@ export default function AccountContent() {
                   router.refresh();
                 });
               }}
-              className="shrink-0 inline-flex items-center justify-center gap-2 rounded-full border border-red-500/40 px-4 py-2 text-sm font-semibold text-red-300 transition-colors hover:border-red-500/70 hover:text-red-200 active:scale-[0.985] active:transition-transform active:duration-80"
+              className="shrink-0 inline-flex items-center justify-center gap-2 rounded-full border border-red-500/40 px-4 py-2 text-sm font-semibold text-red-300 transition-colors hover:border-red-500/70 hover:text-red-200 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
             >
               <SignOutIcon className="h-4 w-4" />
               Sign out
@@ -567,10 +567,10 @@ function IntegrationRow({
         <LoadingIcon className="h-10 w-10 shrink-0" />
       ) : state.status === "connected" ? (
         <div className="flex shrink-0 flex-col items-end gap-1">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-2.5 py-1 text-xs font-semibold text-emerald-300">
+          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-zinc-900/60 px-2.5 py-1 text-xs font-semibold text-zinc-200">
             <span className="relative flex h-1.5 w-1.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60" />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-emerald-400" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-60" />
+              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-red-400" />
             </span>
             Connected
           </span>
@@ -584,7 +584,7 @@ function IntegrationRow({
       ) : (
         <a
           href={href}
-          className="shrink-0 inline-flex items-center justify-center rounded-full bg-white px-4 py-1.5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-white/80 active:scale-[0.985] active:transition-transform active:duration-80"
+          className="shrink-0 inline-flex items-center justify-center rounded-full bg-white px-4 py-2 text-sm font-semibold text-zinc-950 transition-colors duration-200 hover:bg-white/80 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
         >
           Connect
         </a>

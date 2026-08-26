@@ -22,6 +22,8 @@ import {
   type ProgressEntry,
 } from "@/lib/progress";
 import { statusLabel } from "@/lib/mangadex";
+import { popoverSurface, selectField, focusRing } from "@/lib/ui";
+import { EmptyState } from "@/components/EmptyState";
 
 const EMPTY_LIBRARY_SNAPSHOT = {};
 
@@ -179,7 +181,7 @@ function CardMenu({
         <div
           role="menu"
           aria-label={`${title} actions`}
-          className="glass-in absolute right-0 top-full z-30 mt-1.5 w-44 overflow-hidden rounded-xl border border-white/10 bg-zinc-900 shadow-xl shadow-zinc-950/60"
+          className={`${popoverSurface} absolute right-0 top-full z-50 mt-2 w-44 overflow-hidden rounded-2xl p-1.5`}
         >
           {onToggleRead && (
             <>
@@ -190,9 +192,9 @@ function CardMenu({
                   setOpen(false);
                   onToggleRead();
                 }}
-                className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-sm font-medium text-zinc-200 transition-colors hover:bg-zinc-800 hover:text-white"
+                className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-zinc-200 transition-colors duration-200 hover:bg-zinc-800/70 hover:text-white ${focusRing}`}
               >
-                <CheckIcon className="h-4 w-4 shrink-0 text-emerald-400" />
+                <CheckIcon className="h-4 w-4 shrink-0 text-red-400" />
                 {isRead ? "Mark as unread" : "Mark as read"}
               </button>
               <div role="separator" className="h-px bg-white/10" />
@@ -205,7 +207,7 @@ function CardMenu({
               setOpen(false);
               onRemove();
             }}
-            className="flex w-full items-center gap-2.5 px-3.5 py-2.5 text-left text-sm font-medium text-red-300 transition-colors hover:bg-red-500/10 hover:text-red-200"
+            className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-red-300 transition-colors duration-200 hover:bg-red-500/10 hover:text-red-200 ${focusRing}`}
           >
             <TrashIcon className="h-4 w-4 shrink-0" />
             {removeLabel}
@@ -281,7 +283,7 @@ function GridCard({
             <span
               title="Finished"
               aria-label="Finished"
-              className="absolute bottom-1.5 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-emerald-500 text-zinc-950"
+              className="absolute bottom-1.5 right-1 flex h-4 w-4 items-center justify-center rounded-full bg-red-500 text-white"
             >
               <CheckIcon className="h-2.5 w-2.5" />
             </span>
@@ -381,7 +383,7 @@ function ListCard({
         <span
           title="Finished"
           aria-label="Finished"
-          className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500 text-zinc-950"
+          className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-red-500 text-white"
         >
           <CheckIcon className="h-3 w-3" />
         </span>
@@ -479,7 +481,7 @@ export default function LibraryPage() {
 
   return (
     <main className="bg-zinc-950 pb-24">
-      <div className="mx-auto max-w-7xl px-5 pt-28 md:px-10">
+      <div className="mx-auto max-w-7xl px-5 pt-header md:px-10">
         <header className="mb-6">
           <h1 className="text-2xl font-extrabold tracking-tight text-white md:text-3xl">
             Library
@@ -515,7 +517,7 @@ export default function LibraryPage() {
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search your library..."
               aria-label="Search your library"
-              className="w-full appearance-none rounded-full border border-white/10 bg-zinc-900/60 py-2.5 pl-10 pr-4 text-sm font-medium text-zinc-200 outline-none backdrop-blur-xl transition-colors placeholder:text-zinc-500 hover:border-white/25 focus:border-emerald-400/50"
+              className="w-full appearance-none rounded-full border border-white/10 bg-zinc-900/60 py-2.5 pl-10 pr-4 text-sm font-medium text-zinc-200 outline-none backdrop-blur-xl transition-colors duration-200 placeholder:text-zinc-500 hover:border-white/25 focus:border-red-400/50"
             />
           </div>
 
@@ -527,7 +529,7 @@ export default function LibraryPage() {
                 onClick={() => setFilter(option.key)}
                 aria-label={`Show ${option.label.toLowerCase()} manga`}
                 aria-pressed={filter === option.key}
-                className={`rounded-full px-4 py-1.5 text-sm font-medium transition active:scale-[0.97] ${
+                className={`rounded-full px-4 py-1.5 text-sm font-medium transition duration-200 active:scale-[0.97] ${focusRing} ${
                   filter === option.key
                     ? "bg-zinc-100 text-zinc-950"
                     : "text-zinc-400 hover:bg-zinc-800 hover:text-white"
@@ -543,7 +545,7 @@ export default function LibraryPage() {
               value={sort}
               onChange={(event) => setSort(event.target.value as SortKey)}
               aria-label="Sort library"
-              className="appearance-none rounded-full border border-white/10 bg-zinc-900/60 py-2.5 pl-4 pr-9 text-sm font-medium text-zinc-200 outline-none backdrop-blur-xl transition-colors hover:border-white/25 focus:border-emerald-400/50"
+              className={`${selectField} py-2.5 pl-4 pr-9`}
             >
               {SORTS.map((option) => (
                 <option key={option.key} value={option.key}>
@@ -571,7 +573,7 @@ export default function LibraryPage() {
               onClick={() => setView("grid")}
               aria-label="Grid view"
               aria-pressed={view === "grid"}
-              className={`flex h-8 w-8 items-center justify-center rounded-full transition active:scale-[0.95] ${
+              className={`flex h-8 w-8 items-center justify-center rounded-full transition duration-200 active:scale-[0.97] ${focusRing} ${
                 view === "grid"
                   ? "bg-zinc-100 text-zinc-950"
                   : "text-zinc-400 hover:bg-zinc-800 hover:text-white"
@@ -598,7 +600,7 @@ export default function LibraryPage() {
               onClick={() => setView("list")}
               aria-label="List view"
               aria-pressed={view === "list"}
-              className={`flex h-8 w-8 items-center justify-center rounded-full transition active:scale-[0.95] ${
+              className={`flex h-8 w-8 items-center justify-center rounded-full transition duration-200 active:scale-[0.97] ${focusRing} ${
                 view === "list"
                   ? "bg-zinc-100 text-zinc-950"
                   : "text-zinc-400 hover:bg-zinc-800 hover:text-white"
@@ -625,129 +627,134 @@ export default function LibraryPage() {
 
       <div className="mx-auto mt-8 max-w-7xl px-5 md:px-10">
         {entries.length === 0 && extraReading.length === 0 ? (
-          <div className="relative flex min-h-[70vh] flex-col items-center justify-center gap-12 py-16 text-center md:flex-row md:items-center md:justify-center md:gap-20 md:text-left">
-            <span
-              aria-hidden
-              className="pointer-events-none absolute inset-0 flex select-none items-center justify-center text-[10rem] font-black leading-none tracking-tighter text-white/[0.04] md:text-[16rem]"
-            >
-              0
-            </span>
-            <Image
-              src="/pochitasleep.gif"
-              alt="A sleepy dog, dozing off in an empty library"
-              width={200}
-              height={216}
-              unoptimized
-              className="h-52 w-auto shrink-0 rounded-2xl object-cover"
-            />
-            <div className="relative flex max-w-md flex-col items-center text-center md:items-start md:text-left">
-              <p className="text-sm font-semibold uppercase tracking-[0.35em] text-red-500">
-                Empty library
-              </p>
-              <h2 className="mt-3 text-4xl font-black leading-tight tracking-tight text-white">
-                Nothing saved yet
-              </h2>
-              <p className="mt-4 text-sm leading-relaxed text-zinc-400">
+          <EmptyState
+            art={
+              <Image
+                src="/pochitasleep.gif"
+                alt="A sleepy dog, dozing off in an empty library"
+                width={200}
+                height={216}
+                unoptimized
+                className="h-40 w-auto rounded-2xl object-cover"
+              />
+            }
+            title="Nothing saved yet"
+            description={
+              <>
                 Open any manga and hit{" "}
                 <span className="font-semibold text-zinc-200">
                   Add to Library
                 </span>{" "}
                 to keep track of it here.
-              </p>
-              <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row">
-                <Link
-                  href="/browse"
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-white/80"
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>
+              </>
+            }
+            action={
+              <>
+                <Link href="/browse" className="inline-flex items-center justify-center gap-2 rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-zinc-950 transition-colors duration-200 hover:bg-white/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>
                     <circle cx="11" cy="11" r="8" />
                     <path d="m21 21-4.35-4.35" />
                   </svg>
                   Browse Catalog
                 </Link>
-                <Link
-                  href="/"
-                  className="inline-flex items-center justify-center gap-2 rounded-full border border-white/15 px-6 py-2.5 text-sm font-semibold text-zinc-300 transition-colors hover:border-white/40 hover:text-white"
-                >
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>
+                <Link href="/" className="inline-flex items-center justify-center gap-2 rounded-full border border-white/15 px-6 py-2.5 text-sm font-semibold text-zinc-300 transition-colors duration-200 hover:border-white/40 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>
                     <path d="M3 9.5 12 3l9 6.5" />
                     <path d="M5 8.5V21h14V8.5" />
                   </svg>
                   Home
                 </Link>
-              </div>
-            </div>
-          </div>
+              </>
+            }
+          />
         ) : filtered.length === 0 && (filter !== "reading" || extraReading.length === 0) ? (
           query ? (
-            <div className="flex flex-col items-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-900/60 px-6 py-16 text-center">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-8 w-8 text-zinc-600"
-                aria-hidden
-              >
-                <circle cx="11" cy="11" r="8" />
-                <path d="m21 21-4.3-4.3" />
-              </svg>
-              <p className="text-sm text-zinc-400">
-                No titles match{" "}
-                <span className="font-semibold text-zinc-200">
-                  &ldquo;{query}&rdquo;
-                </span>
-                .
-              </p>
-              <button
-                type="button"
-                onClick={() => setQuery("")}
-                className="text-sm font-semibold text-zinc-200 underline-offset-4 hover:underline"
-              >
-                Clear search
-              </button>
-            </div>
+            <EmptyState
+              art={
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-8 w-8 text-zinc-600"
+                  aria-hidden
+                >
+                  <circle cx="11" cy="11" r="8" />
+                  <path d="m21 21-4.3-4.3" />
+                </svg>
+              }
+              title="No matches"
+              description={
+                <>
+                  No titles match{" "}
+                  <span className="font-semibold text-zinc-200">
+                    &ldquo;{query}&rdquo;
+                  </span>
+                  .
+                </>
+              }
+              action={
+                <button
+                  type="button"
+                  onClick={() => setQuery("")}
+                  className={`text-sm font-semibold text-zinc-200 underline-offset-4 hover:underline ${focusRing}`}
+                >
+                  Clear search
+                </button>
+              }
+            />
           ) : (
-            <div className="flex flex-col items-center gap-3 rounded-2xl border border-zinc-800 bg-zinc-900/60 px-6 py-16 text-center">
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                className="h-8 w-8 text-zinc-600"
-                aria-hidden
-              >
-                {filter === "finished" ? (
-                  <path d="M20 6 9 17l-5-5" />
-                ) : (
-                  <>
-                    <circle cx="12" cy="12" r="9" />
-                    <path d="M12 7v5l3 2" />
-                  </>
-                )}
-              </svg>
-              <p className="text-sm text-zinc-400">
-                {filter === "finished"
-                  ? "Nothing marked as finished yet."
+            <EmptyState
+              art={
+                <svg
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="h-8 w-8 text-zinc-600"
+                  aria-hidden
+                >
+                  {filter === "finished" ? (
+                    <path d="M20 6 9 17l-5-5" />
+                  ) : (
+                    <>
+                      <circle cx="12" cy="12" r="9" />
+                      <path d="M12 7v5l3 2" />
+                    </>
+                  )}
+                </svg>
+              }
+              title={
+                filter === "finished"
+                  ? "Nothing finished yet"
                   : filter === "reading"
-                    ? "Nothing in progress — open a chapter to start reading."
-                    : "Nothing here yet."}
-              </p>
-              <button
-                type="button"
-                onClick={() => setFilter("all")}
-                className="text-sm font-semibold text-zinc-200 underline-offset-4 hover:underline"
-              >
-                Show all
-              </button>
-            </div>
+                    ? "Nothing in progress"
+                    : "Nothing here yet"
+              }
+              description={
+                filter === "finished"
+                  ? "Titles you mark as finished will show up here."
+                  : filter === "reading"
+                    ? "Open a chapter to start reading."
+                    : undefined
+              }
+              action={
+                <button
+                  type="button"
+                  onClick={() => setFilter("all")}
+                  className={`text-sm font-semibold text-zinc-200 underline-offset-4 hover:underline ${focusRing}`}
+                >
+                  Show all
+                </button>
+              }
+            />
           )
         ) : view === "grid" ? (
-          <div className="grid grid-cols-4 gap-x-3 gap-y-5 sm:grid-cols-6 lg:grid-cols-8">
+          <div className="grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
             {filtered.map(({ manga, addedAt }) => {
               const mangaProgress = progress[manga.id];
               const pct = mangaProgress
@@ -763,14 +770,16 @@ export default function LibraryPage() {
                   title={manga.title}
                   coverUrl={thumbUrl(manga.coverUrl)}
                   href={
-                    mangaProgress
-                      ? `/read/${manga.id}/${mangaProgress.chapterId}`
-                      : `/manga/${manga.id}`
+                    isRead || !mangaProgress
+                      ? `/manga/${manga.id}`
+                      : `/read/${manga.id}/${mangaProgress.chapterId}`
                   }
                   ariaLabel={
-                    mangaProgress
-                      ? `${manga.title} — continue from ${mangaProgress.chapterLabel}, ${pct}% read`
-                      : manga.title
+                    isRead
+                      ? `${manga.title} — finished`
+                      : mangaProgress
+                        ? `${manga.title} — continue from ${mangaProgress.chapterLabel}, ${pct}% read`
+                        : manga.title
                   }
                   progressPct={pct}
                   meta={
@@ -812,7 +821,7 @@ export default function LibraryPage() {
               })}
           </div>
         ) : (
-          <div className="flex flex-col gap-2.5">
+          <div className="flex flex-col gap-2">
             {filtered.map(({ manga, addedAt }) => {
               const mangaProgress = progress[manga.id];
               const pct = mangaProgress
@@ -838,14 +847,16 @@ export default function LibraryPage() {
                   title={manga.title}
                   coverUrl={thumbUrl(manga.coverUrl)}
                   href={
-                    mangaProgress
-                      ? `/read/${manga.id}/${mangaProgress.chapterId}`
-                      : `/manga/${manga.id}`
+                    isRead || !mangaProgress
+                      ? `/manga/${manga.id}`
+                      : `/read/${manga.id}/${mangaProgress.chapterId}`
                   }
                   ariaLabel={
-                    mangaProgress
-                      ? `${manga.title} — continue from ${mangaProgress.chapterLabel}, ${pct}% read`
-                      : manga.title
+                    isRead
+                      ? `${manga.title} — finished`
+                      : mangaProgress
+                        ? `${manga.title} — continue from ${mangaProgress.chapterLabel}, ${pct}% read`
+                        : manga.title
                   }
                   progressPct={pct}
                   meta={metaBits.join(" · ")}

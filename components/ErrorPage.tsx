@@ -47,7 +47,7 @@ export function ErrorPage({
               height={40}
               className="h-10 w-10 rounded-xl object-contain"
             />
-            <span className="header-wordmark text-lg font-bold text-zinc-50">
+            <span className="header-wordmark font-heading text-lg font-bold text-zinc-50">
               Hana
             </span>
           </Link>

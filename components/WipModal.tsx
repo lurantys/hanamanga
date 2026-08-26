@@ -3,6 +3,7 @@
 import { useEffect } from "react";
 import Link from "next/link";
 import type { Manga } from "@/lib/mangadex";
+import { useDialogFocus } from "@/lib/use-dialog-focus";
 
 type WipModalProps = {
   open: boolean;
@@ -11,6 +12,8 @@ type WipModalProps = {
 };
 
 export function WipModal({ open, media, onClose }: WipModalProps) {
+  const dialogRef = useDialogFocus<HTMLDivElement>(open);
+
   useEffect(() => {
     if (!open) return;
 
@@ -39,11 +42,12 @@ export function WipModal({ open, media, onClose }: WipModalProps) {
 
   return (
     <div
+      ref={dialogRef}
       role="dialog"
       aria-modal="true"
       aria-label="Manga reader work in progress"
       onClick={onClose}
-      className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/80 p-4 backdrop-blur-sm"
+      className="animate-sheet-fade-in fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/80 p-4 backdrop-blur-sm"
     >
       <div
         onClick={(event) => event.stopPropagation()}
@@ -58,7 +62,7 @@ export function WipModal({ open, media, onClose }: WipModalProps) {
             type="button"
             onClick={onClose}
             aria-label="Close"
-            className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-400 transition active:scale-95 hover:bg-zinc-800 hover:text-zinc-100"
+            className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-400 transition duration-200 hover:bg-zinc-800 hover:text-zinc-100 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
           >
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="h-4 w-4" aria-hidden>
               <path strokeLinecap="round" d="M6 6l12 12M18 6L6 18" />
@@ -75,7 +79,7 @@ export function WipModal({ open, media, onClose }: WipModalProps) {
               No chapters available
             </h3>
             {title && (
-              <p className="text-sm font-medium text-emerald-400">Queued: {title}</p>
+              <p className="text-sm font-medium text-red-300">Queued: {title}</p>
             )}
             <p className="mx-auto max-w-xs text-sm leading-relaxed text-zinc-400">
               We couldn&apos;t find readable chapters for this title on any
@@ -87,14 +91,14 @@ export function WipModal({ open, media, onClose }: WipModalProps) {
             <Link
               href="/browse"
               onClick={onClose}
-              className="rounded-lg bg-emerald-500 px-6 py-2.5 text-sm font-bold text-zinc-950 transition active:scale-[0.97] hover:bg-emerald-400"
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-white px-6 py-2.5 text-sm font-bold text-zinc-950 transition duration-200 hover:bg-white/80 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
             >
               Back to Catalog
             </Link>
             <button
               type="button"
               onClick={onClose}
-              className="rounded-lg border border-zinc-700 px-6 py-2.5 text-sm font-semibold text-zinc-200 transition active:scale-[0.97] hover:bg-zinc-800"
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/15 bg-zinc-800/60 px-6 py-2.5 text-sm font-semibold text-zinc-100 transition duration-200 hover:border-white/30 hover:bg-zinc-700/60 hover:text-white active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
             >
               Close
             </button>

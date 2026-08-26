@@ -7,6 +7,10 @@ import Image from "next/image";
 import { useAuth } from "@/lib/auth";
 import { LoadingIcon } from "@/components/LoadingIcon";
 import { SignInIcon } from "@/components/AuthIcons";
+import { focusRing } from "@/lib/ui";
+
+const loginInput =
+  "w-full rounded-lg border border-white/10 bg-zinc-900/60 py-3 pl-11 pr-4 text-base text-zinc-100 outline-none transition-colors duration-200 placeholder:text-zinc-500 hover:border-white/25 focus:border-red-400/50";
 
 type Mode = "signin" | "signup";
 
@@ -124,7 +128,7 @@ export default function LoginForm() {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-zinc-950 px-6 pb-24 pt-32">
+    <main className="flex min-h-screen items-center justify-center bg-zinc-950 px-6 pb-24 pt-header">
       <div className="w-full max-w-md">
         <div className="mb-8 flex flex-col items-center gap-3">
           <Image
@@ -135,22 +139,22 @@ export default function LoginForm() {
             priority
             className="h-16 w-16 rounded-2xl object-contain"
           />
-          <span className="header-wordmark text-3xl font-bold text-zinc-50">
+          <span className="header-wordmark font-heading text-3xl font-bold text-zinc-50">
             Hana
           </span>
         </div>
 
-        <div className="flex rounded-full bg-zinc-900 p-1">
+        <div className="flex rounded-full border border-white/10 bg-zinc-900/60 p-1 backdrop-blur-xl">
           {(["signin", "signup"] as const).map((m) => (
             <button
               key={m}
               type="button"
               onClick={() => switchMode(m)}
               aria-pressed={mode === m}
-              className={`flex-1 rounded-full px-4 py-2.5 text-sm font-semibold transition-colors ${
+              className={`flex-1 rounded-full px-4 py-2.5 text-sm font-semibold transition duration-200 active:scale-[0.97] ${focusRing} ${
                 mode === m
-                  ? "bg-white text-zinc-950"
-                  : "text-zinc-400 hover:text-white"
+                  ? "bg-zinc-100 text-zinc-950"
+                  : "text-zinc-400 hover:bg-zinc-800 hover:text-white"
               }`}
             >
               {m === "signin" ? "Sign in" : "Create account"}
@@ -158,7 +162,7 @@ export default function LoginForm() {
           ))}
         </div>
 
-        <h1 className="mt-8 text-center text-2xl font-extrabold tracking-tight text-white">
+        <h1 className="mt-8 text-center text-2xl font-extrabold tracking-tight text-white md:text-3xl">
           {mode === "signin" ? "Welcome back" : "Join Hana"}
         </h1>
         <p className="mt-1.5 text-center text-base text-zinc-400">
@@ -178,7 +182,7 @@ export default function LoginForm() {
         {success && (
           <p
             role="status"
-            className="mt-5 rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-center text-sm text-emerald-300"
+            className="mt-5 rounded-lg border border-white/15 bg-zinc-900/60 px-3 py-2 text-center text-sm text-zinc-100"
           >
             Check your email to confirm your account, then sign in.
           </p>
@@ -189,7 +193,7 @@ export default function LoginForm() {
             type="button"
             onClick={handleGoogle}
             disabled={busy || authLoading}
-            className="inline-flex w-full items-center justify-center gap-2.5 rounded-xl border border-zinc-800 bg-zinc-900/70 py-3 text-base font-semibold text-zinc-100 transition-colors hover:border-zinc-600 disabled:cursor-not-allowed disabled:opacity-50"
+            className={`inline-flex w-full items-center justify-center gap-2.5 rounded-lg border border-white/10 bg-zinc-900/60 py-3 text-sm font-semibold text-zinc-100 transition-colors duration-200 hover:border-white/25 hover:bg-zinc-800/70 disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-40 ${focusRing}`}
           >
             <svg viewBox="0 0 24 24" className="h-5 w-5" aria-hidden>
               <path
@@ -231,7 +235,7 @@ export default function LoginForm() {
               placeholder="Email"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
-              className="w-full rounded-xl border border-zinc-800 bg-zinc-900/70 py-3 pl-11 pr-4 text-base text-zinc-100 placeholder-zinc-500 outline-none transition-colors focus:border-zinc-600"
+              className={loginInput}
             />
           </label>
           {mode === "signup" && (
@@ -243,7 +247,7 @@ export default function LoginForm() {
                 placeholder="Display name (optional)"
                 value={displayName}
                 onChange={(event) => setDisplayName(event.target.value)}
-                className="w-full rounded-xl border border-zinc-800 bg-zinc-900/70 py-3 pl-11 pr-4 text-base text-zinc-100 placeholder-zinc-500 outline-none transition-colors focus:border-zinc-600"
+                className={loginInput}
               />
             </label>
           )}
@@ -258,13 +262,13 @@ export default function LoginForm() {
               placeholder="Password"
               value={password}
               onChange={(event) => setPassword(event.target.value)}
-              className="w-full rounded-xl border border-zinc-800 bg-zinc-900/70 py-3 pl-11 pr-4 text-base text-zinc-100 placeholder-zinc-500 outline-none transition-colors focus:border-zinc-600"
+              className={loginInput}
             />
           </label>
           <button
             type="submit"
             disabled={busy || authLoading}
-            className="mt-1 inline-flex items-center justify-center gap-2 rounded-xl bg-white py-3 text-base font-semibold text-zinc-950 transition-colors hover:bg-white/80 disabled:cursor-not-allowed disabled:opacity-50"
+            className={`mt-1 inline-flex items-center justify-center gap-2 rounded-lg bg-white py-3 text-sm font-semibold text-zinc-950 transition duration-200 hover:bg-white/80 active:scale-[0.97] disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-40 ${focusRing}`}
           >
             {busy ? (
               <>

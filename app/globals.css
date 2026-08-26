@@ -10,12 +10,19 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+  --font-heading: var(--font-zen-kaku);
 }
 
 h1,
 h2,
 h3 {
-  font-family: var(--font-heading), Arial, Helvetica, sans-serif;
+  font-family: var(--font-zen-kaku), Arial, Helvetica, sans-serif;
+}
+
+/* Page top padding that clears the fixed floating pill header on any
+   device (header offset = 1.5rem + safe-area + ~72px tall pill). */
+@utility pt-header {
+  padding-top: calc(7.5rem + env(safe-area-inset-top));
 }
 
 @utility scrollbar-hide {
@@ -40,7 +47,7 @@ h3 {
 
 @utility glass-in {
   transform-origin: top;
-  animation: glass-in 0.18s ease-out;
+  animation: glass-in 0.18s ease-out both;
 }
 
 /* Search form entry: animate from button dimensions */
@@ -75,7 +82,7 @@ h3 {
 }
 
 @utility animate-hero-in {
-  animation: hero-in 0.5s ease both;
+  animation: hero-in 0.5s ease-out both;
 }
 
 @keyframes kenburns {
@@ -107,6 +114,22 @@ h3 {
   animation: modal-in 0.18s ease-out;
 }
 
+/* Page-section reveal (rises from below, unlike dropdowns which drop in). */
+@keyframes page-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@utility animate-page-in {
+  animation: page-in 0.24s ease-out both;
+}
+
 @keyframes sheet-fade-in {
   from {
     opacity: 0;
@@ -131,24 +154,9 @@ h3 {
   }
 }
 
+/* Matches the 2200ms highlight timers in the chapter lists. */
 @utility animate-chapter-highlight {
-  animation: chapter-highlight 1.8s ease-out both;
-}
-
-@keyframes card-pop-in {
-  from {
-    opacity: 0;
-    transform: translateY(-6px) scale(0.97);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
-}
-
-@utility animate-card-pop-in {
-  transform-origin: bottom center;
-  animation: card-pop-in 0.18s ease-out both;
+  animation: chapter-highlight 2s ease-out both;
 }
 
 :root {
@@ -159,6 +167,8 @@ h3 {
   .animate-kenburns,
   .animate-hero-in,
   .animate-modal-in,
+  .animate-page-in,
+  .animate-sheet-fade-in,
   .glass-in {
     animation: none;
   }

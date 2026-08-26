@@ -34,30 +34,15 @@ import {
   useReadChapters,
 } from "@/lib/read-state";
 import type { ReaderProps } from "@/lib/reader-data";
-
-function ChevronLeft({ className = "h-4 w-4" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
-      <path d="m15 18-6-6 6-6" />
-    </svg>
-  );
-}
-
-function ChevronRight({ className = "h-4 w-4" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
-      <path d="m9 18 6-6-6-6" />
-    </svg>
-  );
-}
-
-function ChevronDown({ className = "h-4 w-4" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
-      <path d="m6 9 6 6 6-6" />
-    </svg>
-  );
-}
+import { useDialogFocus } from "@/lib/use-dialog-focus";
+import { focusRing } from "@/lib/ui";
+import {
+  ChevronLeftIcon,
+  ChevronRightIcon,
+  ChevronDownIcon,
+  CheckIcon,
+  CloseIcon,
+} from "./icons";
 
 function HomeIcon({ className = "h-5 w-5" }: { className?: string }) {
   return (
@@ -146,33 +131,17 @@ function SettingsIcon({ className = "h-5 w-5" }: { className?: string }) {
   );
 }
 
-function CheckIcon({ className = "h-4 w-4" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
-      <path d="M20 6 9 17l-5-5" />
-    </svg>
-  );
-}
-
-function CloseIcon({ className = "h-4 w-4" }: { className?: string }) {
-  return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} aria-hidden>
-      <path d="M6 6l12 12M18 6L6 18" />
-    </svg>
-  );
-}
-
 const controlButton =
-  "inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-zinc-900/70 px-3.5 py-2 text-sm font-semibold text-zinc-200 shadow-[0_8px_24px_rgba(0,0,0,0.35)] transition active:scale-[0.97] hover:bg-zinc-800/80 hover:text-white";
+  "inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-zinc-900/70 px-3.5 py-2 text-sm font-semibold text-zinc-200 shadow-[0_8px_24px_rgba(0,0,0,0.35)] transition duration-200 active:scale-[0.97] hover:bg-zinc-800/80 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70";
 
 const iconButton =
-  "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-zinc-900/70 text-zinc-200 shadow-[0_8px_24px_rgba(0,0,0,0.35)] transition active:scale-[0.97] hover:bg-zinc-800/80 hover:text-white";
+  "inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-white/10 bg-zinc-900/70 text-zinc-200 shadow-[0_8px_24px_rgba(0,0,0,0.35)] transition duration-200 active:scale-[0.97] hover:bg-zinc-800/80 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70";
 
 const railButton =
-  "inline-flex h-11 w-11 items-center justify-center rounded-full text-zinc-200 transition active:scale-[0.95] hover:bg-white/5 hover:text-white disabled:pointer-events-none disabled:opacity-40";
+  "inline-flex h-11 w-11 items-center justify-center rounded-full text-zinc-200 transition duration-200 active:scale-[0.97] hover:bg-white/5 hover:text-white disabled:pointer-events-none disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70";
 
 const mobileRailButton =
-  "inline-flex h-10 w-10 items-center justify-center rounded-full text-zinc-200 transition active:scale-[0.95] hover:bg-white/5 hover:text-white disabled:pointer-events-none disabled:opacity-40";
+  "inline-flex h-10 w-10 items-center justify-center rounded-full text-zinc-200 transition duration-200 active:scale-[0.97] hover:bg-white/5 hover:text-white disabled:pointer-events-none disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70";
 
 function Segmented<T extends string>({
   value,
@@ -184,16 +153,17 @@ function Segmented<T extends string>({
   onChange: (value: T) => void;
 }) {
   return (
-    <div className="flex rounded-full border border-white/10 bg-zinc-950/60 p-1">
+    <div className="flex rounded-full border border-white/10 bg-zinc-900/60 p-1">
       {options.map((option) => (
         <button
           key={option.value}
           type="button"
           onClick={() => onChange(option.value)}
-          className={`flex-1 rounded-full px-4 py-1.5 text-sm font-medium transition active:scale-[0.97] ${
+          aria-pressed={value === option.value}
+          className={`flex-1 rounded-full px-4 py-1.5 text-sm font-medium transition duration-200 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 ${
             value === option.value
               ? "bg-zinc-100 text-zinc-950"
-              : "text-zinc-300 hover:text-white"
+              : "text-zinc-300 hover:bg-zinc-800 hover:text-white"
           }`}
         >
           {option.label}
@@ -222,8 +192,8 @@ function Toggle({
     >
       <span className="text-sm text-zinc-300">{label}</span>
       <span
-        className={`relative h-6 w-11 shrink-0 rounded-full transition-colors ${
-          checked ? "bg-emerald-500" : "bg-zinc-700"
+        className={`relative h-6 w-11 shrink-0 rounded-full transition-colors duration-200 ${
+          checked ? "bg-red-500" : "bg-zinc-700"
         }`}
       >
         <span
@@ -263,29 +233,61 @@ function ReaderImage({
   placeholderClassName?: string;
 }) {
   const [loaded, setLoaded] = useState(false);
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+
+  const retry = () => {
+    setAttempt((value) => value + 1);
+    setFailed(false);
+    setLoaded(false);
+  };
+
+  const resolvedSrc =
+    attempt > 0
+      ? `${src}${src.includes("?") ? "&" : "?"}retry=${attempt}`
+      : src;
+
   return (
     <div className={`relative ${width && height ? "" : "min-h-[50vh]"}`}>
-      {!loaded && (
+      {!loaded && !failed && (
         <div
           className={`absolute inset-0 ${placeholderClassName} animate-pulse rounded-lg bg-zinc-900`}
           aria-hidden
         />
       )}
-      {/* eslint-disable-next-line @next/next/no-img-element */}
-      <img
-        src={src}
-        alt={alt}
-        width={width}
-        height={height}
-        loading={loading}
-        decoding="async"
-        onLoad={() => setLoaded(true)}
-        onError={() => setLoaded(true)}
-        className={`${className ?? ""} transition-opacity duration-300 ${
-          loaded ? "opacity-100" : "opacity-0"
-        }`}
-        style={style}
-      />
+      {failed ? (
+        <div
+          role="alert"
+          className={`flex flex-col items-center justify-center gap-3 rounded-lg bg-zinc-900 text-center ${placeholderClassName}`}
+        >
+          <p className="text-sm font-medium text-zinc-400">
+            This page failed to load.
+          </p>
+          <button
+            type="button"
+            onClick={retry}
+            className="rounded-lg border border-white/10 bg-zinc-800 px-3 py-1.5 text-xs font-semibold text-zinc-200 transition-colors hover:border-red-400/40 hover:text-white"
+          >
+            Retry
+          </button>
+        </div>
+      ) : (
+        /* eslint-disable-next-line @next/next/no-img-element */
+        <img
+          src={resolvedSrc}
+          alt={alt}
+          width={width}
+          height={height}
+          loading={loading}
+          decoding="async"
+          onLoad={() => setLoaded(true)}
+          onError={() => setFailed(true)}
+          className={`${className ?? ""} transition-opacity duration-300 ${
+            loaded ? "opacity-100" : "opacity-0"
+          }`}
+          style={style}
+        />
+      )}
     </div>
   );
 }
@@ -325,6 +327,7 @@ export function Reader({
   const [uiHidden, setUiHidden] = useState(false);
   const [preloadUrls, setPreloadUrls] = useState<string[]>([]);
   const readChapters = useReadChapters(mangaId);
+  const settingsDialogRef = useDialogFocus<HTMLDivElement>(settingsOpen);
   const initializedChapterRef = useRef<string | null>(null);
   const lastRestoredAtRef = useRef(0);
   const chapterInitRef = useRef(false);
@@ -942,17 +945,12 @@ export function Reader({
 
   useEffect(() => {
     if (!settingsOpen) return;
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setSettingsOpen(false);
-    };
     const onBeforeUnload = () => {
       document.body.style.overflow = "";
     };
-    document.addEventListener("keydown", onKeyDown);
     window.addEventListener("beforeunload", onBeforeUnload);
     document.body.style.overflow = "hidden";
     return () => {
-      document.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("beforeunload", onBeforeUnload);
       document.body.style.overflow = "";
     };
@@ -1182,7 +1180,7 @@ export function Reader({
         <link key={url} rel="preload" as="image" href={url} />
       ))}
 
-      <header className={`sticky top-[env(safe-area-inset-top)] z-20 border-b border-white/10 bg-zinc-950/80 backdrop-blur-xl transition-all duration-300 ${uiHidden ? "pointer-events-none -translate-y-full opacity-0" : ""}`}>
+      <header className={`sticky top-[env(safe-area-inset-top)] z-20 border-b border-white/10 bg-zinc-950/70 backdrop-blur-xl transition-all duration-300 ${uiHidden ? "pointer-events-none -translate-y-full opacity-0" : ""}`}>
         <div aria-hidden className="absolute inset-x-0 top-0 h-[3px] bg-white/5">
           <div
             className="h-full bg-red-500 transition-[width] duration-150 ease-out"
@@ -1196,7 +1194,7 @@ export function Reader({
             aria-label={`Back to ${mangaTitle}`}
             className={iconButton}
           >
-            <ChevronLeft />
+            <ChevronLeftIcon />
           </Link>
 
           <div className="relative min-w-0 flex-1">
@@ -1207,8 +1205,8 @@ export function Reader({
                 setSettingsOpen(false);
               }}
               aria-expanded={open}
-              aria-haspopup="listbox"
-              className="flex w-full items-center gap-1.5 rounded-lg px-2 py-1 text-left transition-colors hover:bg-white/5"
+              aria-controls="reader-chapter-list"
+              className="flex w-full items-center gap-1.5 rounded-lg px-2 py-1 text-left transition-colors duration-200 hover:bg-white/5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
             >
               <span className="min-w-0">
                 <span className="block truncate text-sm font-bold text-white">
@@ -1218,7 +1216,7 @@ export function Reader({
                   {chapterLabel}
                 </span>
               </span>
-              <ChevronDown className="h-3.5 w-3.5 shrink-0 text-zinc-500" />
+              <ChevronDownIcon className="h-3.5 w-3.5 shrink-0 text-zinc-500" />
             </button>
 
             {open && (
@@ -1226,12 +1224,15 @@ export function Reader({
                 <button
                   type="button"
                   aria-label="Close chapter list"
+                  tabIndex={-1}
                   className="fixed inset-0 z-30 cursor-default"
                   onClick={() => setOpen(false)}
                 />
                 <div
                   ref={listRef}
-                  className="absolute left-0 right-0 top-full z-40 mt-2 max-h-80 overflow-y-auto rounded-xl border border-white/10 bg-zinc-900/95 p-1.5 shadow-2xl shadow-zinc-950/70 backdrop-blur-xl"
+                  id="reader-chapter-list"
+                  role="menu"
+                  className="glass-in absolute left-0 right-0 top-full z-40 mt-2 max-h-80 overflow-y-auto rounded-[2rem] border border-white/10 bg-zinc-950/95 p-2 shadow-[0_24px_60px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.08)] ring-1 ring-inset ring-white/10 backdrop-blur-2xl"
                 >
                   {chapters.map((chapter) => {
                     const isActive = chapter.id === currentChapterId;
@@ -1243,15 +1244,15 @@ export function Reader({
                         prefetch={false}
                         data-active={isActive}
                         onClick={() => setOpen(false)}
-                        className={`block rounded-lg px-3 py-2 text-sm transition-colors ${
+                        className={`block rounded-lg px-3 py-2 text-sm transition-colors duration-200 ${
                           isActive
                             ? "bg-red-500/15 font-bold text-red-300"
-                            : "text-zinc-300 hover:bg-white/5 hover:text-white"
+                            : "text-zinc-300 hover:bg-zinc-800/70 hover:text-white"
                         }`}
                       >
                         <span className="flex items-center gap-2">
                           {isRead && (
-                            <CheckIcon className="h-3.5 w-3.5 shrink-0 text-emerald-400" />
+                            <CheckIcon className="h-3.5 w-3.5 shrink-0 text-red-400" />
                           )}
                           <span className="truncate">{chapter.label}</span>
                         </span>
@@ -1266,11 +1267,11 @@ export function Reader({
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             {prevHref ? (
               <Link href={prevHref} aria-label="Previous chapter" title="Previous chapter" className={iconButton}>
-                <ChevronLeft />
+                <ChevronLeftIcon />
               </Link>
             ) : (
-              <span className={`${iconButton} cursor-not-allowed opacity-40`}>
-                <ChevronLeft />
+              <span aria-disabled="true" className={`${iconButton} cursor-not-allowed opacity-40`}>
+                <ChevronLeftIcon />
               </span>
             )}
             {nextHref ? (
@@ -1278,13 +1279,13 @@ export function Reader({
                 href={nextHref}
                 aria-label="Next chapter"
                 title="Next chapter"
-                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-red-500/40 bg-red-500/15 text-red-300 transition active:scale-[0.97] hover:bg-red-500/25"
+                className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-red-500/40 bg-red-500/15 text-red-300 transition duration-200 active:scale-[0.97] hover:bg-red-500/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
               >
-                <ChevronRight />
+                <ChevronRightIcon />
               </Link>
             ) : (
-              <span className={`${iconButton} cursor-not-allowed opacity-40`}>
-                <ChevronRight />
+              <span aria-disabled="true" className={`${iconButton} cursor-not-allowed opacity-40`}>
+                <ChevronRightIcon />
               </span>
             )}
           </div>
@@ -1294,30 +1295,41 @@ export function Reader({
       {mode === "webtoon" ? (
         <>
           <nav className="mx-auto flex max-w-4xl items-center justify-between gap-2 px-4 pt-5">
-            <Link
-              href={prevHref ?? mangaHref}
-              aria-disabled={!prevHref}
-              className={`${controlButton} ${
-                prevHref ? "" : "pointer-events-none opacity-40"
-              }`}
-            >
-              <ChevronLeft className="h-4 w-4" />
-              Previous
-            </Link>
+            {prevHref ? (
+              <Link href={prevHref} className={controlButton}>
+                <ChevronLeftIcon className="h-4 w-4" />
+                Previous
+              </Link>
+            ) : (
+              <span
+                aria-disabled="true"
+                className={`${controlButton} cursor-not-allowed opacity-40`}
+              >
+                <ChevronLeftIcon className="h-4 w-4" />
+                Previous
+              </span>
+            )}
             <span className="hidden text-xs font-medium uppercase tracking-widest text-zinc-500 sm:block">
               {chapterPrefix ? `${chapterPrefix} · ` : ""}Page {currentPage + 1} of{" "}
               {pages.length} · use ← → keys
             </span>
-            <Link
-              href={nextHref ?? mangaHref}
-              aria-disabled={!nextHref}
-              className={`inline-flex items-center justify-center gap-2 rounded-lg border border-red-500/40 bg-red-500/15 px-3.5 py-2 text-sm font-semibold text-red-300 transition active:scale-[0.97] hover:bg-red-500/25 ${
-                nextHref ? "" : "pointer-events-none opacity-40"
-              }`}
-            >
-              Next
-              <ChevronRight className="h-4 w-4" />
-            </Link>
+            {nextHref ? (
+              <Link
+                href={nextHref}
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-500/40 bg-red-500/15 px-3.5 py-2 text-sm font-semibold text-red-300 transition duration-200 active:scale-[0.97] hover:bg-red-500/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+              >
+                Next
+                <ChevronRightIcon className="h-4 w-4" />
+              </Link>
+            ) : (
+              <span
+                aria-disabled="true"
+                className="inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-lg border border-red-500/40 bg-red-500/15 px-3.5 py-2 text-sm font-semibold text-red-300 opacity-40"
+              >
+                Next
+                <ChevronRightIcon className="h-4 w-4" />
+              </span>
+            )}
           </nav>
 
           <div
@@ -1335,32 +1347,43 @@ export function Reader({
           </div>
 
           <nav className="mx-auto mt-10 flex max-w-4xl flex-wrap items-center justify-center gap-3 px-4">
-            <Link
-              href={prevHref ?? mangaHref}
-              aria-disabled={!prevHref}
-              className={`${controlButton} ${
-                prevHref ? "" : "pointer-events-none opacity-40"
-              }`}
-            >
-              <ChevronLeft className="h-4 w-4" />
-              Previous
-            </Link>
+            {prevHref ? (
+              <Link href={prevHref} className={controlButton}>
+                <ChevronLeftIcon className="h-4 w-4" />
+                Previous
+              </Link>
+            ) : (
+              <span
+                aria-disabled="true"
+                className={`${controlButton} cursor-not-allowed opacity-40`}
+              >
+                <ChevronLeftIcon className="h-4 w-4" />
+                Previous
+              </span>
+            )}
             <Link
               href={mangaHref}
-              className="inline-flex items-center justify-center gap-2 rounded-lg border border-white/10 bg-zinc-900/70 px-3.5 py-2 text-sm font-semibold text-zinc-200 shadow-[0_8px_24px_rgba(0,0,0,0.35)] transition-colors hover:bg-zinc-800/80 hover:text-white"
+              className={controlButton}
             >
               All Chapters
             </Link>
-            <Link
-              href={nextHref ?? mangaHref}
-              aria-disabled={!nextHref}
-              className={`inline-flex items-center justify-center gap-2 rounded-lg border border-red-500/40 bg-red-500/15 px-3.5 py-2 text-sm font-semibold text-red-300 transition active:scale-[0.97] hover:bg-red-500/25 ${
-                nextHref ? "" : "pointer-events-none opacity-40"
-              }`}
-            >
-              Next
-              <ChevronRight className="h-4 w-4" />
-            </Link>
+            {nextHref ? (
+              <Link
+                href={nextHref}
+                className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-500/40 bg-red-500/15 px-3.5 py-2 text-sm font-semibold text-red-300 transition duration-200 active:scale-[0.97] hover:bg-red-500/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+              >
+                Next
+                <ChevronRightIcon className="h-4 w-4" />
+              </Link>
+            ) : (
+              <span
+                aria-disabled="true"
+                className="inline-flex cursor-not-allowed items-center justify-center gap-2 rounded-lg border border-red-500/40 bg-red-500/15 px-3.5 py-2 text-sm font-semibold text-red-300 opacity-40"
+              >
+                Next
+                <ChevronRightIcon className="h-4 w-4" />
+              </span>
+            )}
           </nav>
         </>
       ) : (
@@ -1455,6 +1478,7 @@ export function Reader({
                 onClick={zonePrev}
                 aria-label="Previous page"
                 title="Previous page"
+                tabIndex={-1}
                 className="absolute inset-y-0 left-0 z-10 w-1/3"
               />
               <button
@@ -1462,13 +1486,14 @@ export function Reader({
                 onClick={zoneNext}
                 aria-label="Next page"
                 title="Next page"
+                tabIndex={-1}
                 className="absolute inset-y-0 right-0 z-10 w-1/3"
               />
             </>
           )}
 
           <div className="pointer-events-none absolute bottom-4 left-1/2 z-10 -translate-x-1/2">
-            <span className="rounded-full border border-white/10 bg-zinc-950/80 px-3 py-1 text-xs font-semibold text-zinc-300 backdrop-blur-xl">
+            <span className="rounded-full border border-white/10 bg-zinc-950/70 px-3 py-1 text-xs font-semibold text-zinc-300 backdrop-blur-xl">
               {isTwoPage
                 ? `${pagedIndex + 1}–${Math.min(pagedIndex + 2, pages.length)} / ${pages.length}`
                 : `${pagedIndex + 1} / ${pages.length}`}
@@ -1479,24 +1504,23 @@ export function Reader({
 
       <nav
         aria-label="Reader controls"
-        className={`fixed right-3 top-1/2 z-30 hidden -translate-y-1/2 flex-col items-center gap-1.5 rounded-full border border-zinc-700/50 bg-zinc-950/70 py-2 shadow-[0_8px_40px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.06)] ring-1 ring-inset ring-white/10 backdrop-blur-xl transition-opacity duration-300 sm:right-5 sm:flex ${uiHidden ? "pointer-events-none opacity-0" : "opacity-100"}`}
+        className={`fixed right-3 top-1/2 z-30 hidden -translate-y-1/2 flex-col items-center gap-1.5 rounded-full border border-zinc-700/50 bg-zinc-950/70 py-2 shadow-[0_8px_40px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.08)] ring-1 ring-inset ring-white/10 backdrop-blur-xl transition-opacity duration-300 sm:right-5 sm:flex ${uiHidden ? "pointer-events-none opacity-0" : "opacity-100"}`}
       >
         {renderControls(railButton)}
       </nav>
 
       {!open && !settingsOpen && advanceCount === null && !uiHidden && (
-        <nav
-          aria-label="Reader controls"
-          className={`fixed inset-x-0 bottom-0 z-40 flex justify-center px-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-4 transition-all duration-300 sm:hidden ${
+        <div
+          className={`fixed inset-x-0 bottom-0 z-30 flex justify-center px-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-4 transition-all duration-300 sm:hidden ${
             controlsVisible
               ? "translate-y-0 opacity-100"
               : "pointer-events-none translate-y-4 opacity-0"
           }`}
         >
-          <div className="flex items-center gap-1 rounded-full border border-zinc-700/50 bg-zinc-950/85 px-1.5 py-1.5 shadow-[0_8px_40px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.06)] ring-1 ring-inset ring-white/10 backdrop-blur-xl">
+          <div className="flex items-center gap-1 rounded-full border border-zinc-700/50 bg-zinc-950/70 px-1.5 py-1.5 shadow-[0_8px_40px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.08)] ring-1 ring-inset ring-white/10 backdrop-blur-xl">
             {renderControls(mobileRailButton)}
           </div>
-        </nav>
+        </div>
       )}
 
       {advanceCount !== null && (
@@ -1504,7 +1528,7 @@ export function Reader({
           role="status"
           className="fixed inset-x-0 bottom-6 z-30 flex justify-center px-4"
         >
-          <div className="flex items-center gap-4 rounded-full border border-red-500/40 bg-zinc-950/90 px-5 py-2.5 backdrop-blur-xl">
+          <div className="flex items-center gap-4 rounded-full border border-red-500/40 bg-zinc-950/70 px-5 py-2.5 shadow-[0_8px_40px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.08)] ring-1 ring-inset ring-white/10 backdrop-blur-xl">
             <p className="min-w-0 text-sm text-zinc-300">
               {nextChapterLabel ? (
                 <>
@@ -1524,7 +1548,7 @@ export function Reader({
             <button
               type="button"
               onClick={stopAdvance}
-              className="rounded-full border border-white/10 px-3 py-1 text-xs font-semibold text-zinc-300 transition-colors hover:border-red-400/50 hover:text-white"
+              className={`rounded-full border border-white/10 px-3 py-1 text-xs font-semibold text-zinc-300 transition-colors duration-200 hover:border-red-400/50 hover:text-white ${focusRing}`}
             >
               Cancel
             </button>
@@ -1534,11 +1558,12 @@ export function Reader({
 
       {settingsOpen && (
         <div
+          ref={settingsDialogRef}
           role="dialog"
           aria-modal="true"
           aria-label="Reader settings"
           onClick={() => setSettingsOpen(false)}
-          className="fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/80 p-4 backdrop-blur-sm"
+          className="animate-sheet-fade-in fixed inset-0 z-50 flex items-center justify-center bg-zinc-950/80 p-4 backdrop-blur-sm"
         >
           <div
             onClick={(event) => event.stopPropagation()}
@@ -1552,7 +1577,7 @@ export function Reader({
                 type="button"
                 onClick={() => setSettingsOpen(false)}
                 aria-label="Close settings"
-                className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-400 transition active:scale-95 hover:bg-zinc-800 hover:text-zinc-100"
+                className="flex h-8 w-8 items-center justify-center rounded-full text-zinc-400 transition duration-200 hover:bg-zinc-800 hover:text-zinc-100 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
               >
                 <CloseIcon />
               </button>
@@ -1644,7 +1669,7 @@ export function Reader({
                   onChange={(event) =>
                     updateSettings({ brightness: Number(event.target.value) })
                   }
-                  className="w-full accent-red-500"
+                  className="w-full cursor-pointer accent-red-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
                   aria-label="Brightness"
                 />
               </section>
@@ -1700,7 +1725,7 @@ export function Reader({
                   onClick={() =>
                     setReaderSettings({ ...DEFAULT_READER_SETTINGS })
                   }
-                  className="rounded-lg border border-white/10 bg-zinc-800/60 px-4 py-2 text-sm font-semibold text-zinc-300 transition-colors hover:bg-zinc-700/60 hover:text-white"
+                  className={`rounded-lg border border-white/10 bg-zinc-800/60 px-4 py-2 text-sm font-semibold text-zinc-300 transition-colors duration-200 hover:bg-zinc-700/60 hover:text-white ${focusRing}`}
                 >
                   Reset defaults
                 </button>

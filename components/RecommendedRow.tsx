@@ -98,7 +98,7 @@ export function RecommendedRow() {
   if (manga.length === 0) return null;
 
   return (
-    <Carousel title="Recommended for You" ariaLabel="Recommended for you">
+    <Carousel title="Recommended for You" ariaLabel="Recommended for You">
       {manga.map((item) => (
         <MangaCard key={item.id} manga={item} />
       ))}

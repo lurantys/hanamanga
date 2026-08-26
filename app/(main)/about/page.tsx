@@ -19,9 +19,9 @@ export const metadata: Metadata = {
 
 export default function AboutPage() {
   return (
-    <main className="mx-auto max-w-3xl px-5 pb-24 pt-32 md:px-10 md:pt-40">
+    <main className="mx-auto max-w-3xl px-5 pt-header pb-24 md:px-10">
       <article className="prose prose-invert prose-zinc max-w-none">
-        <h1 className="text-3xl font-extrabold tracking-tight text-white md:text-5xl">
+        <h1 className="text-2xl font-extrabold tracking-tight text-white md:text-3xl">
           About Hana
         </h1>
         <p className="lead text-lg text-zinc-300">
@@ -79,7 +79,7 @@ export default function AboutPage() {
           Hana is deployed and running at{" "}
           <a
             href={SITE_URL}
-            className="font-semibold text-emerald-400 hover:text-emerald-300"
+            className="font-semibold text-red-400 transition-colors duration-200 hover:text-red-300"
           >
             hanamanga.online
           </a>
@@ -99,13 +99,13 @@ export default function AboutPage() {
         <div className="flex flex-wrap gap-3 pt-4">
           <Link
             href="/"
-            className="inline-flex items-center justify-center rounded-full bg-white px-6 py-2.5 text-sm font-bold text-zinc-950 transition-colors hover:bg-white/80"
+            className="inline-flex items-center justify-center rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-zinc-950 transition-colors duration-200 hover:bg-white/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
           >
             Start reading
           </Link>
           <Link
             href="/browse"
-            className="inline-flex items-center justify-center rounded-full border border-white/10 bg-zinc-800/60 px-6 py-2.5 text-sm font-bold text-white transition-colors hover:bg-zinc-700/60"
+            className="inline-flex items-center justify-center rounded-full border border-white/15 px-6 py-2.5 text-sm font-semibold text-zinc-300 transition-colors duration-200 hover:border-white/40 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
           >
             Browse manga
           </Link>

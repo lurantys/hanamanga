@@ -6,7 +6,8 @@ import type { AtsuChapter, AtsuScanlator } from "@/lib/atsu";
 import { atsuChapterLabel } from "@/lib/atsu";
 import { markAllRead, useReadChapters } from "@/lib/read-state";
 import { setPreferredScanlator, usePreferredScanlator } from "@/lib/scanlator-preference";
-import { LoadingIcon } from "./LoadingIcon";
+import { chipButton, focusRing, inputField } from "@/lib/ui";
+import { useChapterFlash } from "@/lib/use-chapter-flash";
 
 type AtsuChapterListProps = {
   mangaId: string;
@@ -32,13 +33,12 @@ export function AtsuChapterList({
   const [revealed, setRevealed] = useState(BATCH);
   const [jump, setJump] = useState("");
   const [scrollTarget, setScrollTarget] = useState<string | null>(null);
-  const [highlightId, setHighlightId] = useState<string | null>(null);
+  const { highlightId, flash: flashChapter } = useChapterFlash();
 
   const readChapters = useReadChapters(mangaId);
   const itemRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
   const sentinelRef = useRef<HTMLDivElement>(null);
   const loadingRef = useRef(false);
-  const highlightTimerRef = useRef(0);
 
   const groupChapters = useMemo(
     () =>
@@ -91,22 +91,6 @@ export function AtsuChapterList({
     if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [scrollTarget, orderedChapters]);
 
-  useEffect(
-    () => () => {
-      if (highlightTimerRef.current) window.clearTimeout(highlightTimerRef.current);
-    },
-    [],
-  );
-
-  const flashChapter = (chapterId: string) => {
-    setHighlightId(chapterId);
-    if (highlightTimerRef.current) window.clearTimeout(highlightTimerRef.current);
-    highlightTimerRef.current = window.setTimeout(
-      () => setHighlightId(null),
-      2200,
-    );
-  };
-
   const goToChapter = () => {
     const target = Number(jump.trim());
     if (!Number.isFinite(target)) return;
@@ -144,7 +128,8 @@ export function AtsuChapterList({
                 key={scanlator.id}
                 type="button"
                 onClick={() => setPreferredScanlator(mangaId, scanlator.id)}
-                className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors ${
+                aria-pressed={selected === scanlator.id}
+                className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors duration-200 ${focusRing} ${
                   selected === scanlator.id
                     ? "border-red-400/60 bg-red-500/15 text-red-300"
                     : "border-white/10 bg-zinc-800/60 text-zinc-400 hover:text-white"
@@ -168,7 +153,7 @@ export function AtsuChapterList({
                   groupChapters.map((chapter) => chapter.id),
                 )
               }
-              className="shrink-0 rounded-lg border border-white/10 bg-zinc-800/60 px-3 py-2 text-xs font-semibold text-zinc-300 transition-colors hover:border-red-400/40 hover:text-red-300"
+              className={`${chipButton} shrink-0 py-2`}
             >
               Mark all read
             </button>
@@ -193,7 +178,7 @@ export function AtsuChapterList({
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               placeholder={`Find chapter (${groupChapters.length} available)`}
-              className="w-full rounded-lg border border-white/10 bg-zinc-900/60 py-2 pl-9 pr-3 text-sm text-zinc-100 outline-none transition-colors placeholder:text-zinc-500 focus:border-red-400/50"
+              className={`${inputField} w-full py-2 pl-9 pr-3 hover:border-white/25`}
             />
           </label>
         </div>
@@ -206,7 +191,8 @@ export function AtsuChapterList({
               key={value}
               type="button"
               onClick={() => setOrder(value)}
-              className={`rounded-full px-4 py-1.5 text-sm font-medium transition active:scale-[0.97] ${
+              aria-pressed={order === value}
+              className={`rounded-full px-4 py-1.5 text-sm font-medium transition duration-200 active:scale-[0.97] ${focusRing} ${
                 order === value
                   ? "bg-zinc-100 text-zinc-950"
                   : "text-zinc-300 hover:bg-zinc-800 hover:text-white"
@@ -228,22 +214,14 @@ export function AtsuChapterList({
             }}
             placeholder="Ch. #"
             aria-label="Jump to chapter number"
-            className="w-24 rounded-lg border border-white/10 bg-zinc-900/60 py-2 pl-3 pr-2 text-sm text-zinc-100 outline-none transition-colors placeholder:text-zinc-500 focus:border-red-400/50"
+            className={`${inputField} w-24 py-2 pl-3 pr-2 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none`}
           />
-          <button
-            type="button"
-            onClick={goToChapter}
-            className="rounded-lg border border-white/10 bg-zinc-800/60 px-3 py-2 text-xs font-semibold text-zinc-200 transition-colors hover:border-red-400/40 hover:text-white"
-          >
+          <button type="button" onClick={goToChapter} className={chipButton}>
             Go
           </button>
         </div>
 
-        <button
-          type="button"
-          onClick={startFromBeginning}
-          className="rounded-lg border border-white/10 bg-zinc-800/60 px-3 py-2 text-xs font-semibold text-zinc-200 transition-colors hover:border-red-400/40 hover:text-white"
-        >
+        <button type="button" onClick={startFromBeginning} className={chipButton}>
           Start from beginning
         </button>
       </div>
@@ -256,7 +234,7 @@ export function AtsuChapterList({
       )}
 
       {visibleChapters.length === 0 ? (
-        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 px-6 py-10 text-center">
+        <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 px-6 py-12 text-center">
           <p className="text-sm text-zinc-400">
             {query
               ? `No chapters match "${query}".`
@@ -275,14 +253,10 @@ export function AtsuChapterList({
                 }}
                 href={`/read/${mangaId}/${chapter.id}`}
                 prefetch={false}
-                className={`group flex items-center justify-between gap-3 rounded-xl border px-4 py-3 backdrop-blur-xl transition-colors ${
+                className={`group flex items-center justify-between gap-3 rounded-xl border px-4 py-3 backdrop-blur-xl transition-colors duration-200 hover:border-white/25 ${focusRing} ${
                   highlightId === chapter.id
                     ? "animate-chapter-highlight border-red-400/50 bg-red-500/20"
                     : "border-white/10 bg-zinc-900/60"
-                } ${
-                  isRead
-                    ? "hover:border-red-400/30"
-                    : "hover:border-red-400/40"
                 }`}
               >
                 <div className="min-w-0">
@@ -293,31 +267,35 @@ export function AtsuChapterList({
                   >
                     <span className="flex items-center gap-2">
                       {isRead && (
-                        <svg
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2.5"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          className="h-3.5 w-3.5 shrink-0 text-red-400"
-                          aria-hidden
-                        >
-                          <path d="M20 6 9 17l-5-5" />
-                        </svg>
+                        <span className="inline-flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-red-400/40 bg-red-500/15 text-red-400" role="img" aria-label="Read">
+                          <svg
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2.5"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="h-3 w-3"
+                            aria-hidden
+                          >
+                            <path d="M20 6 9 17l-5-5" />
+                          </svg>
+                        </span>
                       )}
                       <span className="truncate">{atsuChapterLabel(chapter)}</span>
-                    </span>
-                  </p>
+                    </span>                  </p>
                   <p className="text-xs text-zinc-500">
-                    {chapter.pageCount}{" "}
-                    {chapter.pageCount === 1 ? "page" : "pages"}
+                    {chapter.pageCount > 0
+                      ? `${chapter.pageCount} ${
+                          chapter.pageCount === 1 ? "page" : "pages"
+                        }`
+                      : null}
                     {chapter.createdAt
-                      ? ` · ${new Date(chapter.createdAt).toLocaleDateString()}`
+                      ? `${chapter.pageCount > 0 ? " · " : ""}${new Date(chapter.createdAt).toLocaleDateString()}`
                       : ""}
                   </p>
                 </div>
-                <span className="shrink-0 rounded-lg border border-white/10 bg-zinc-800/60 px-3.5 py-1.5 text-xs font-semibold text-zinc-200 transition-colors group-hover:border-red-400/40 group-hover:bg-zinc-700/60 group-hover:text-white">
+                <span className="shrink-0 rounded-full border border-white/10 bg-zinc-800/60 px-3.5 py-1.5 text-xs font-semibold text-zinc-200 transition-colors duration-200 group-hover:border-red-400/40 group-hover:bg-zinc-700/60 group-hover:text-white">
                   {isRead ? "Re-read" : "Read"}
                 </span>
               </Link>
@@ -326,10 +304,22 @@ export function AtsuChapterList({
         </div>
       )}
 
-      {hasMore && (
-        <div ref={sentinelRef} className="flex items-center justify-center py-4">
-          <LoadingIcon className="h-8 w-8" />
+      {hasMore ? (
+        <div ref={sentinelRef} className="mt-6 flex flex-col items-center gap-2">
+          <button
+            type="button"
+            onClick={loadMore}
+            className={`rounded-full border border-white/10 bg-zinc-900/60 px-5 py-2 text-sm font-semibold text-zinc-200 transition-colors duration-200 hover:border-red-400/40 hover:bg-zinc-800 hover:text-white ${focusRing}`}
+          >
+            Show more chapters
+          </button>
         </div>
+      ) : (
+        groupChapters.length > 0 && (
+          <p className="mt-6 text-center text-sm text-zinc-500">
+            All {groupChapters.length.toLocaleString()} chapters loaded.
+          </p>
+        )
       )}
     </div>
   );

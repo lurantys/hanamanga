@@ -14,6 +14,8 @@ import {
 import { getLibraryList, LIBRARY_EVENT } from "@/lib/library";
 import { statusLabel, truncate, type Manga } from "@/lib/mangadex";
 import { ratingBadgeClass, ratingTier } from "@/lib/rating";
+import { HERO_FALLBACK_GRADIENT, focusRing } from "@/lib/ui";
+import { StarIcon } from "./icons";
 
 type HeroSpotlightClientProps = {
   initial: Manga;
@@ -187,9 +189,9 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
     <>
       <Link
         href={primaryHref}
-        className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-bold text-zinc-950 transition active:scale-[0.97] hover:bg-white/80 md:flex-none md:px-6"
+        className={`inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-white px-4 py-2.5 text-sm font-semibold text-zinc-950 transition duration-200 active:scale-[0.97] hover:bg-white/80 md:flex-none md:px-6 ${focusRing}`}
       >
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>
           <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z" />
         </svg>
         <span className="flex flex-col items-start leading-tight">
@@ -204,7 +206,7 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
       </Link>
       <Link
         href={`/manga/${displayHero.id}`}
-        className="inline-flex flex-1 items-center justify-center gap-2 rounded-lg bg-zinc-500/50 px-4 py-2.5 text-sm font-bold text-white transition active:scale-[0.97] hover:bg-zinc-500/30 md:flex-none md:px-6"
+        className={`inline-flex flex-1 items-center justify-center gap-2 rounded-lg border border-white/15 bg-zinc-800/60 px-4 py-2.5 text-sm font-semibold text-zinc-100 backdrop-blur-sm transition duration-200 active:scale-[0.97] hover:border-white/30 hover:bg-zinc-700/60 hover:text-white md:flex-none md:px-6 ${focusRing}`}
       >
         More Info
       </Link>
@@ -224,7 +226,7 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
           fill
           sizes="(min-width:768px) 100vw, 512px"
           onLoad={() => setImageLoaded(true)}
-          className={`object-cover object-[center_20%] md:object-top transition-opacity duration-700 ${
+          className={`object-cover object-[center_20%] md:object-top transition-opacity duration-300 ${
             bannerSrc ? "" : "scale-125 blur-2xl"
           } ${ready ? "opacity-100" : "opacity-0"}`}
         />
@@ -232,8 +234,7 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
         <div
           className="absolute inset-0"
           style={{
-            background:
-              "radial-gradient(circle at 30% 20%, #27272a 0%, #09090b 60%)",
+            background: HERO_FALLBACK_GRADIENT,
           }}
         />
       )}
@@ -245,8 +246,8 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
       {imageSrc && (
         <div
           aria-hidden
-          className={`absolute inset-0 bg-zinc-900 transition-opacity duration-700 ${
-            ready ? "opacity-0" : "animate-pulse opacity-100"
+          className={`absolute inset-0 animate-pulse bg-zinc-800 transition-opacity duration-300 ${
+            ready ? "opacity-0" : "opacity-100"
           }`}
         />
       )}
@@ -254,13 +255,13 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
       <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/25 to-zinc-950/60" />
       <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/50 to-transparent" />
 
-      <div className="absolute inset-x-0 bottom-0 z-10 px-5 pb-8 pt-10 md:px-10 md:pb-20 md:pt-0 lg:px-16">
+      <div className="absolute inset-x-0 bottom-0 z-10 px-5 pb-8 pt-10 md:px-10 md:pb-20 md:pt-0">
         <div className="flex items-start gap-4 md:items-end md:gap-8">
           {displayHero.coverUrl && (
             <Link
               href={`/manga/${displayHero.id}`}
               aria-label={displayHero.title}
-              className="shrink-0"
+              className={`shrink-0 rounded-xl ${focusRing}`}
             >
               <Image
                 src={displayHero.coverUrl}
@@ -269,7 +270,7 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
                 width={224}
                 height={336}
                 sizes="(min-width:1280px) 224px, (min-width:768px) 176px, 152px"
-                className="aspect-[2/3] w-[9.5rem] rounded-xl object-cover shadow-2xl shadow-zinc-950/70 ring-1 ring-white/10 transition hover:ring-white/30 md:w-44 xl:w-56"
+                className="aspect-[2/3] w-[9.5rem] rounded-lg object-cover shadow-2xl shadow-zinc-950/70 ring-1 ring-white/10 transition duration-200 hover:ring-white/30 md:w-44 xl:w-56"
               />
             </Link>
           )}
@@ -277,17 +278,15 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5 md:gap-x-4 md:gap-y-2">
               {showRating ? (
                 <span className={`inline-flex items-center gap-2 rounded-md px-2.5 py-1 text-sm font-bold ${ratingClass}`}>
-                  <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4" aria-hidden>
-                    <path d="M12 2l2.4 7.2H22l-6 4.6 2.3 7.2-6.3-4.5-6.3 4.5L8 13.8 2 9.2h7.6Z" />
-                  </svg>
+                  <StarIcon className="h-4 w-4" />
                   {match} / 10
                 </span>
               ) : null}
-              <span className="rounded-md border border-zinc-500/60 px-2 py-0.5 text-xs font-semibold uppercase tracking-wide text-zinc-200">
+              <span className="rounded-md border border-white/15 px-2.5 py-1 text-xs font-semibold uppercase tracking-wide text-zinc-200">
                 {statusLabel(displayHero.status)}
               </span>
               {displayHero.year && (
-                <span className="text-sm text-zinc-300">{displayHero.year}</span>
+                <span className="text-sm text-zinc-400">{displayHero.year}</span>
               )}
               {displayHero.follows ? (
                 <span className="text-sm text-zinc-400">

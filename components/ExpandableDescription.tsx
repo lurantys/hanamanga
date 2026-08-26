@@ -116,7 +116,7 @@ export function ExpandableDescription({
           type="button"
           onClick={() => setExpanded((value) => !value)}
           aria-expanded={expanded}
-          className="mt-1.5 text-sm font-bold text-red-400 transition-colors hover:text-red-300"
+          className="mt-1.5 rounded text-sm font-bold text-red-400 transition-colors duration-200 hover:text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
         >
           {expanded ? "Show less" : "Show more"}
         </button>

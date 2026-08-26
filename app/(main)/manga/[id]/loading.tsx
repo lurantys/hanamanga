@@ -1,10 +1,10 @@
 export default function MangaLoading() {
   return (
     <main className="bg-zinc-950 pb-24">
-      <div className="h-[46vh] min-h-[320px] w-full animate-pulse bg-zinc-900" />
-      <div className="relative z-10 mx-auto -mt-52 max-w-5xl px-5 md:px-10">
-        <div className="flex flex-col gap-8 md:flex-row md:items-end">
-          <div className="aspect-[2/3] w-44 shrink-0 animate-pulse rounded-xl bg-zinc-800 md:w-56" />
+      <div className="h-[34dvh] min-h-[260px] w-full animate-pulse bg-zinc-900 md:h-[46dvh] md:min-h-[320px]" />
+      <div className="relative z-10 mx-auto -mt-40 max-w-5xl px-5 md:-mt-52 md:px-10">
+        <div className="flex flex-col gap-8 md:flex-row md:items-start">
+          <div className="aspect-[2/3] w-44 shrink-0 animate-pulse rounded-xl border border-zinc-800 bg-zinc-800 shadow-2xl shadow-zinc-950/70 md:w-56" />
           <div className="flex-1 space-y-4 pb-2">
             <div className="h-5 w-48 animate-pulse rounded bg-zinc-800" />
             <div className="h-10 w-3/4 animate-pulse rounded bg-zinc-800" />
@@ -20,7 +20,7 @@ export default function MangaLoading() {
           {Array.from({ length: 9 }).map((_, index) => (
             <div
               key={index}
-              className="h-16 animate-pulse rounded-xl bg-zinc-900"
+              className="h-[76px] animate-pulse rounded-xl border border-white/10 bg-zinc-900/60"
             />
           ))}
         </div>

@@ -3,7 +3,9 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ChapterReadCheck } from "./ChapterReadCheck";
-import { LoadingIcon } from "./LoadingIcon";
+import { chipButton, focusRing, inputField } from "@/lib/ui";
+import { useChapterFlash } from "@/lib/use-chapter-flash";
+import { useReadChapters } from "@/lib/read-state";
 import type { Chapter } from "@/lib/mangadex";
 
 type VolumeGroup = { volume: string | null; chapters: Chapter[] };
@@ -27,12 +29,12 @@ export function MangaChapterList({ mangaId, volumes }: MangaChapterListProps) {
   const [revealedVolumes, setRevealedVolumes] = useState(VOLUME_BATCH);
   const [jump, setJump] = useState("");
   const [scrollTarget, setScrollTarget] = useState<string | null>(null);
-  const [highlightId, setHighlightId] = useState<string | null>(null);
+  const { highlightId, flash } = useChapterFlash();
 
   const itemRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const sentinelRef = useRef<HTMLDivElement>(null);
   const loadingRef = useRef(false);
-  const highlightTimerRef = useRef(0);
+  const readChapters = useReadChapters(mangaId);
 
   const orderedVolumes = useMemo(() => {
     const reversed =
@@ -74,22 +76,6 @@ export function MangaChapterList({ mangaId, volumes }: MangaChapterListProps) {
     if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
   }, [scrollTarget, orderedVolumes]);
 
-  useEffect(
-    () => () => {
-      if (highlightTimerRef.current) window.clearTimeout(highlightTimerRef.current);
-    },
-    [],
-  );
-
-  const flashChapter = (chapterId: string) => {
-    setHighlightId(chapterId);
-    if (highlightTimerRef.current) window.clearTimeout(highlightTimerRef.current);
-    highlightTimerRef.current = window.setTimeout(
-      () => setHighlightId(null),
-      2200,
-    );
-  };
-
   const goToChapter = () => {
     const target = Number(jump.trim());
     if (!Number.isFinite(target)) return;
@@ -101,7 +87,7 @@ export function MangaChapterList({ mangaId, volumes }: MangaChapterListProps) {
         const chapterId = orderedVolumes[i].chapters[index].id;
         setRevealedVolumes(Math.max(revealedVolumes, i + 1));
         setScrollTarget(chapterId);
-        flashChapter(chapterId);
+        flash(chapterId);
         return;
       }
     }
@@ -112,7 +98,7 @@ export function MangaChapterList({ mangaId, volumes }: MangaChapterListProps) {
     setOrder("oldest");
     setRevealedVolumes(VOLUME_BATCH);
     setScrollTarget(firstChapterId);
-    flashChapter(firstChapterId);
+    flash(firstChapterId);
   };
 
   return (
@@ -124,7 +110,8 @@ export function MangaChapterList({ mangaId, volumes }: MangaChapterListProps) {
               key={value}
               type="button"
               onClick={() => setOrder(value)}
-              className={`rounded-full px-4 py-1.5 text-sm font-medium transition active:scale-[0.97] ${
+              aria-pressed={order === value}
+              className={`rounded-full px-4 py-1.5 text-sm font-medium transition duration-200 active:scale-[0.97] ${focusRing} ${
                 order === value
                   ? "bg-zinc-100 text-zinc-950"
                   : "text-zinc-300 hover:bg-zinc-800 hover:text-white"
@@ -146,22 +133,14 @@ export function MangaChapterList({ mangaId, volumes }: MangaChapterListProps) {
             }}
             placeholder="Ch. #"
             aria-label="Jump to chapter number"
-            className="w-24 rounded-lg border border-white/10 bg-zinc-900/60 py-2 pl-3 pr-2 text-sm text-zinc-100 outline-none transition-colors placeholder:text-zinc-500 focus:border-red-400/50"
+            className={`${inputField} w-24 py-2 pl-3 pr-2 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none`}
           />
-          <button
-            type="button"
-            onClick={goToChapter}
-            className="rounded-lg border border-white/10 bg-zinc-800/60 px-3 py-2 text-xs font-semibold text-zinc-200 transition-colors hover:border-red-400/40 hover:text-white"
-          >
+          <button type="button" onClick={goToChapter} className={chipButton}>
             Go
           </button>
         </div>
 
-        <button
-          type="button"
-          onClick={startFromBeginning}
-          className="rounded-lg border border-white/10 bg-zinc-800/60 px-3 py-2 text-xs font-semibold text-zinc-200 transition-colors hover:border-red-400/40 hover:text-white"
-        >
+        <button type="button" onClick={startFromBeginning} className={chipButton}>
           Start from beginning
         </button>
       </div>
@@ -169,24 +148,30 @@ export function MangaChapterList({ mangaId, volumes }: MangaChapterListProps) {
       <div className="flex flex-col gap-8">
         {visibleVolumes.map(({ volume, chapters }) => (
           <div key={volume ?? "no-volume"}>
-            <h3 className="mb-3 text-sm font-bold uppercase tracking-widest text-zinc-400">
+            <h3 className="mb-2 text-[11px] font-semibold uppercase tracking-widest text-zinc-500">
               {volume ? `Volume ${volume}` : "Unvolumed"}
             </h3>
             <div className="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {chapters.map((chapter) => (
+              {chapters.map((chapter) => {
+                const isRead = readChapters.has(chapter.id);
+                return (
                 <div
                   key={chapter.id}
                   ref={(el) => {
                     itemRefs.current[chapter.id] = el;
                   }}
-                  className={`flex items-center justify-between gap-3 rounded-xl border px-4 py-3 backdrop-blur-xl transition-colors hover:border-white/25 ${
+                  className={`group flex items-center justify-between gap-3 rounded-xl border px-4 py-3 backdrop-blur-xl transition-colors duration-200 hover:border-white/25 ${
                   highlightId === chapter.id
                     ? "animate-chapter-highlight border-red-400/50 bg-red-500/20"
                     : "border-white/10 bg-zinc-900/60"
                 }`}
                 >
                   <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-zinc-200">
+                    <p
+                      className={`truncate text-sm font-semibold group-hover:text-white ${
+                        isRead ? "text-zinc-500" : "text-zinc-200"
+                      }`}
+                    >
                       {chapterLabel(chapter)}
                     </p>
                     <p className="text-xs text-zinc-500">
@@ -205,7 +190,7 @@ export function MangaChapterList({ mangaId, volumes }: MangaChapterListProps) {
                         href={chapter.externalUrl}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="rounded-lg border border-white/10 bg-zinc-800/60 px-3.5 py-1.5 text-xs font-semibold text-zinc-200 transition-colors hover:bg-zinc-700/60 hover:text-white"
+                        className={chipButton}
                       >
                         External
                       </a>
@@ -213,22 +198,29 @@ export function MangaChapterList({ mangaId, volumes }: MangaChapterListProps) {
                       <Link
                         href={`/read/${mangaId}/${chapter.id}`}
                         prefetch={false}
-                        className="rounded-lg border border-white/10 bg-zinc-800/60 px-3.5 py-1.5 text-xs font-semibold text-zinc-200 transition-colors hover:bg-zinc-700/60 hover:text-white"
+                        className={chipButton}
                       >
                         Read
                       </Link>
                     )}
                   </div>
                 </div>
-              ))}
+                );
+                })}
             </div>
           </div>
         ))}
       </div>
 
       {hasMore ? (
-        <div ref={sentinelRef} className="mt-6 flex items-center justify-center">
-          <LoadingIcon className="h-8 w-8" />
+        <div ref={sentinelRef} className="mt-6 flex flex-col items-center gap-2">
+          <button
+            type="button"
+            onClick={loadMore}
+            className={`rounded-full border border-white/10 bg-zinc-900/60 px-5 py-2 text-sm font-semibold text-zinc-200 transition-colors duration-200 hover:border-red-400/40 hover:bg-zinc-800 hover:text-white ${focusRing}`}
+          >
+            Show more chapters
+          </button>
         </div>
       ) : (
         <p className="mt-6 text-center text-sm text-zinc-500">

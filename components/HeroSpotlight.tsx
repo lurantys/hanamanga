@@ -1,5 +1,6 @@
 import { getTrending, pickHero } from "@/lib/read";
 import { enhanceWithAniList } from "@/lib/catalog";
+import { HERO_FALLBACK_GRADIENT } from "@/lib/ui";
 import { HeroSpotlightClient } from "./HeroSpotlightClient";
 
 function HeroFallback() {
@@ -8,8 +9,7 @@ function HeroFallback() {
       <div
         className="absolute inset-0"
         style={{
-          background:
-            "radial-gradient(circle at 30% 20%, #27272a 0%, #09090b 60%)",
+          background: HERO_FALLBACK_GRADIENT,
         }}
       />
       <p className="relative px-6 text-center text-sm text-zinc-500">
@@ -28,6 +28,6 @@ export async function HeroSpotlight() {
   }
   const picked = data ? pickHero(data.data) : null;
   if (!picked) return <HeroFallback />;
-  const hero = await enhanceWithAniList(picked);
+  const hero = await enhanceWithAniList(picked).catch(() => picked);
   return <HeroSpotlightClient initial={hero} />;
 }

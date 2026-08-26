@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { MangaCard } from "./MangaCard";
 import { MangaGridSkeleton } from "./MangaCardSkeleton";
+import { EmptyState } from "./EmptyState";
+import { ctaPrimary, focusRing } from "@/lib/ui";
 import { sortLabel, type SortKey } from "@/lib/genres";
 import type { Manga } from "@/lib/mangadex";
 
@@ -93,39 +95,39 @@ export function BrowseGrid({
 
   if (error && items.length === 0) {
     return (
-      <div className="flex flex-col items-center gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/60 px-6 py-16 text-center">
-        <h2 className="text-xl font-bold text-white">Couldn’t load titles</h2>
-        <p className="max-w-sm text-sm text-zinc-400">
-          The catalog service is temporarily unavailable. Please try again.
-        </p>
-        <button
-          type="button"
-          onClick={() => void loadMore(initialPage, true)}
-          className="mt-2 rounded-lg bg-emerald-500 px-6 py-2.5 text-sm font-bold text-zinc-950 transition-colors hover:bg-emerald-400"
-        >
-          Try again
-        </button>
-      </div>
+      <EmptyState
+        title="Couldn’t load titles"
+        description="The catalog service is temporarily unavailable. Please try again."
+        action={
+          <button
+            type="button"
+            onClick={() => void loadMore(initialPage, true)}
+            className={`${ctaPrimary} mt-2`}
+          >
+            Try again
+          </button>
+        }
+      />
     );
   }
 
   if (!items.length) {
     return (
-      <div className="flex flex-col items-center gap-4 rounded-2xl border border-zinc-800 bg-zinc-900/60 px-6 py-16 text-center">
-        <span className="text-5xl" aria-hidden>
-          🔍
-        </span>
-        <h2 className="text-xl font-bold text-white">Nothing here yet</h2>
-        <p className="max-w-sm text-sm text-zinc-400">
-          Try a different genre, status, or sort order.
-        </p>
-      </div>
+      <EmptyState
+        art={
+          <span className="text-5xl" aria-hidden>
+            🔍
+          </span>
+        }
+        title="Nothing here yet"
+        description="Try a different genre, status, or sort order."
+      />
     );
   }
 
   return (
     <>
-      <p className="mb-4 text-sm text-zinc-400">
+      <p className="mb-5 text-sm text-zinc-400">
         {total.toLocaleString()} {total === 1 ? "title" : "titles"}
         {genres.length ? (
           <>
@@ -140,7 +142,7 @@ export function BrowseGrid({
         <span className="font-semibold text-zinc-200">{sortLabel(sort)}</span>
       </p>
 
-      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-7">
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
         {items.map((manga) => (
           <div key={manga.id} style={{ contentVisibility: "auto", containIntrinsicSize: "260px" }}>
             <MangaCard manga={manga} className="w-full!" />
@@ -149,18 +151,33 @@ export function BrowseGrid({
       </div>
 
       {hasMore ? (
-        <div ref={sentinelRef} className="mt-10 flex items-center justify-center">
+        <div ref={sentinelRef} className="mt-10 flex flex-col items-center gap-4">
+          <p aria-live="polite" className="sr-only">
+            {loading
+              ? "Loading more titles…"
+              : error
+                ? "Loading more titles failed."
+                : ""}
+          </p>
           {error ? (
             <button
               type="button"
               onClick={() => void loadMore(page + 1, false)}
-              className="rounded-full border border-white/10 bg-zinc-900/60 px-5 py-2 text-sm font-medium text-zinc-300 backdrop-blur-xl transition hover:bg-zinc-800 hover:text-white"
+              className={`rounded-full border border-white/10 bg-zinc-900/60 px-5 py-2 text-sm font-medium text-zinc-300 backdrop-blur-xl transition-colors duration-200 hover:bg-zinc-800 hover:text-white ${focusRing}`}
             >
               Retry
             </button>
           ) : loading ? (
-            <MangaGridSkeleton count={7} />
-          ) : null}
+            <MangaGridSkeleton count={6} />
+          ) : (
+            <button
+              type="button"
+              onClick={() => void loadMore(page + 1, false)}
+              className={`rounded-full border border-white/10 bg-zinc-900/60 px-6 py-2.5 text-sm font-semibold text-zinc-200 backdrop-blur-xl transition-colors duration-200 hover:border-white/25 hover:bg-zinc-800 hover:text-white ${focusRing}`}
+            >
+              Load more
+            </button>
+          )}
         </div>
       ) : (
         <p className="mt-10 text-center text-sm text-zinc-500">

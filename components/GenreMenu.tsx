@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { GENRES } from "@/lib/genres";
+import { popoverSurface, focusRing } from "@/lib/ui";
 
 export function GenreMenu() {
   const router = useRouter();
@@ -15,7 +16,7 @@ export function GenreMenu() {
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === "Escape") setOpen(false);
     };
-    const onClickOutside = (event: MouseEvent) => {
+    const onPointerDown = (event: PointerEvent) => {
       if (
         containerRef.current &&
         !containerRef.current.contains(event.target as Node)
@@ -25,11 +26,11 @@ export function GenreMenu() {
     };
 
     document.addEventListener("keydown", onKeyDown);
-    document.addEventListener("mousedown", onClickOutside);
+    document.addEventListener("pointerdown", onPointerDown);
 
     return () => {
       document.removeEventListener("keydown", onKeyDown);
-      document.removeEventListener("mousedown", onClickOutside);
+      document.removeEventListener("pointerdown", onPointerDown);
     };
   }, [open]);
 
@@ -45,7 +46,7 @@ export function GenreMenu() {
         onClick={() => setOpen((value) => !value)}
         aria-expanded={open}
         aria-haspopup="menu"
-        className="relative flex items-center gap-1.5 transition-colors hover:text-white after:absolute after:inset-x-0 after:-bottom-1.5 after:h-0.5 after:origin-left after:scale-x-0 after:rounded-full after:bg-red-500 after:transition-transform after:duration-200 hover:after:scale-x-100"
+        className={`relative flex items-center gap-1.5 transition-colors duration-200 hover:text-white after:absolute after:inset-x-0 after:-bottom-1.5 after:h-0.5 after:origin-left after:scale-x-0 after:rounded-full after:bg-red-500 after:transition-transform after:duration-200 hover:after:scale-x-100 ${focusRing}`}
       >
         Genre
         <svg
@@ -65,24 +66,25 @@ export function GenreMenu() {
       {open && (
         <div
           role="menu"
-          className="glass-in absolute left-1/2 top-10 z-50 w-72 -translate-x-1/2 overflow-hidden rounded-[2rem] border border-white/10 bg-zinc-950/70 p-4 shadow-[0_24px_60px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.08)] ring-1 ring-inset ring-white/10 backdrop-blur-2xl"
+          className={`${popoverSurface} absolute left-1/2 top-full z-50 mt-3 w-72 overflow-hidden p-4`}
         >
-
-          <p className="relative mb-2.5 px-1 text-[11px] font-semibold uppercase tracking-widest text-zinc-500">
-            Browse genres
-          </p>
-          <div className="relative flex flex-wrap gap-2">
-            {GENRES.map((genre) => (
-              <button
-                key={genre.name}
-                type="button"
-                role="menuitem"
-                onClick={() => selectGenre(genre.name)}
-                className="rounded-full border border-white/10 bg-zinc-800/50 px-3 py-1.5 text-xs font-medium text-zinc-200 transition-colors hover:border-emerald-400/40 hover:bg-zinc-700/60 hover:text-white"
-              >
-                {genre.name}
-              </button>
-            ))}
+          <div className="-translate-x-1/2 relative left-1/2 w-72">
+            <p className="mb-2.5 px-1 text-[11px] font-semibold uppercase tracking-widest text-zinc-500">
+              Browse genres
+            </p>
+            <div className="flex flex-wrap gap-2">
+              {GENRES.map((genre) => (
+                <button
+                  key={genre.name}
+                  type="button"
+                  role="menuitem"
+                  onClick={() => selectGenre(genre.name)}
+                  className={`rounded-full border border-white/10 bg-zinc-800/50 px-3 py-1.5 text-xs font-medium text-zinc-200 transition-colors duration-200 hover:border-red-400/40 hover:bg-zinc-700/60 hover:text-white ${focusRing}`}
+                >
+                  {genre.name}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}

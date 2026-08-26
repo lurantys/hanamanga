@@ -93,7 +93,7 @@ export function NewChaptersRow() {
   if (updates.length === 0) return null;
 
   return (
-    <Carousel title="New Chapters" ariaLabel="New chapters">
+    <Carousel title="New Chapters" ariaLabel="New Chapters">
       {updates.map((update) => (
         <MangaCard key={update.manga.id} manga={update.manga} />
       ))}

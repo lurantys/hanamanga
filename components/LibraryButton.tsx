@@ -6,6 +6,7 @@ import {
   subscribeLibrary,
   toggleLibrary,
 } from "@/lib/library";
+import { ctaPrimary, ctaSecondary } from "@/lib/ui";
 import type { Manga } from "@/lib/mangadex";
 
 type LibraryButtonProps = {
@@ -25,11 +26,7 @@ export function LibraryButton({ manga, className = "" }: LibraryButtonProps) {
       type="button"
       onClick={() => toggleLibrary(manga)}
       aria-pressed={saved}
-      className={`inline-flex items-center justify-center gap-2 rounded-lg px-6 py-2.5 text-sm font-bold transition active:scale-[0.97] ${
-        saved
-          ? "bg-red-500 text-zinc-950 hover:bg-red-400"
-          : "border border-white/15 bg-zinc-800/60 text-zinc-100 hover:border-red-400/50 hover:bg-zinc-700/60"
-      } ${className}`}
+      className={`${saved ? `${ctaPrimary} border border-transparent bg-red-500 text-zinc-950 hover:bg-red-400` : ctaSecondary} ${className}`}
     >
       <svg
         viewBox="0 0 24 24"

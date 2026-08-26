@@ -16,7 +16,8 @@ export function ChapterReadCheck({ mangaId, chapterId }: ChapterReadCheckProps) 
   return (
     <span
       title="Read"
-      className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-emerald-400/40 bg-emerald-500/15 text-emerald-400"
+      className="inline-flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-red-400/40 bg-red-500/15 text-red-400"
+      role="img"
       aria-label="Read"
     >
       <svg

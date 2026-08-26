@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSyncExternalStore } from "react";
 import { Carousel } from "./Carousel";
 import { MangaCard } from "./MangaCard";
+import { focusRing } from "@/lib/ui";
 import {
   getLibrarySnapshot,
   subscribeLibrary,
@@ -32,7 +33,8 @@ export function LibraryRow() {
       headerRight={
         <Link
           href="/library"
-          className="text-xs font-semibold text-zinc-400 transition-colors hover:text-white"
+          aria-label="View all manga in your library"
+          className={`rounded text-xs font-semibold text-zinc-400 transition-colors duration-200 hover:text-white ${focusRing}`}
         >
           View all
         </Link>

@@ -17,10 +17,10 @@ export const revalidate = 300;
 function RowUnavailable({ title }: { title: string }) {
   return (
     <section aria-label={title}>
-      <h2 className="mb-3 px-4 text-lg font-bold tracking-tight text-zinc-400 md:px-10">
+      <h2 className="mb-3 px-5 text-lg font-bold tracking-tight text-zinc-100 md:px-10">
         {title}
       </h2>
-      <div className="px-4 py-4 md:px-10">
+      <div className="px-5 py-4 md:px-10">
         <p className="text-sm text-zinc-500">
           Couldn&apos;t load this row right now. Please try again in a moment.
         </p>
@@ -80,10 +80,10 @@ async function ManhuaRow() {
 function RowSkeleton({ title }: { title: string }) {
   return (
     <section aria-hidden>
-      <h2 className="mb-3 px-4 text-lg font-bold tracking-tight text-zinc-400 md:px-10">
+      <h2 className="mb-3 px-5 text-lg font-bold tracking-tight text-zinc-100 md:px-10">
         {title}
       </h2>
-      <div className="flex gap-3 overflow-hidden px-4 py-2 md:px-10">
+      <div className="flex gap-3 overflow-hidden px-5 py-2 md:px-10">
         {Array.from({ length: 8 }).map((_, index) => (
           <div
             key={index}
@@ -107,11 +107,14 @@ function HeroSkeleton() {
 export default function Home() {
   return (
     <main className="bg-zinc-950">
+      <h1 className="sr-only">
+        Hana — read manga, manhwa, manhua, and webtoons online
+      </h1>
       <Suspense fallback={<HeroSkeleton />}>
         <HeroSpotlight />
       </Suspense>
 
-      <div className="relative z-10 -mt-6 space-y-10 pb-20 md:-mt-16">
+      <div className="relative z-10 -mt-6 space-y-10 pb-24 md:-mt-16">
         <ContinueRow />
         <LibraryRow />
 

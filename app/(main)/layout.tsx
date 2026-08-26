@@ -8,7 +8,7 @@ import { SearchBar } from "@/components/SearchBar";
 function Footer() {
   return (
     <footer className="mt-auto border-t border-white/5 bg-zinc-950">
-      <div className="mx-auto max-w-5xl px-5 py-6 md:px-10">
+      <div className="mx-auto max-w-7xl px-5 py-6 md:px-10">
         <div className="flex flex-wrap items-center justify-between gap-x-8 gap-y-3">
           <div className="flex items-center gap-2">
             <Image
@@ -28,7 +28,7 @@ function Footer() {
               — read manga, manhwa, manhua, and webtoons online at{" "}
               <a
                 href="https://hanamanga.online"
-                className="text-zinc-400 hover:text-white"
+                className="text-zinc-400 transition-colors duration-200 hover:text-white"
               >
                 hanamanga.online
               </a>
@@ -44,19 +44,19 @@ function Footer() {
           <nav className="flex items-center gap-4 text-sm">
             <Link
               href="/browse"
-              className="text-zinc-400 transition-colors hover:text-white"
+              className="text-zinc-400 transition-colors duration-200 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
             >
               Browse
             </Link>
             <Link
               href="/about"
-              className="text-zinc-400 transition-colors hover:text-white"
+              className="text-zinc-400 transition-colors duration-200 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
             >
               About
             </Link>
             <Link
               href="/library"
-              className="text-zinc-400 transition-colors hover:text-white"
+              className="text-zinc-400 transition-colors duration-200 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
             >
               Library
             </Link>
@@ -73,7 +73,7 @@ function Footer() {
 function Header() {
   return (
     <header className="fixed inset-x-0 top-[calc(1.5rem+env(safe-area-inset-top))] z-40 flex justify-center px-4">
-      <div className="flex w-fit max-w-[calc(100vw-1rem)] items-center justify-center gap-3 rounded-full border border-zinc-700/50 bg-zinc-950/70 px-3 py-3 shadow-[0_8px_40px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.06)] ring-1 ring-inset ring-white/10 backdrop-blur-xl md:gap-6 md:px-4">
+      <div className="flex w-fit max-w-[calc(100vw-1rem)] items-center justify-center gap-3 rounded-full border border-zinc-700/50 bg-zinc-950/70 px-3 py-3 shadow-[0_8px_40px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.08)] ring-1 ring-inset ring-white/10 backdrop-blur-xl md:gap-6 md:px-4">
         <Link href="/" className="flex items-center gap-2" aria-label="Hana home">
           <Image
             src="/logo-v2.png"
@@ -82,26 +82,26 @@ function Header() {
             height={48}
             className="h-12 w-12 rounded-xl object-contain"
           />
-          <span className="header-wordmark text-xl font-bold text-zinc-50 md:text-2xl">
+          <span className="header-wordmark font-heading text-xl font-bold text-zinc-50 md:text-2xl">
             Hana
           </span>
         </Link>
         <nav className="hidden items-center gap-5 text-sm font-medium text-zinc-300 lg:flex">
           <Link
             href="/"
-            className="relative text-zinc-50 transition-colors after:absolute after:inset-x-0 after:-bottom-1.5 after:h-0.5 after:origin-left after:scale-x-0 after:rounded-full after:bg-red-500 after:transition-transform after:duration-200 hover:after:scale-x-100"
+            className="relative text-zinc-50 transition-colors duration-200 after:absolute after:inset-x-0 after:-bottom-1.5 after:h-0.5 after:origin-left after:scale-x-0 after:rounded-full after:bg-red-500 after:transition-transform after:duration-200 hover:after:scale-x-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
           >
             Home
           </Link>
           <Link
             href="/browse"
-            className="relative transition-colors hover:text-white after:absolute after:inset-x-0 after:-bottom-1.5 after:h-0.5 after:origin-left after:scale-x-0 after:rounded-full after:bg-red-500 after:transition-transform after:duration-200 hover:after:scale-x-100"
+            className="relative transition-colors duration-200 hover:text-white after:absolute after:inset-x-0 after:-bottom-1.5 after:h-0.5 after:origin-left after:scale-x-0 after:rounded-full after:bg-red-500 after:transition-transform after:duration-200 hover:after:scale-x-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
           >
             Browse
           </Link>
           <Link
             href="/library"
-            className="relative transition-colors hover:text-white after:absolute after:inset-x-0 after:-bottom-1.5 after:h-0.5 after:origin-left after:scale-x-0 after:rounded-full after:bg-red-500 after:transition-transform after:duration-200 hover:after:scale-x-100"
+            className="relative transition-colors duration-200 hover:text-white after:absolute after:inset-x-0 after:-bottom-1.5 after:h-0.5 after:origin-left after:scale-x-0 after:rounded-full after:bg-red-500 after:transition-transform after:duration-200 hover:after:scale-x-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
           >
             Library
           </Link>

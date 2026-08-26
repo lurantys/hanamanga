@@ -110,15 +110,19 @@ export default async function CharactersPage({
 
   if (!alId) {
     return (
-      <main className="mx-auto max-w-5xl px-5 pb-16 pt-40 md:px-10 md:pt-36">
+      <main className="mx-auto max-w-5xl px-5 pt-header pb-24 md:px-10">
         <Link
           href={`/manga/${rawId}`}
-          className="text-sm text-zinc-400 transition-colors hover:text-white"
+          className="text-sm text-zinc-400 transition-colors duration-200 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
         >
-          ← Back to {mangaTitle}
+          &larr; Back to {mangaTitle}
         </Link>
-        <h1 className="mt-6 text-2xl font-bold text-white">Characters</h1>
-        <p className="mt-3 text-sm text-zinc-400">
+        <header className="mb-6 mt-6">
+          <h1 className="text-2xl font-extrabold tracking-tight text-white md:text-3xl">
+            Characters
+          </h1>
+        </header>
+        <p className="text-sm text-zinc-400">
           Character data isn&apos;t available for this title.
         </p>
       </main>
@@ -139,40 +143,44 @@ export default async function CharactersPage({
         eyebrow="Error"
         title="AniList is down"
         description="Character data comes from AniList, which has been temporarily disabled due to severe stability issues. Please try again in a little while."
-        className="pb-24 pt-40 md:pt-32"
+        className="pt-header pb-24"
       >
         <Link
-          href={`/manga/${rawId}`}
-          className="inline-flex items-center justify-center rounded-full border border-white/15 px-6 py-2.5 text-sm font-semibold text-zinc-300 transition-colors hover:border-white/40 hover:text-white"
-        >
-          ← Back to {mangaTitle}
-        </Link>
-        <Link
           href="/"
-          className="inline-flex items-center justify-center rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-zinc-950 transition-colors hover:bg-white/80"
+          className="inline-flex items-center justify-center rounded-full bg-white px-6 py-2.5 text-sm font-semibold text-zinc-950 transition-colors duration-200 hover:bg-white/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
         >
           Back to Home
+        </Link>
+        <Link
+          href={`/manga/${rawId}`}
+          className="inline-flex items-center justify-center rounded-full border border-white/15 px-6 py-2.5 text-sm font-semibold text-zinc-300 transition-colors duration-200 hover:border-white/40 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+        >
+          &larr; Back to {mangaTitle}
         </Link>
       </ErrorPage>
     );
   }
 
   return (
-    <main className="mx-auto max-w-5xl px-5 pb-16 pt-40 md:px-10 md:pt-36">
+    <main className="mx-auto max-w-5xl px-5 pt-header pb-24 md:px-10">
       <Link
         href={`/manga/${rawId}`}
-        className="text-sm text-zinc-400 transition-colors hover:text-white"
+        className="text-sm text-zinc-400 transition-colors duration-200 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
       >
-        ← Back to {mangaTitle}
+        &larr; Back to {mangaTitle}
       </Link>
-      <h1 className="mt-6 text-2xl font-bold text-white">Characters</h1>
+      <header className="mb-6 mt-6">
+        <h1 className="text-2xl font-extrabold tracking-tight text-white md:text-3xl">
+          Characters
+        </h1>
+      </header>
 
       {characters.length === 0 ? (
-        <p className="mt-3 text-sm text-zinc-400">
+        <p className="text-sm text-zinc-400">
           No characters listed for this title.
         </p>
       ) : (
-        <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
           {characters.map((character) => (
             <CharacterCard key={character.id} character={character} />
           ))}

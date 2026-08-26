@@ -18,7 +18,7 @@ const geistMono = Geist_Mono({
 });
 
 const zenKaku = Zen_Kaku_Gothic_New({
-  variable: "--font-heading",
+  variable: "--font-zen-kaku",
   subsets: ["latin"],
   weight: ["500", "700", "900"],
 });

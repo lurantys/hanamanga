@@ -1,7 +1,8 @@
 export default function ReadLoading() {
   return (
     <div className="min-h-screen bg-zinc-950 pb-24">
-      <div className="sticky top-0 z-20 border-b border-white/10 bg-zinc-950/80">
+      <div className="sticky top-0 z-20 border-b border-white/10 bg-zinc-950/70 backdrop-blur-xl">
+        <div aria-hidden className="absolute inset-x-0 top-0 h-[3px] bg-white/5" />
         <div className="mx-auto flex max-w-4xl items-center gap-2 px-3 py-3 sm:px-4">
           <div className="h-9 w-9 animate-pulse rounded-lg bg-zinc-800" />
           <div className="min-w-0 flex-1 space-y-2 px-2">

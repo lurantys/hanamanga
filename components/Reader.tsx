@@ -353,6 +353,14 @@ export function Reader({
   const pendingScrollTargetRef = useRef<number | null>(null);
   const controlsVisibleRef = useRef(true);
   const controlsTimerRef = useRef(0);
+  const pagedIndexRef = useRef(pagedIndex);
+  const currentPageRef = useRef(currentPage);
+  useEffect(() => {
+    pagedIndexRef.current = pagedIndex;
+  }, [pagedIndex]);
+  useEffect(() => {
+    currentPageRef.current = currentPage;
+  }, [currentPage]);
 
   const mode = settings.mode;
   const isTwoPage = mode === "twopage" && !isMobile;
@@ -760,21 +768,25 @@ export function Reader({
 
   const switchMode = useCallback(
     (target: ReaderMode) => {
-      if (target === mode) return;
+      // Read the latest mode from the store to avoid stale closure when
+      // the user taps modes rapidly before React has re-rendered.
+      const currentMode = getReaderSettings().mode;
+      if (target === currentMode) return;
       if (target === "webtoon") {
-        pendingScrollTargetRef.current = pagedIndex;
+        pendingScrollTargetRef.current = pagedIndexRef.current;
       } else {
+        const cp = currentPageRef.current;
         if (target === "twopage") {
-          setPagedIndex(Math.floor(currentPage / 2) * 2);
+          setPagedIndex(Math.floor(cp / 2) * 2);
         } else {
-          setPagedIndex(currentPage);
+          setPagedIndex(cp);
         }
         pendingScrollTargetRef.current = null;
         window.scrollTo(0, 0);
       }
       updateSettings({ mode: target });
     },
-    [mode, currentPage, pagedIndex, updateSettings],
+    [updateSettings],
   );
 
   const toggleUi = useCallback(() => setUiHidden((value) => !value), []);

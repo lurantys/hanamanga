@@ -22,6 +22,7 @@ import {
 } from "./read-state";
 import {
   getReaderSettings,
+  getReaderSettingsUpdatedAt,
   replaceReaderSettings,
   READER_SETTINGS_EVENT,
   type ReaderSettings,
@@ -198,10 +199,13 @@ async function pushReadState(userId: string): Promise<void> {
 async function pushSettings(userId: string): Promise<void> {
   const supabase = createClient();
   const settings = getReaderSettings();
+  // Use the local updatedAt (set by setReaderSettings) so remote and local stay in sync.
+  // If no local timestamp yet, fall back to now.
+  const updated_at = getReaderSettingsUpdatedAt() || Date.now();
   await supabase
     .from("hana_reader_settings")
     .upsert(
-      [{ user_id: userId, settings, updated_at: Date.now() }],
+      [{ user_id: userId, settings, updated_at }],
       { onConflict: "user_id" },
     );
 }
@@ -309,12 +313,22 @@ async function pullSettings(userId: string): Promise<void> {
   const supabase = createClient();
   const { data } = await supabase
     .from("hana_reader_settings")
-    .select("settings")
+    .select("settings, updated_at")
     .eq("user_id", userId)
     .single();
   if (!data) return;
-  const remote = (data as SettingsRow).settings;
-  if (!sameJson(getReaderSettings(), remote)) replaceReaderSettings(remote);
+  const row = data as SettingsRow;
+  const remote = row.settings;
+  const remoteUpdatedAt = row.updated_at ?? 0;
+  // Don't overwrite a newer local change that hasn't been pushed yet.
+  const localUpdatedAt = getReaderSettingsUpdatedAt();
+  if (remoteUpdatedAt && localUpdatedAt && remoteUpdatedAt <= localUpdatedAt) {
+    // If contents differ but remote is stale, keep local (will be pushed by debounce).
+    if (sameJson(getReaderSettings(), remote)) return;
+    // Remote is stale and local is newer — skip to avoid reverting fast changes.
+    return;
+  }
+  if (!sameJson(getReaderSettings(), remote)) replaceReaderSettings(remote, remoteUpdatedAt || undefined);
 }
 
 async function pullScanlatorPrefs(userId: string): Promise<void> {

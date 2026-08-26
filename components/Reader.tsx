@@ -341,26 +341,6 @@ export function Reader({
   const lastRestoredAtRef = useRef(0);
   const chapterInitRef = useRef(false);
 
-  useEffect(() => {
-    const saved = getProgress(mangaId);
-    lastRestoredAtRef.current = saved?.updatedAt ?? 0;
-    chapterInitRef.current = false;
-    const chapterKey = `${mangaId}:${currentChapterId}`;
-    if (initializedChapterRef.current === chapterKey) return;
-    initializedChapterRef.current = chapterKey;
-
-    const initial =
-      saved?.chapterId === currentChapterId && saved.scrollFraction && pages.length > 0
-        ? Math.min(
-            pages.length - 1,
-            Math.round(saved.scrollFraction * (pages.length - 1)),
-          )
-        : 0;
-    setSlideDir(null);
-    setPagedIndex(initial);
-    setProgress(0);
-  }, [mangaId, currentChapterId, pages.length]);
-
   const listRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const lastZoomRef = useRef(settings.zoom);
@@ -378,6 +358,38 @@ export function Reader({
   const isTwoPage = mode === "twopage" && !isMobile;
   const isSinglePage = mode === "paged" || (mode === "twopage" && isMobile);
   const pageStep = isTwoPage ? 2 : 1;
+
+  const getPagedIndexFromFraction = useCallback(
+    (fraction: number, length: number): number => {
+      if (length <= 0) return 0;
+      const step = isTwoPage ? 2 : 1;
+      const pagesRead = Math.round(fraction * length);
+      if (pagesRead >= length) {
+        const rem = length % step;
+        return rem === 0 ? length - step : length - rem;
+      }
+      const target = Math.max(0, pagesRead - step);
+      return Math.floor(target / step) * step;
+    },
+    [isTwoPage],
+  );
+
+  useEffect(() => {
+    const saved = getProgress(mangaId);
+    lastRestoredAtRef.current = saved?.updatedAt ?? 0;
+    chapterInitRef.current = false;
+    const chapterKey = `${mangaId}:${currentChapterId}`;
+    if (initializedChapterRef.current === chapterKey) return;
+    initializedChapterRef.current = chapterKey;
+
+    const initial =
+      saved?.chapterId === currentChapterId && saved.scrollFraction && pages.length > 0
+        ? getPagedIndexFromFraction(saved.scrollFraction, pages.length)
+        : 0;
+    setSlideDir(null);
+    setPagedIndex(initial);
+    setProgress(0);
+  }, [mangaId, currentChapterId, pages.length, getPagedIndexFromFraction]);
 
   const displayProgress =
     isSinglePage || isTwoPage
@@ -658,12 +670,7 @@ export function Reader({
       lastRestoredAtRef.current = saved.updatedAt;
       if (mode !== "webtoon") {
         chapterInitRef.current = false;
-        setPagedIndex(
-          Math.min(
-            pages.length - 1,
-            Math.round(saved.scrollFraction * (pages.length - 1)),
-          ),
-        );
+        setPagedIndex(getPagedIndexFromFraction(saved.scrollFraction, pages.length));
       } else {
         const doc = document.documentElement;
         const max = doc.scrollHeight - doc.clientHeight;
@@ -672,7 +679,7 @@ export function Reader({
     };
     window.addEventListener(PROGRESS_EVENT, onProgress);
     return () => window.removeEventListener(PROGRESS_EVENT, onProgress);
-  }, [mode, mangaId, currentChapterId, pages.length]);
+  }, [mode, mangaId, currentChapterId, pages.length, getPagedIndexFromFraction]);
 
   useEffect(() => {
     if (mode !== "webtoon") return;

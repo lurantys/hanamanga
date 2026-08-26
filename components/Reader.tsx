@@ -1471,21 +1471,32 @@ export function Reader({
           </div>
           </div>
 
-          {isTwoPage
-            ? pages[pagedIndex + 2] && (
-                <link
-                  rel="preload"
-                  as="image"
-                  href={pages[pagedIndex + 2].image}
-                />
-              )
-            : pages[pagedIndex + 1] && (
+          {isTwoPage ? (
+              <>
+                {pages[pagedIndex + 2] && (
+                  <link
+                    rel="preload"
+                    as="image"
+                    href={pages[pagedIndex + 2].image}
+                  />
+                )}
+                {pages[pagedIndex + 3] && (
+                  <link
+                    rel="preload"
+                    as="image"
+                    href={pages[pagedIndex + 3].image}
+                  />
+                )}
+              </>
+            ) : (
+              pages[pagedIndex + 1] && (
                 <link
                   rel="preload"
                   as="image"
                   href={pages[pagedIndex + 1].image}
                 />
-              )}
+              )
+            )}
 
           {settings.tapZones && (
             <>

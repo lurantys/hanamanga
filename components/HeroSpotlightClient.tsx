@@ -246,7 +246,7 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
       {imageSrc && (
         <div
           aria-hidden
-          className={`absolute inset-0 animate-pulse bg-zinc-800 transition-opacity duration-300 ${
+          className={`absolute inset-0 bg-zinc-800 transition-opacity duration-300 ${
             ready ? "opacity-0" : "opacity-100"
           }`}
         />

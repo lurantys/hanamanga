@@ -90,7 +90,7 @@ export function Carousel({ title, ariaLabel, children, headerRight }: CarouselPr
       </div>
       <div
         ref={scrollerRef}
-        className="scrollbar-hide flex touch-pan-x gap-3 overflow-x-auto px-5 py-2 md:px-10"
+        className="scrollbar-hide flex gap-3 overflow-x-auto px-5 py-2 md:px-10"
         style={{ overscrollBehaviorX: "none" }}
       >
         {children}

@@ -137,6 +137,7 @@ if (atsuReader && atsuReader.pages.length > 0) {
       : mdRefForManga(manga).catch(() => null);
 
   let weebReader: {
+    currentId: string;
     chapterLabel: string;
     chapterNumber: number | null;
     chapters: ReaderChapter[];
@@ -174,6 +175,7 @@ if (atsuReader && atsuReader.pages.length > 0) {
               ? lookup.chapters[index + 1]
               : null;
           weebReader = {
+            currentId: current.id,
             chapterLabel: current.label,
             chapterNumber: current.number,
             chapters: lookup.chapters.map((chapter) => ({
@@ -200,7 +202,7 @@ if (weebReader) {
        mangaHref: `/manga/${manga.id}`,
        chapterLabel: weebReader.chapterLabel,
        chapterNumber: weebReader.chapterNumber,
-       currentChapterId: chapterId,
+       currentChapterId: weebReader.currentId,
        chapters: weebReader.chapters,
        pages: weebReader.pages,
        prevHref: weebReader.prevHref,
@@ -209,6 +211,7 @@ if (weebReader) {
    }
 
   let katanaReader: {
+    currentId: string;
     chapterLabel: string;
     chapterNumber: number | null;
     chapters: ReaderChapter[];
@@ -241,6 +244,7 @@ if (weebReader) {
               ? lookup.chapters[index + 1]
               : null;
           katanaReader = {
+            currentId: current.id,
             chapterLabel: current.label,
             chapterNumber: current.number,
             chapters: lookup.chapters.map((chapter) => ({
@@ -266,7 +270,7 @@ if (katanaReader) {
        mangaHref: `/manga/${manga.id}`,
        chapterLabel: katanaReader.chapterLabel,
        chapterNumber: katanaReader.chapterNumber,
-       currentChapterId: chapterId,
+       currentChapterId: katanaReader.currentId,
        chapters: katanaReader.chapters,
        pages: katanaReader.pages,
        prevHref: katanaReader.prevHref,

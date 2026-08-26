@@ -28,12 +28,14 @@ export function RecommendedRow() {
     () => EMPTY_LIBRARY,
   );
   const [manga, setManga] = useState<Manga[]>([]);
-  const [prevLibrary, setPrevLibrary] = useState(library);
 
-  if (prevLibrary !== library) {
-    setPrevLibrary(library);
+  useEffect(() => {
+    // Clear stale recommendations immediately when library changes;
+    // the fetch below will repopulate. This is an intentional reset-on-prop-change.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setManga([]);
-  }
+
+  }, [library]);
 
   useEffect(() => {
     let active = true;

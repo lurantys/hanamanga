@@ -323,7 +323,15 @@ export function Reader({
   const [advanceCount, setAdvanceCount] = useState<number | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [controlsVisible, setControlsVisible] = useState(true);
-  const [isMobile, setIsMobile] = useState(false);
+  const isMobile = useSyncExternalStore(
+    (onChange) => {
+      const mq = window.matchMedia("(max-width: 640px)");
+      mq.addEventListener("change", onChange);
+      return () => mq.removeEventListener("change", onChange);
+    },
+    () => window.matchMedia("(max-width: 640px)").matches,
+    () => false,
+  );
   const [uiHidden, setUiHidden] = useState(false);
   const [preloadUrls, setPreloadUrls] = useState<string[]>([]);
   const readChapters = useReadChapters(mangaId);
@@ -956,14 +964,6 @@ export function Reader({
     };
   }, [settingsOpen]);
 
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 640px)");
-    const update = () => setIsMobile(mq.matches);
-    update();
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
-  }, []);
-
   const onViewportClick = useCallback(
     (event: ReactMouseEvent<HTMLDivElement>) => {
       if ((event.target as HTMLElement).closest("button")) return;
@@ -1388,12 +1388,12 @@ export function Reader({
         </>
       ) : (
         <div
-          className="fixed inset-0 z-0 overflow-hidden bg-zinc-950"
+          className="relative z-0 flex min-h-[calc(100dvh-4rem)] items-center justify-center overflow-hidden bg-zinc-950 px-0 py-8 sm:px-4"
           onTouchStart={onTouchStart}
           onTouchEnd={onTouchEnd}
           onClick={onViewportClick}
         >
-          <div className="flex min-h-full items-center justify-center px-0 pb-16 pt-20 sm:px-4">
+          <div className="flex items-center justify-center">
             {isTwoPage ? (
               <div
                 className={`flex items-center justify-center gap-2 sm:gap-3 ${

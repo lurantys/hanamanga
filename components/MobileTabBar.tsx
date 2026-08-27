@@ -38,6 +38,24 @@ export function MobileTabBar() {
     };
   }, []);
 
+  // Fix: logging out/in navigates and focus may stay stuck (login input keeps focusin true).
+  // Reset keyboard state on route or auth change so bar doesn't stay disappeared.
+  useEffect(() => {
+    setKeyboardOpen(false);
+    // Blur any focused input that survived navigation (login → account → home)
+    if (document.activeElement instanceof HTMLElement) {
+      const el = document.activeElement;
+      if (
+        el.tagName === "INPUT" ||
+        el.tagName === "TEXTAREA" ||
+        el.tagName === "SELECT" ||
+        el.isContentEditable
+      ) {
+        el.blur();
+      }
+    }
+  }, [pathname, user?.id, loading]);
+
   const isHome = pathname === "/";
   const isBrowse = pathname.startsWith("/browse");
   const isSearch = pathname.startsWith("/search");

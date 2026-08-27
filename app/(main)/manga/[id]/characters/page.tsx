@@ -15,6 +15,9 @@ type CharactersPageProps = {
   params: Promise<{ id: string }>;
 };
 
+export const revalidate = 3600;
+export const generateStaticParams = async () => [];
+
 function characterRoleLabel(role?: string): string | null {
   switch (role) {
     case "MAIN":

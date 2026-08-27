@@ -2,6 +2,7 @@ import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import {
   fetchMangaById,
+  fetchMangaList,
   fetchSearch,
   MangaDexError,
   type Manga,
@@ -11,6 +12,7 @@ import {
   AniListError,
   fetchAniListById,
   fetchAniListByIds,
+  fetchAniListList,
   searchAniList,
   searchAniListByAuthor,
 } from "./anilist";
@@ -26,6 +28,12 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { parseMangaId, toMangaId } from "./source";
 import { normalizeTitleKey, titleHits } from "./title";
+import {
+  RATING_VALUES,
+  SORT_ORDER,
+  tagIdFor,
+  type SortKey,
+} from "./genres";
 
 type AtsuLike = {
   id: string;
@@ -120,6 +128,83 @@ export function atsuToManga(atsu: AtsuLike): Manga {
 }
 
 const EMPTY_SEARCH: MangaListResult = { data: [], total: 0, offset: 0, limit: 24 };
+
+export const CATALOG_PAGE_SIZE = 24;
+export const SEARCH_POOL_SIZE = 60;
+
+export type BrowseOptions = {
+  sort: SortKey;
+  genres: string[];
+  status?: string;
+  rating?: string;
+  origin?: string;
+  yearFrom?: number;
+  yearTo?: number;
+  minScore?: number;
+  page?: number;
+};
+
+const cachedBrowseCatalog = unstable_cache(
+  async (options: BrowseOptions): Promise<MangaListResult> => {
+    const page = Math.max(1, options.page ?? 1);
+    const offset = (page - 1) * CATALOG_PAGE_SIZE;
+    try {
+      return await fetchAniListList({
+        limit: CATALOG_PAGE_SIZE,
+        offset,
+        sort: options.sort,
+        genres: options.genres,
+        status: options.status,
+        rating: options.rating,
+        origin: options.origin,
+        yearFrom: options.yearFrom,
+        yearTo: options.yearTo,
+        minScore: options.minScore,
+      });
+    } catch {
+      return fetchMangaList({
+        limit: CATALOG_PAGE_SIZE,
+        offset,
+        order: SORT_ORDER[options.sort],
+        includedTags: options.genres.map(tagIdFor).filter(
+          (id): id is string => Boolean(id),
+        ),
+        status: options.status ? [options.status] : undefined,
+        contentRating: options.rating ? RATING_VALUES[options.rating] : undefined,
+        year:
+          options.yearFrom && options.yearFrom === options.yearTo
+            ? options.yearFrom
+            : undefined,
+      });
+    }
+  },
+  ["catalog-browse"],
+  { revalidate: 300 },
+);
+
+export function fetchBrowseCatalog(options: BrowseOptions): Promise<MangaListResult> {
+  return cachedBrowseCatalog(options);
+}
+
+const cachedSearchCatalog = unstable_cache(
+  (query: string) => searchCatalog(query, SEARCH_POOL_SIZE),
+  ["catalog-search"],
+  { revalidate: 300 },
+);
+
+const cachedAuthorCatalog = unstable_cache(
+  (author: string) => searchCatalogByAuthor(author, SEARCH_POOL_SIZE),
+  ["catalog-author-search"],
+  { revalidate: 300 },
+);
+
+export function fetchCachedSearchCatalog(query: string): Promise<MangaListResult> {
+  return cachedSearchCatalog(query);
+}
+
+export function fetchCachedAuthorCatalog(author: string): Promise<AuthorSearchResult> {
+  return cachedAuthorCatalog(author);
+}
 
 export function isNotFoundError(error: unknown): boolean {
   return (

@@ -7,21 +7,16 @@ import {
   isRatingKey,
   isSortKey,
   isStatusKey,
-  RATING_VALUES,
-  SORT_ORDER,
-  tagIdFor,
   type SortKey,
 } from "@/lib/genres";
-import { fetchAniListList } from "@/lib/anilist";
-import { fetchMangaList, type Manga } from "@/lib/mangadex";
+import type { Manga } from "@/lib/mangadex";
+import { fetchBrowseCatalog } from "@/lib/catalog";
 
 export const metadata: Metadata = {
   title: "Browse — Hana",
   description:
     "Browse the manga catalog — sort by popularity, trending, or rating and filter by genre, status, and content rating.",
 };
-
-const PER_PAGE = 24;
 
 export default async function BrowsePage({
   searchParams,
@@ -63,32 +58,17 @@ export default async function BrowsePage({
   let total = 0;
   let errored = false;
   try {
-    let result;
-    try {
-      result = await fetchAniListList({
-        limit: PER_PAGE,
-        offset: 0,
-        sort,
-        genres,
-        status: status || undefined,
-        rating: rating || undefined,
-        origin: origin || undefined,
-        yearFrom: yearFrom ? Number(yearFrom) : undefined,
-        yearTo: yearTo ? Number(yearTo) : undefined,
-        minScore: minScore ? Number(minScore) : undefined,
-      });
-    } catch {
-      const tagIds = genres.map(tagIdFor).filter((id): id is string => Boolean(id));
-      result = await fetchMangaList({
-        limit: PER_PAGE,
-        offset: 0,
-        order: SORT_ORDER[sort],
-        includedTags: tagIds,
-        status: status ? [status] : undefined,
-        contentRating: rating ? RATING_VALUES[rating] : undefined,
-        year: yearFrom && yearFrom === yearTo ? Number(yearFrom) : undefined,
-      });
-    }
+    const result = await fetchBrowseCatalog({
+      sort,
+      genres,
+      status: status || undefined,
+      rating: rating || undefined,
+      origin: origin || undefined,
+      yearFrom: yearFrom ? Number(yearFrom) : undefined,
+      yearTo: yearTo ? Number(yearTo) : undefined,
+      minScore: minScore ? Number(minScore) : undefined,
+      page: 1,
+    });
     initialResults = result.data;
     total = result.total;
   } catch {

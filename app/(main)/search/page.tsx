@@ -5,14 +5,16 @@ import { SearchResults } from "@/components/SearchResults";
 import { SearchField } from "@/components/SearchField";
 import { EmptyState } from "@/components/EmptyState";
 import { ctaPrimary } from "@/lib/ui";
-import { searchCatalog, searchCatalogByAuthor } from "@/lib/catalog";
+import {
+  fetchCachedAuthorCatalog,
+  fetchCachedSearchCatalog,
+} from "@/lib/catalog";
 import type { Manga } from "@/lib/mangadex";
 
 export const metadata: Metadata = {
   title: "Search — Hana",
 };
 
-const POOL = 60;
 const FIRST_PAGE = 24;
 
 export default async function SearchPage({
@@ -68,7 +70,7 @@ export default async function SearchPage({
   let fellBackToTitle = false;
   try {
     if (author) {
-      const pool = await searchCatalogByAuthor(author, POOL);
+      const pool = await fetchCachedAuthorCatalog(author);
       initialData = pool.data.slice(0, FIRST_PAGE);
       total = pool.data.length;
       authorName = pool.authorName;
@@ -79,7 +81,7 @@ export default async function SearchPage({
   }
   if (!author || fellBackToTitle) {
     try {
-      const pool = await searchCatalog(fellBackToTitle ? author : query, POOL);
+      const pool = await fetchCachedSearchCatalog(fellBackToTitle ? author : query);
       initialData = pool.data.slice(0, FIRST_PAGE);
       total = pool.data.length;
     } catch {

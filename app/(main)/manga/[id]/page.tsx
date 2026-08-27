@@ -43,6 +43,9 @@ type MangaPageProps = {
   params: Promise<{ id: string }>;
 };
 
+export const revalidate = 300;
+export const generateStaticParams = async () => [];
+
 export async function generateMetadata({
   params,
 }: MangaPageProps): Promise<Metadata> {

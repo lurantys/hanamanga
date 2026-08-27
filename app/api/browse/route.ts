@@ -1,73 +1,15 @@
 import { NextResponse } from "next/server";
-import { unstable_cache } from "next/cache";
-import { fetchAniListList } from "@/lib/anilist";
-import { fetchMangaList } from "@/lib/mangadex";
+import { fetchBrowseCatalog } from "@/lib/catalog";
 import {
   isMinScoreKey,
   isOriginKey,
   isRatingKey,
   isSortKey,
   isStatusKey,
-  RATING_VALUES,
-  SORT_ORDER,
-  tagIdFor,
   type SortKey,
 } from "@/lib/genres";
 
 export const dynamic = "force-dynamic";
-
-const PER_PAGE = 24;
-
-const cachedBrowse = unstable_cache(
-  async (
-    sort: SortKey,
-    genres: string,
-    status: string,
-    rating: string,
-    origin: string,
-    yearFrom: string,
-    yearTo: string,
-    minScore: string,
-    page: number,
-  ) => {
-    const offset = (page - 1) * PER_PAGE;
-    const genreList = genres
-      .split(",")
-      .map((genre) => genre.trim())
-      .filter(Boolean);
-    try {
-      try {
-        return await fetchAniListList({
-          limit: PER_PAGE,
-          offset,
-          sort,
-          genres: genreList,
-          status: status || undefined,
-          rating: rating || undefined,
-          origin: origin || undefined,
-          yearFrom: yearFrom ? Number(yearFrom) : undefined,
-          yearTo: yearTo ? Number(yearTo) : undefined,
-          minScore: minScore ? Number(minScore) : undefined,
-        });
-      } catch {
-        const tagIds = genreList.map(tagIdFor).filter((id): id is string => Boolean(id));
-        return await fetchMangaList({
-          limit: PER_PAGE,
-          offset,
-          order: SORT_ORDER[sort],
-          includedTags: tagIds,
-          status: status ? [status] : undefined,
-          contentRating: rating ? RATING_VALUES[rating] : undefined,
-          year: yearFrom && yearFrom === yearTo ? Number(yearFrom) : undefined,
-        });
-      }
-    } catch {
-      return { data: [], total: 0 };
-    }
-  },
-  ["api-browse"],
-  { revalidate: 300 },
-);
 
 export async function GET(request: Request) {
   const sp = new URL(request.url).searchParams;
@@ -87,17 +29,17 @@ export async function GET(request: Request) {
   const page = Math.max(1, Number(sp.get("page")) || 1);
 
   try {
-    const { data, total } = await cachedBrowse(
+    const { data, total } = await fetchBrowseCatalog({
       sort,
-      genresParam ?? "",
-      status,
-      rating,
-      origin,
-      yearFrom,
-      yearTo,
-      minScore,
+      genres: (genresParam ?? "").split(",").map((genre) => genre.trim()).filter(Boolean),
+      status: status || undefined,
+      rating: rating || undefined,
+      origin: origin || undefined,
+      yearFrom: /^\d{4}$/.test(yearFrom) ? Number(yearFrom) : undefined,
+      yearTo: /^\d{4}$/.test(yearTo) ? Number(yearTo) : undefined,
+      minScore: minScore ? Number(minScore) : undefined,
       page,
-    );
+    });
     return NextResponse.json(
       { data, total, page },
       {

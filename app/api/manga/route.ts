@@ -68,7 +68,12 @@ export async function GET(request: Request) {
     .map((id) => id.trim())
     .filter(Boolean);
   const withBanners = searchParams.get("banners") === "1";
-  if (!ids.length) return NextResponse.json({ data: [] });
+  if (!ids.length || ids.length > 100) {
+    return NextResponse.json(
+      { data: [] },
+      { headers: { "Cache-Control": "public, max-age=60, s-maxage=60" } },
+    );
+  }
   try {
     const data = await cachedProviderFetch(ids, withBanners);
     const foundAl = new Set(data.filter((m) => m.id.startsWith("al:")).map((m) => m.id));

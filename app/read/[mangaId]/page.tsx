@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { resolveFirstChapter } from "@/lib/read";
 
-export const dynamic = "force-dynamic";
+export const revalidate = 3600;
+export const generateStaticParams = async () => [];
 
 export const metadata: Metadata = { title: "Read — Hana" };
 

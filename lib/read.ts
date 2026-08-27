@@ -228,7 +228,7 @@ export async function mdRefForCatalogId(mangaId: string): Promise<string | null>
   }
 }
 
-export async function resolveFirstChapter(
+async function resolveFirstChapterUncached(
   mangaId: string,
 ): Promise<string | null> {
   try {
@@ -259,4 +259,14 @@ export async function resolveFirstChapter(
   } catch {
     return null;
   }
+}
+
+const cachedFirstChapter = unstable_cache(
+  (mangaId: string) => resolveFirstChapterUncached(mangaId),
+  ["resolve-first-chapter"],
+  { revalidate: SOURCE_REVALIDATE },
+);
+
+export function resolveFirstChapter(mangaId: string): Promise<string | null> {
+  return cachedFirstChapter(mangaId);
 }

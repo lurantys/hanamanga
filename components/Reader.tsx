@@ -1663,17 +1663,6 @@ export function Reader({
               {mode !== "webtoon" && (
                 <>
                   <section>
-                    <SectionLabel>Reading direction</SectionLabel>
-                    <Segmented
-                      value={settings.direction}
-                      onChange={(value) => updateSettings({ direction: value })}
-                      options={[
-                        { value: "ltr" as const, label: "Left → Right" },
-                        { value: "rtl" as const, label: "Right → Left" },
-                      ]}
-                    />
-                  </section>
-                  <section>
                     <SectionLabel>Page fit</SectionLabel>
                     <Segmented
                       value={settings.fit}

@@ -10,15 +10,12 @@ import { focusRing } from "@/lib/ui";
 import { BrowseIcon, LibraryIcon, SearchIcon } from "./icons";
 import { SignInIcon } from "./AuthIcons";
 
-const tabButton = `flex h-11 w-11 items-center justify-center rounded-full text-zinc-400 transition duration-200 hover:bg-zinc-800 hover:text-zinc-100 active:scale-[0.97] ${focusRing}`;
-
-const activeTab = "bg-red-500 text-white hover:bg-red-500 hover:text-white";
-
 export function MobileTabBar() {
   const pathname = usePathname();
   const { user, loading } = useAuth();
   const avatar = useProviderAvatar(user?.id ?? null);
   const [keyboardOpen, setKeyboardOpen] = useState(false);
+  const [pressedIndex, setPressedIndex] = useState<number | null>(null);
 
   useEffect(() => {
     const isField = (target: EventTarget | null) =>
@@ -48,78 +45,243 @@ export function MobileTabBar() {
   const isAccount =
     pathname.startsWith("/account") || pathname.startsWith("/login");
 
+  const activeIndex = isHome ? 0 : isBrowse ? 1 : isSearch ? 2 : isLibrary ? 3 : 4;
+
   return (
     <nav
       aria-label="Primary"
-      className={`fixed inset-x-0 bottom-0 z-40 flex justify-center px-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-4 transition-all duration-300 lg:hidden ${
+      className={`fixed inset-x-0 bottom-0 z-40 flex justify-center px-3 pb-[max(env(safe-area-inset-bottom),0.75rem)] pt-4 transition-all duration-150 lg:hidden ${
         keyboardOpen
           ? "pointer-events-none translate-y-[calc(100%+2rem)] opacity-0"
           : "translate-y-0 opacity-100"
       }`}
     >
-      <div className="flex items-center gap-1 rounded-full border border-zinc-700/50 bg-zinc-950/70 px-1.5 py-1.5 shadow-[0_8px_40px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.08)] ring-1 ring-inset ring-white/10 backdrop-blur-xl">
+      {/* Liquid Glass pill — blackish, way more solid */}
+      <div
+        className="relative flex items-center gap-1 rounded-[28px] border border-white/[0.08] bg-zinc-900/85 p-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.55),0_1px_3px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.10),inset_0_-1px_0_rgba(255,255,255,0.03)] backdrop-blur-[22px] backdrop-saturate-[140%] supports-[backdrop-filter]:bg-zinc-900/85"
+        style={{
+          boxShadow:
+            "0 8px 32px rgba(0,0,0,0.55), 0 1px 3px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.10), inset 0 -1px 0 rgba(255,255,255,0.03), 0 0 0 1px rgba(255,255,255,0.06)",
+        }}
+      >
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-0 rounded-[28px] bg-gradient-to-b from-white/[0.08] via-white/[0.02] to-transparent"
+        />
+        <div
+          aria-hidden
+          className="pointer-events-none absolute inset-[1px] rounded-[26px] border border-white/[0.06]"
+        />
+
+        {/* Fluid morphing selection indicator — more solid */}
+        <div
+          aria-hidden
+          className="absolute left-1.5 top-1.5 h-11 w-11 rounded-full border border-white/[0.18] bg-white/[0.20] shadow-[inset_0_1px_1px_rgba(255,255,255,0.30),inset_0_-1px_1px_rgba(255,255,255,0.08),0_2px_10px_rgba(0,0,0,0.22),0_1px_2px_rgba(0,0,0,0.18)] backdrop-blur-xl will-change-transform"
+          style={{
+            transform: `translateX(${activeIndex * 48}px)`,
+            transition:
+              "transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1), width 160ms cubic-bezier(0.32, 0.72, 0, 1), opacity 100ms ease",
+          }}
+        >
+          <div className="pointer-events-none absolute inset-0 rounded-full bg-gradient-to-b from-white/[0.26] via-white/[0.08] to-transparent opacity-90" />
+          <div className="pointer-events-none absolute inset-x-2 bottom-[2px] h-[1px] rounded-full bg-white/25 blur-[0.5px]" />
+        </div>
+
+        {/* Home */}
         <Link
           href="/"
           aria-label="Hana home"
           aria-current={isHome ? "page" : undefined}
           title="Home"
-          className={`${tabButton} ${isHome ? "bg-white/10 text-white" : ""}`}
+          onTouchStart={() => setPressedIndex(0)}
+          onTouchEnd={() => setPressedIndex(null)}
+          onMouseDown={() => setPressedIndex(0)}
+          onMouseUp={() => setPressedIndex(null)}
+          onMouseLeave={() => setPressedIndex(null)}
+          className={`relative z-10 flex h-11 w-11 items-center justify-center rounded-full focus-visible:outline-none ${focusRing} ${
+            isHome ? "text-white" : "text-white/60 hover:text-white/85"
+          }`}
+          style={{
+            transform: pressedIndex === 0 ? "scale(0.86)" : "scale(1)",
+            transition:
+              pressedIndex === 0
+                ? "transform 60ms cubic-bezier(0.32, 0.72, 0, 1)"
+                : "transform 250ms cubic-bezier(0.34, 1.56, 0.64, 1), color 100ms ease",
+          }}
         >
-          <Image
-            src="/logo-v2.png"
-            alt=""
-            width={32}
-            height={32}
-            className="h-8 w-8 rounded-lg object-contain"
-          />
+          <span
+            className="flex items-center justify-center"
+            style={{
+              transform: isHome ? "scale(1.06)" : "scale(1)",
+              transition: "transform 250ms cubic-bezier(0.34, 1.56, 0.64, 1)",
+            }}
+          >
+            <Image
+              src="/logo-v2.png"
+              alt=""
+              width={32}
+              height={32}
+              className={`h-7 w-7 rounded-lg object-contain transition-[filter,opacity] duration-150 ${isHome ? "opacity-100" : "opacity-80"}`}
+            />
+          </span>
         </Link>
+
+        {/* Browse */}
         <Link
           href="/browse"
           aria-label="Browse"
           aria-current={isBrowse ? "page" : undefined}
           title="Browse"
-          className={`${tabButton} ${isBrowse ? activeTab : ""}`}
+          onTouchStart={() => setPressedIndex(1)}
+          onTouchEnd={() => setPressedIndex(null)}
+          onMouseDown={() => setPressedIndex(1)}
+          onMouseUp={() => setPressedIndex(null)}
+          onMouseLeave={() => setPressedIndex(null)}
+          className={`relative z-10 flex h-11 w-11 items-center justify-center rounded-full focus-visible:outline-none ${focusRing} ${
+            isBrowse ? "text-white" : "text-white/60 hover:text-white/85"
+          }`}
+          style={{
+            transform: pressedIndex === 1 ? "scale(0.86)" : "scale(1)",
+            transition:
+              pressedIndex === 1
+                ? "transform 60ms cubic-bezier(0.32, 0.72, 0, 1)"
+                : "transform 250ms cubic-bezier(0.34, 1.56, 0.64, 1), color 100ms ease",
+          }}
         >
-          <BrowseIcon className="h-5 w-5" />
+          <span
+            style={{
+              transform: isBrowse ? "scale(1.08)" : "scale(1)",
+              transition: "transform 250ms cubic-bezier(0.34, 1.56, 0.64, 1)",
+            }}
+            className="flex"
+          >
+            <BrowseIcon className="h-5 w-5" />
+          </span>
         </Link>
+
+        {/* Search */}
         <Link
           href="/search"
           aria-label="Search"
           aria-current={isSearch ? "page" : undefined}
           title="Search"
-          className={`${tabButton} ${isSearch ? activeTab : ""}`}
+          onTouchStart={() => setPressedIndex(2)}
+          onTouchEnd={() => setPressedIndex(null)}
+          onMouseDown={() => setPressedIndex(2)}
+          onMouseUp={() => setPressedIndex(null)}
+          onMouseLeave={() => setPressedIndex(null)}
+          className={`relative z-10 flex h-11 w-11 items-center justify-center rounded-full focus-visible:outline-none ${focusRing} ${
+            isSearch ? "text-white" : "text-white/60 hover:text-white/85"
+          }`}
+          style={{
+            transform: pressedIndex === 2 ? "scale(0.86)" : "scale(1)",
+            transition:
+              pressedIndex === 2
+                ? "transform 60ms cubic-bezier(0.32, 0.72, 0, 1)"
+                : "transform 250ms cubic-bezier(0.34, 1.56, 0.64, 1), color 100ms ease",
+          }}
         >
-          <SearchIcon className="h-5 w-5" />
+          <span
+            style={{
+              transform: isSearch ? "scale(1.08)" : "scale(1)",
+              transition: "transform 250ms cubic-bezier(0.34, 1.56, 0.64, 1)",
+            }}
+            className="flex"
+          >
+            <SearchIcon className="h-5 w-5" />
+          </span>
         </Link>
+
+        {/* Library */}
         <Link
           href="/library"
           aria-label="Library"
           aria-current={isLibrary ? "page" : undefined}
           title="Library"
-          className={`${tabButton} ${isLibrary ? activeTab : ""}`}
+          onTouchStart={() => setPressedIndex(3)}
+          onTouchEnd={() => setPressedIndex(null)}
+          onMouseDown={() => setPressedIndex(3)}
+          onMouseUp={() => setPressedIndex(null)}
+          onMouseLeave={() => setPressedIndex(null)}
+          className={`relative z-10 flex h-11 w-11 items-center justify-center rounded-full focus-visible:outline-none ${focusRing} ${
+            isLibrary ? "text-white" : "text-white/60 hover:text-white/85"
+          }`}
+          style={{
+            transform: pressedIndex === 3 ? "scale(0.86)" : "scale(1)",
+            transition:
+              pressedIndex === 3
+                ? "transform 60ms cubic-bezier(0.32, 0.72, 0, 1)"
+                : "transform 250ms cubic-bezier(0.34, 1.56, 0.64, 1), color 100ms ease",
+          }}
         >
-          <LibraryIcon className="h-5 w-5" />
+          <span
+            style={{
+              transform: isLibrary ? "scale(1.08)" : "scale(1)",
+              transition: "transform 250ms cubic-bezier(0.34, 1.56, 0.64, 1)",
+            }}
+            className="flex"
+          >
+            <LibraryIcon className="h-5 w-5" />
+          </span>
         </Link>
+
+        {/* Account / Login */}
         {loading ? (
-          <span className="h-11 w-11 animate-pulse rounded-full bg-zinc-800/60" aria-hidden />
+          <span
+            className="relative z-10 flex h-11 w-11 items-center justify-center rounded-full"
+            aria-hidden
+          >
+            <span className="h-7 w-7 animate-pulse rounded-full bg-white/10 backdrop-blur" />
+          </span>
         ) : user ? (
           <Link
             href="/account"
             aria-label={`Account${user.email ? ` — ${user.email}` : ""}`}
             aria-current={isAccount ? "page" : undefined}
             title="Account"
-            className={`${tabButton} overflow-hidden ${isAccount ? activeTab : ""}`}
+            onTouchStart={() => setPressedIndex(4)}
+            onTouchEnd={() => setPressedIndex(null)}
+            onMouseDown={() => setPressedIndex(4)}
+            onMouseUp={() => setPressedIndex(null)}
+            onMouseLeave={() => setPressedIndex(null)}
+            className={`relative z-10 flex h-11 w-11 items-center justify-center overflow-hidden rounded-full focus-visible:outline-none ${focusRing} ${
+              isAccount ? "text-white" : "text-white/90"
+            }`}
+            style={{
+              transform: pressedIndex === 4 ? "scale(0.86)" : "scale(1)",
+              transition:
+                pressedIndex === 4
+                  ? "transform 60ms cubic-bezier(0.32, 0.72, 0, 1)"
+                  : "transform 250ms cubic-bezier(0.34, 1.56, 0.64, 1)",
+            }}
           >
             {avatar?.url ? (
-              <Image
-                src={avatar.url}
-                alt=""
-                width={44}
-                height={44}
-                className="h-full w-full rounded-full object-cover"
-              />
+              <span
+                className="relative flex h-7 w-7 items-center justify-center overflow-hidden rounded-full"
+                style={{
+                  transform: isAccount ? "scale(1.08)" : "scale(1)",
+                  transition: "transform 250ms cubic-bezier(0.34, 1.56, 0.64, 1)",
+                }}
+              >
+                <Image
+                  src={avatar.url}
+                  alt=""
+                  width={28}
+                  height={28}
+                  className="h-full w-full object-cover"
+                />
+              </span>
             ) : (
-              <span className="text-sm font-bold">
+              <span
+                className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold leading-none backdrop-blur ${
+                  isAccount ? "bg-white text-zinc-900" : "bg-white/12 text-white"
+                }`}
+                style={{
+                  transform: isAccount ? "scale(1.08)" : "scale(1)",
+                  transition:
+                    "transform 250ms cubic-bezier(0.34, 1.56, 0.64, 1), background-color 100ms ease",
+                }}
+              >
                 {user.email?.charAt(0).toUpperCase() ?? "U"}
               </span>
             )}
@@ -130,9 +292,31 @@ export function MobileTabBar() {
             aria-label="Sign in"
             aria-current={isAccount ? "page" : undefined}
             title="Sign in"
-            className={`${tabButton} ${isAccount ? activeTab : ""}`}
+            onTouchStart={() => setPressedIndex(4)}
+            onTouchEnd={() => setPressedIndex(null)}
+            onMouseDown={() => setPressedIndex(4)}
+            onMouseUp={() => setPressedIndex(null)}
+            onMouseLeave={() => setPressedIndex(null)}
+            className={`relative z-10 flex h-11 w-11 items-center justify-center rounded-full focus-visible:outline-none ${focusRing} ${
+              isAccount ? "text-white" : "text-white/60 hover:text-white/85"
+            }`}
+            style={{
+              transform: pressedIndex === 4 ? "scale(0.86)" : "scale(1)",
+              transition:
+                pressedIndex === 4
+                  ? "transform 60ms cubic-bezier(0.32, 0.72, 0, 1)"
+                  : "transform 250ms cubic-bezier(0.34, 1.56, 0.64, 1), color 100ms ease",
+            }}
           >
-            <SignInIcon className="h-5 w-5" />
+            <span
+              style={{
+                transform: isAccount ? "scale(1.08)" : "scale(1)",
+                transition: "transform 250ms cubic-bezier(0.34, 1.56, 0.64, 1)",
+              }}
+              className="flex"
+            >
+              <SignInIcon className="h-5 w-5" />
+            </span>
           </Link>
         )}
       </div>

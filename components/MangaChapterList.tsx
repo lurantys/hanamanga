@@ -4,9 +4,9 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ChapterReadCheck } from "./ChapterReadCheck";
 import { MarkReadButton } from "./MarkReadButton";
-import { chipButton, focusRing, inputField } from "@/lib/ui";
-import { useChapterFlash } from "@/lib/use-chapter-flash";
-import { useMangaRead, useReadChapters } from "@/lib/read-state";
+import { chipButton, focusRing } from "@/lib/ui";
+import { markAllRead, markMangaRead, useMangaRead, useReadChapters } from "@/lib/read-state";
+import { clearProgress, getProgress, saveProgress } from "@/lib/progress";
 import type { Chapter } from "@/lib/mangadex";
 
 type VolumeGroup = { volume: string | null; chapters: Chapter[] };
@@ -37,11 +37,7 @@ export function MangaChapterList({
 }: MangaChapterListProps) {
   const [order, setOrder] = useState<"newest" | "oldest">("newest");
   const [revealedVolumes, setRevealedVolumes] = useState(VOLUME_BATCH);
-  const [jump, setJump] = useState("");
-  const [scrollTarget, setScrollTarget] = useState<string | null>(null);
-  const { highlightId, flash } = useChapterFlash();
 
-  const itemRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const sentinelRef = useRef<HTMLDivElement>(null);
   const loadingRef = useRef(false);
   const readChapters = useReadChapters(mangaId);
@@ -65,7 +61,6 @@ export function MangaChapterList({
     return reversed;
   }, [volumes, order]);
 
-  const firstChapterId = volumes[0]?.chapters[0]?.id ?? null;
   const visibleVolumes = orderedVolumes.slice(0, revealedVolumes);
   const hasMore = revealedVolumes < orderedVolumes.length;
 
@@ -89,35 +84,29 @@ export function MangaChapterList({
     return () => observer.disconnect();
   }, [hasMore, orderedVolumes.length, revealedVolumes]);
 
-  useEffect(() => {
-    if (!scrollTarget) return;
-    const el = itemRefs.current[scrollTarget];
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-  }, [scrollTarget, orderedVolumes]);
-
-  const goToChapter = () => {
-    const target = Number(jump.trim());
-    if (!Number.isFinite(target)) return;
-    for (let i = 0; i < orderedVolumes.length; i++) {
-      const index = orderedVolumes[i].chapters.findIndex(
-        (chapter) => parseFloat(chapter.chapter ?? "") === target,
-      );
-      if (index !== -1) {
-        const chapterId = orderedVolumes[i].chapters[index].id;
-        setRevealedVolumes(Math.max(revealedVolumes, i + 1));
-        setScrollTarget(chapterId);
-        flash(chapterId);
-        return;
-      }
+  const markEverythingRead = () => {
+    const chapterIds = readingOrder.map((chapter) => chapter.id);
+    if (!chapterIds.length) return;
+    markAllRead(mangaId, chapterIds);
+    markMangaRead(mangaId);
+    for (const id of alternateIds ?? []) {
+      if (id) markMangaRead(id);
     }
-  };
-
-  const startFromBeginning = () => {
-    if (!firstChapterId) return;
-    setOrder("oldest");
-    setRevealedVolumes(VOLUME_BATCH);
-    setScrollTarget(firstChapterId);
-    flash(firstChapterId);
+    const progress = getProgress(mangaId, alternateIds, mangaTitle);
+    if (progress && progress.mangaId !== mangaId) clearProgress(progress.mangaId);
+    const finalChapter = readingOrder[readingOrder.length - 1];
+    if (finalChapter) {
+      saveProgress({
+        mangaId,
+        chapterId: finalChapter.id,
+        chapterLabel: finalChapter.label,
+        mangaTitle,
+        coverUrl,
+        scrollFraction: 1,
+        mangaFraction: 1,
+        updatedAt: Date.now(),
+      });
+    }
   };
 
   return (
@@ -140,27 +129,8 @@ export function MangaChapterList({
             </button>
           ))}
         </div>
-
-        <div className="flex items-center gap-2">
-          <input
-            type="number"
-            min={1}
-            value={jump}
-            onChange={(event) => setJump(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") goToChapter();
-            }}
-            placeholder="Ch. #"
-            aria-label="Jump to chapter number"
-            className={`${inputField} w-24 py-2 pl-3 pr-2 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none`}
-          />
-          <button type="button" onClick={goToChapter} className={chipButton}>
-            Go
-          </button>
-        </div>
-
-        <button type="button" onClick={startFromBeginning} className={chipButton}>
-          Start from beginning
+        <button type="button" onClick={markEverythingRead} className={chipButton}>
+          Mark all read
         </button>
       </div>
 
@@ -176,14 +146,7 @@ export function MangaChapterList({
                 return (
                 <div
                   key={chapter.id}
-                  ref={(el) => {
-                    itemRefs.current[chapter.id] = el;
-                  }}
-                  className={`group flex items-center justify-between gap-3 rounded-xl border px-4 py-3 backdrop-blur-xl transition-colors duration-200 hover:border-white/25 ${
-                  highlightId === chapter.id
-                    ? "animate-chapter-highlight border-red-400/50 bg-red-500/20"
-                    : "border-white/10 bg-zinc-900/60"
-                }`}
+                  className="group flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-zinc-900/60 px-4 py-3 backdrop-blur-xl transition-colors duration-200 hover:border-white/25"
                 >
                   <div className="min-w-0">
                     <p

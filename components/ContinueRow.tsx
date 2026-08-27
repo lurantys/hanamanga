@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useSyncExternalStore } from "react";
+import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
 import { Carousel } from "./Carousel";
 import { MangaCard } from "./MangaCard";
 import { focusRing } from "@/lib/ui";
@@ -13,8 +13,10 @@ import {
   type ProgressEntry,
 } from "@/lib/progress";
 import type { Manga } from "@/lib/mangadex";
+import { getFinishedSnapshot, subscribeFinished } from "@/lib/read-state";
 
 const EMPTY_LIST: ProgressEntry[] = [];
+const EMPTY_FINISHED: Record<string, number> = {};
 
 function subscribe(onChange: () => void): () => void {
   const listener = () => onChange();
@@ -38,11 +40,20 @@ export function ContinueRow() {
     () => getContinueList(18),
     () => EMPTY_LIST,
   );
+  const finished = useSyncExternalStore(
+    subscribeFinished,
+    getFinishedSnapshot,
+    () => EMPTY_FINISHED,
+  );
+  const visibleEntries = useMemo(
+    () => entries.filter((entry) => !finished[entry.mangaId]),
+    [entries, finished],
+  );
   const [mangaById, setMangaById] = useState<Record<string, Manga>>({});
 
   useEffect(() => {
-    if (!entries.length) return;
-    const ids = entries.map((entry) => entry.mangaId).join(",");
+    if (!visibleEntries.length) return;
+    const ids = visibleEntries.map((entry) => entry.mangaId).join(",");
     let active = true;
     fetch(`/api/manga?ids=${encodeURIComponent(ids)}`)
       .then((res) => (res.ok ? res.json() : null))
@@ -57,13 +68,13 @@ export function ContinueRow() {
     return () => {
       active = false;
     };
-  }, [entries]);
+  }, [visibleEntries]);
 
-  if (!entries.length) return null;
+  if (!visibleEntries.length) return null;
 
   return (
     <Carousel title="Continue Reading" ariaLabel="Continue Reading">
-      {entries.map((entry) => {
+      {visibleEntries.map((entry) => {
         const manga = mangaById[entry.mangaId];
         const title = manga?.title ?? entry.mangaTitle;
         const coverUrl = entry.coverUrl ?? manga?.coverUrl;

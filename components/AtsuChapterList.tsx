@@ -5,11 +5,16 @@ import Link from "next/link";
 import type { AtsuChapter, AtsuScanlator } from "@/lib/atsu";
 import { atsuChapterLabel } from "@/lib/atsu";
 import { MarkReadButton } from "./MarkReadButton";
-import { markAllRead, useReadChapters } from "@/lib/read-state";
+import { markAllRead, markMangaRead, useReadChapters } from "@/lib/read-state";
 import { setPreferredScanlator, usePreferredScanlator } from "@/lib/scanlator-preference";
-import { getProgress, PROGRESS_EVENT, invalidateProgressCache } from "@/lib/progress";
+import {
+  clearProgress,
+  getProgress,
+  PROGRESS_EVENT,
+  saveProgress,
+  invalidateProgressCache,
+} from "@/lib/progress";
 import { chipButton, focusRing, inputField } from "@/lib/ui";
-import { useChapterFlash } from "@/lib/use-chapter-flash";
 
 type AtsuChapterListProps = {
   mangaId: string;
@@ -39,9 +44,6 @@ export function AtsuChapterList({
   const [query, setQuery] = useState("");
   const [order, setOrder] = useState<"newest" | "oldest">("newest");
   const [revealed, setRevealed] = useState(BATCH);
-  const [jump, setJump] = useState("");
-  const [scrollTarget, setScrollTarget] = useState<string | null>(null);
-  const { highlightId, flash: flashChapter } = useChapterFlash();
 
   // If user has progress on a different scanlator, auto-switch so continue/read pops are visible
   useEffect(() => {
@@ -76,7 +78,6 @@ export function AtsuChapterList({
   }, [mangaId, chapters, selected]);
 
   const readChapters = useReadChapters(mangaId);
-  const itemRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const sentinelRef = useRef<HTMLDivElement>(null);
   const loadingRef = useRef(false);
 
@@ -134,34 +135,6 @@ export function AtsuChapterList({
     return () => observer.disconnect();
   }, [hasMore, orderedChapters.length, revealed]);
 
-  useEffect(() => {
-    if (!scrollTarget) return;
-    const el = itemRefs.current[scrollTarget];
-    if (el) el.scrollIntoView({ behavior: "smooth", block: "center" });
-  }, [scrollTarget, orderedChapters]);
-
-  const goToChapter = () => {
-    const target = Number(jump.trim());
-    if (!Number.isFinite(target)) return;
-    const index = orderedChapters.findIndex(
-      (chapter) => chapter.number === target,
-    );
-    if (index === -1) return;
-    const chapterId = orderedChapters[index].id;
-    if (index + 1 > revealed) setRevealed(index + 1);
-    setScrollTarget(chapterId);
-    flashChapter(chapterId);
-  };
-
-  const startFromBeginning = () => {
-    const firstId = groupChapters[0]?.id;
-    if (!firstId) return;
-    setOrder("oldest");
-    setRevealed(BATCH);
-    setScrollTarget(firstId);
-    flashChapter(firstId);
-  };
-
   const hasMultipleScanlators = scanlators.length > 1;
   const readCount = groupChapters.filter((chapter) =>
     readChapters.has(chapter.id),
@@ -169,7 +142,7 @@ export function AtsuChapterList({
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+      <div className="flex flex-wrap items-center gap-3">
         {hasMultipleScanlators ? (
           <div className="flex flex-wrap gap-2">
             {scanlators.map((scanlator) => (
@@ -192,22 +165,54 @@ export function AtsuChapterList({
           <span />
         )}
 
-        <div className="flex items-center gap-2">
-          {groupChapters.length > 0 && (
+        <div className="flex rounded-full border border-white/10 bg-zinc-900/60 p-1">
+          {(["newest", "oldest"] as const).map((value) => (
             <button
+              key={value}
               type="button"
-              onClick={() =>
-                markAllRead(
-                  mangaId,
-                  groupChapters.map((chapter) => chapter.id),
-                )
-              }
-              className={`${chipButton} shrink-0 py-2`}
+              onClick={() => setOrder(value)}
+              aria-pressed={order === value}
+              className={`rounded-full px-4 py-1.5 text-sm font-medium transition duration-200 active:scale-[0.97] ${focusRing} ${
+                order === value
+                  ? "bg-zinc-100 text-zinc-950"
+                  : "text-zinc-300 hover:bg-zinc-800 hover:text-white"
+              }`}
             >
-              Mark all read
+              {value === "newest" ? "Newest" : "Oldest"}
             </button>
-          )}
-          <label className="relative block sm:w-56">
+          ))}
+        </div>
+        {groupChapters.length > 0 && (
+          <button
+            type="button"
+            onClick={() => {
+              markAllRead(mangaId, groupChapters.map((chapter) => chapter.id));
+              markMangaRead(mangaId);
+              for (const id of alternateIds ?? []) {
+                if (id) markMangaRead(id);
+              }
+              const progress = getProgress(mangaId, alternateIds, mangaTitle);
+              if (progress && progress.mangaId !== mangaId) clearProgress(progress.mangaId);
+              const finalChapter = readingOrder[readingOrder.length - 1];
+              if (finalChapter) {
+                saveProgress({
+                  mangaId,
+                  chapterId: finalChapter.id,
+                  chapterLabel: finalChapter.label,
+                  mangaTitle,
+                  coverUrl,
+                  scrollFraction: 1,
+                  mangaFraction: 1,
+                  updatedAt: Date.now(),
+                });
+              }
+            }}
+            className={`${chipButton} shrink-0 py-2`}
+          >
+            Mark all read
+          </button>
+        )}
+        <label className="relative block w-full sm:w-56">
             <span className="sr-only">Find a chapter</span>
             <svg
               viewBox="0 0 24 24"
@@ -230,49 +235,6 @@ export function AtsuChapterList({
               className={`${inputField} w-full py-2 pl-9 pr-3 hover:border-white/25`}
             />
           </label>
-        </div>
-      </div>
-
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="flex rounded-full border border-white/10 bg-zinc-900/60 p-1">
-          {(["newest", "oldest"] as const).map((value) => (
-            <button
-              key={value}
-              type="button"
-              onClick={() => setOrder(value)}
-              aria-pressed={order === value}
-              className={`rounded-full px-4 py-1.5 text-sm font-medium transition duration-200 active:scale-[0.97] ${focusRing} ${
-                order === value
-                  ? "bg-zinc-100 text-zinc-950"
-                  : "text-zinc-300 hover:bg-zinc-800 hover:text-white"
-              }`}
-            >
-              {value === "newest" ? "Newest" : "Oldest"}
-            </button>
-          ))}
-        </div>
-
-        <div className="flex items-center gap-2">
-          <input
-            type="number"
-            min={1}
-            value={jump}
-            onChange={(event) => setJump(event.target.value)}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") goToChapter();
-            }}
-            placeholder="Ch. #"
-            aria-label="Jump to chapter number"
-            className={`${inputField} w-24 py-2 pl-3 pr-2 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none`}
-          />
-          <button type="button" onClick={goToChapter} className={chipButton}>
-            Go
-          </button>
-        </div>
-
-        <button type="button" onClick={startFromBeginning} className={chipButton}>
-          Start from beginning
-        </button>
       </div>
 
       {groupChapters.length > 0 && readCount > 0 && (
@@ -297,14 +259,7 @@ export function AtsuChapterList({
             return (
               <div
                 key={chapter.id}
-                ref={(el) => {
-                  itemRefs.current[chapter.id] = el;
-                }}
-                className={`group relative flex items-center justify-between gap-3 rounded-xl border px-4 py-3 backdrop-blur-xl transition-colors duration-200 hover:border-white/25 ${
-                  highlightId === chapter.id
-                    ? "animate-chapter-highlight border-red-400/50 bg-red-500/20"
-                    : "border-white/10 bg-zinc-900/60"
-                }`}
+                className="group relative flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-zinc-900/60 px-4 py-3 backdrop-blur-xl transition-colors duration-200 hover:border-white/25"
               >
                 <Link
                   href={`/read/${mangaId}/${chapter.id}`}

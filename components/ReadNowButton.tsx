@@ -6,6 +6,7 @@ import type { AtsuChapter, AtsuScanlator } from "@/lib/atsu";
 import { chaptersOfScanlator } from "@/lib/atsu";
 import { usePreferredScanlator } from "@/lib/scanlator-preference";
 import { getProgress, PROGRESS_EVENT, invalidateProgressCache } from "@/lib/progress";
+import { useMangaRead } from "@/lib/read-state";
 import { BookOpenIcon } from "./icons";
 import { ctaPrimary } from "@/lib/ui";
 
@@ -45,13 +46,14 @@ export function ReadNowButton({
     () => getProgress(mangaId, alternateIds, mangaTitle),
     () => null,
   );
+  const mangaRead = useMangaRead(mangaId);
   const selected = scanlators.some((scanlator) => scanlator.id === preferred)
     ? (preferred ?? "")
     : (defaultScanlatorId ?? scanlators[0]?.id ?? "");
   const group = chaptersOfScanlator(chapters, selected);
-  let target = group[0] ?? chapters[0] ?? null;
+  let target = (mangaRead ? group[group.length - 1] : group[0]) ?? chapters[0] ?? null;
   // If user has progress, honor it — continue from last read chapter (or next)
-  if (progress) {
+  if (progress && !mangaRead) {
     const progressInGroup = group.find((c) => c.id === progress.chapterId);
     if (progressInGroup) {
       target = progressInGroup;
@@ -62,13 +64,13 @@ export function ReadNowButton({
   }
   if (!target && !progress) return null;
 
-  const isContinue = Boolean(progress);
-  const pct = progress
+  const isContinue = Boolean(progress && !mangaRead);
+  const pct = progress && !mangaRead
     ? Math.round((progress.mangaFraction ?? progress.scrollFraction) * 100)
     : 0;
 
-  const targetMangaId = progress?.mangaId || mangaId;
-  const targetChapterId = progress?.chapterId || target?.id;
+  const targetMangaId = isContinue ? progress?.mangaId || mangaId : mangaId;
+  const targetChapterId = isContinue ? progress?.chapterId : target?.id;
 
   return (
     <Link

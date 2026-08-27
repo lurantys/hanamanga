@@ -7,6 +7,7 @@ import {
   getLibrarySnapshot,
   removeFromLibrary,
   subscribeLibrary,
+  type LibraryEntry,
 } from "@/lib/library";
 import {
   getFinishedSnapshot,
@@ -429,6 +430,26 @@ export default function LibraryPage() {
     () => Object.values(library).sort((a, b) => b.addedAt - a.addedAt),
     [library],
   );
+  const extraFinished = useMemo<LibraryEntry[]>(
+    () =>
+      continueList
+        .filter((entry) => !library[entry.mangaId] && finished[entry.mangaId])
+        .map((entry) => ({
+          addedAt: finished[entry.mangaId],
+          manga: {
+            id: entry.mangaId,
+            title: entry.mangaTitle,
+            coverUrl: entry.coverUrl,
+            genres: [],
+            availableLanguages: ["en"],
+          },
+        })),
+    [continueList, library, finished],
+  );
+  const allEntries = useMemo(
+    () => [...entries, ...extraFinished],
+    [entries, extraFinished],
+  );
   const [query, setQuery] = useState("");
   const [sort, setSort] = useState<SortKey>("added");
   const [view, setView] = useState<View>("grid");
@@ -436,7 +457,7 @@ export default function LibraryPage() {
 
   const filtered = useMemo(() => {
     const term = query.trim().toLowerCase();
-    const list = entries.filter(({ manga }) => {
+    const list = allEntries.filter(({ manga }) => {
       if (term && !manga.title.toLowerCase().includes(term)) return false;
       const isRead = Boolean(finished[manga.id]);
       if (filter === "finished") return isRead;
@@ -467,7 +488,7 @@ export default function LibraryPage() {
           return bTime - aTime;
         });
     }
-  }, [entries, query, sort, progress, finished, filter]);
+  }, [allEntries, query, sort, progress, finished, filter]);
 
   const extraReading = useMemo(
     () =>
@@ -477,7 +498,7 @@ export default function LibraryPage() {
     [continueList, library, finished],
   );
 
-  const toolbarVisible = entries.length > 0 || extraReading.length > 0;
+  const toolbarVisible = allEntries.length > 0 || extraReading.length > 0;
 
   return (
     <main className="bg-zinc-950 pb-8 lg:pb-24">
@@ -487,7 +508,7 @@ export default function LibraryPage() {
             Library
           </h1>
           <p className="mt-1 text-sm text-zinc-400">
-            {entries.length === 0
+            {allEntries.length === 0
               ? "Manga you save will show up here."
               : "All the manga you're following, in one place."}
           </p>
@@ -626,7 +647,7 @@ export default function LibraryPage() {
       )}
 
       <div className="mx-auto mt-8 max-w-7xl px-5 md:px-10">
-        {entries.length === 0 && extraReading.length === 0 ? (
+        {allEntries.length === 0 && extraReading.length === 0 ? (
           <EmptyState
             art={
               <Image
@@ -795,7 +816,14 @@ export default function LibraryPage() {
                       ? markMangaUnread(manga.id)
                       : markMangaRead(manga.id)
                   }
-                  onRemove={() => removeFromLibrary(manga.id)}
+                   onRemove={() => {
+                     if (library[manga.id]) {
+                       removeFromLibrary(manga.id);
+                     } else {
+                       markMangaUnread(manga.id);
+                       clearProgress(manga.id);
+                     }
+                   }}
                 />
               );
             })}
@@ -866,7 +894,14 @@ export default function LibraryPage() {
                       ? markMangaUnread(manga.id)
                       : markMangaRead(manga.id)
                   }
-                  onRemove={() => removeFromLibrary(manga.id)}
+                   onRemove={() => {
+                     if (library[manga.id]) {
+                       removeFromLibrary(manga.id);
+                     } else {
+                       markMangaUnread(manga.id);
+                       clearProgress(manga.id);
+                     }
+                   }}
                 />
               );
             })}

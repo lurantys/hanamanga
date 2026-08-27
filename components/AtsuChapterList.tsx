@@ -6,6 +6,7 @@ import type { AtsuChapter, AtsuScanlator } from "@/lib/atsu";
 import { atsuChapterLabel } from "@/lib/atsu";
 import { markAllRead, useReadChapters } from "@/lib/read-state";
 import { setPreferredScanlator, usePreferredScanlator } from "@/lib/scanlator-preference";
+import { getProgress, PROGRESS_EVENT, invalidateProgressCache } from "@/lib/progress";
 import { chipButton, focusRing, inputField } from "@/lib/ui";
 import { useChapterFlash } from "@/lib/use-chapter-flash";
 
@@ -34,6 +35,38 @@ export function AtsuChapterList({
   const [jump, setJump] = useState("");
   const [scrollTarget, setScrollTarget] = useState<string | null>(null);
   const { highlightId, flash: flashChapter } = useChapterFlash();
+
+  // If user has progress on a different scanlator, auto-switch so continue/read pops are visible
+  useEffect(() => {
+    const progress = getProgress(mangaId);
+    if (!progress) return;
+    const scanlatorForProgress = chapters.find((c) => c.id === progress.chapterId)?.scanlationMangaId;
+    if (scanlatorForProgress && scanlatorForProgress !== selected) {
+      setPreferredScanlator(mangaId, scanlatorForProgress);
+    }
+    const onProgress = () => {
+      const p = getProgress(mangaId);
+      const s = p ? chapters.find((c) => c.id === p.chapterId)?.scanlationMangaId : null;
+      if (s && s !== getProgress(mangaId)?.chapterId) {
+        // handled above
+      }
+      if (s && s !== selected) {
+        setPreferredScanlator(mangaId, s);
+      }
+    };
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === "hana:progress") {
+        invalidateProgressCache();
+        onProgress();
+      }
+    };
+    window.addEventListener(PROGRESS_EVENT, onProgress);
+    window.addEventListener("storage", onStorage);
+    return () => {
+      window.removeEventListener(PROGRESS_EVENT, onProgress);
+      window.removeEventListener("storage", onStorage);
+    };
+  }, [mangaId, chapters, selected]);
 
   const readChapters = useReadChapters(mangaId);
   const itemRefs = useRef<Record<string, HTMLAnchorElement | null>>({});

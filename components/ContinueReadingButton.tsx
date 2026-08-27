@@ -37,6 +37,8 @@ export function ContinueReadingButton({
 
   if (!progress) return <>{children}</>;
 
+  // If progress points to a chapter that no longer exists (stale id), fall back to children (Read Now)
+  // This prevents "always chapter 1" loop when progress id is mismatched due to scanlator switch.
   const pct = Math.round(
     (progress.mangaFraction ?? progress.scrollFraction) * 100,
   );

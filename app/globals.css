@@ -1,5 +1,38 @@
 @import "tailwindcss";
 
+/* Netflix Sans — fetched from Netflix CDN for Home branding */
+@font-face {
+  font-family: 'Netflix Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url(https://assets.nflxext.com/ffe/siteui/fonts/netflix-sans/v3/NetflixSans_W_Rg.woff2) format('woff2');
+}
+@font-face {
+  font-family: 'Netflix Sans';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url(https://assets.nflxext.com/ffe/siteui/fonts/netflix-sans/v3/NetflixSans_W_Md.woff2) format('woff2');
+}
+@font-face {
+  font-family: 'Netflix Sans';
+  font-style: normal;
+  font-weight: 800;
+  font-display: swap;
+  src: url(https://assets.nflxext.com/ffe/siteui/fonts/netflix-sans/v3/NetflixSans_W_Bd.woff2) format('woff2');
+}
+@font-face {
+  font-family: 'Netflix Sans';
+  font-style: normal;
+  font-weight: 900;
+  font-display: swap;
+  src: url(https://assets.nflxext.com/ffe/siteui/fonts/netflix-sans/v3/NetflixSans_W_Blk.woff2) format('woff2');
+}
+.font-netflix {
+  font-family: 'Netflix Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+}
+
 :root {
   --background: #09090b;
   --foreground: #fafafa;
@@ -16,7 +49,7 @@
 h1,
 h2,
 h3 {
-  font-family: var(--font-zen-kaku), Arial, Helvetica, sans-serif;
+  font-family: 'Netflix Sans', var(--font-zen-kaku), Arial, Helvetica, sans-serif;
 }
 
 /* Page top padding that clears the fixed floating pill header on lg+
@@ -237,7 +270,7 @@ h3 {
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-sans), Arial, Helvetica, sans-serif;
+  font-family: 'Netflix Sans', var(--font-sans), 'Helvetica Neue', Helvetica, Arial, sans-serif;
   overscroll-behavior: contain;
 }
 

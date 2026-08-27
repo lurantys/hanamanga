@@ -56,29 +56,29 @@ export function MobileTabBar() {
           : "translate-y-0 opacity-100"
       }`}
     >
-      {/* Liquid Glass pill — blackish, way more solid */}
+      {/* Liquid Glass pill — 25% smaller than 50% enlarged (net ~12% bigger than original) */}
       <div
-        className="relative flex items-center gap-1 rounded-[28px] border border-white/[0.08] bg-zinc-900/85 p-1.5 shadow-[0_8px_32px_rgba(0,0,0,0.55),0_1px_3px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.10),inset_0_-1px_0_rgba(255,255,255,0.03)] backdrop-blur-[22px] backdrop-saturate-[140%] supports-[backdrop-filter]:bg-zinc-900/85"
+        className="relative flex items-center gap-[5px] rounded-[32px] border border-white/[0.08] bg-zinc-900/85 p-[7px] shadow-[0_12px_48px_rgba(0,0,0,0.55),0_1px_4px_rgba(0,0,0,0.4),inset_0_1px_0_rgba(255,255,255,0.10),inset_0_-1px_0_rgba(255,255,255,0.03)] backdrop-blur-[22px] backdrop-saturate-[140%] supports-[backdrop-filter]:bg-zinc-900/85"
         style={{
           boxShadow:
-            "0 8px 32px rgba(0,0,0,0.55), 0 1px 3px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.10), inset 0 -1px 0 rgba(255,255,255,0.03), 0 0 0 1px rgba(255,255,255,0.06)",
+            "0 12px 48px rgba(0,0,0,0.55), 0 1px 4px rgba(0,0,0,0.4), inset 0 1px 0 rgba(255,255,255,0.10), inset 0 -1px 0 rgba(255,255,255,0.03), 0 0 0 1px rgba(255,255,255,0.06)",
         }}
       >
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-0 rounded-[28px] bg-gradient-to-b from-white/[0.08] via-white/[0.02] to-transparent"
+          className="pointer-events-none absolute inset-0 rounded-[32px] bg-gradient-to-b from-white/[0.08] via-white/[0.02] to-transparent"
         />
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-[1px] rounded-[26px] border border-white/[0.06]"
+          className="pointer-events-none absolute inset-[1px] rounded-[30px] border border-white/[0.06]"
         />
 
-        {/* Fluid morphing selection indicator — more solid */}
+        {/* Fluid morphing selection indicator — 25% smaller */}
         <div
           aria-hidden
-          className="absolute left-1.5 top-1.5 h-11 w-11 rounded-full border border-white/[0.18] bg-white/[0.20] shadow-[inset_0_1px_1px_rgba(255,255,255,0.30),inset_0_-1px_1px_rgba(255,255,255,0.08),0_2px_10px_rgba(0,0,0,0.22),0_1px_2px_rgba(0,0,0,0.18)] backdrop-blur-xl will-change-transform"
+          className="absolute left-[7px] top-[7px] h-[50px] w-[50px] rounded-full border border-white/[0.18] bg-white/[0.20] shadow-[inset_0_1px_1px_rgba(255,255,255,0.30),inset_0_-1px_1px_rgba(255,255,255,0.08),0_3px_14px_rgba(0,0,0,0.22),0_1px_3px_rgba(0,0,0,0.18)] backdrop-blur-xl will-change-transform"
           style={{
-            transform: `translateX(${activeIndex * 48}px)`,
+            transform: `translateX(${activeIndex * 55}px)`,
             transition:
               "transform 300ms cubic-bezier(0.34, 1.56, 0.64, 1), width 160ms cubic-bezier(0.32, 0.72, 0, 1), opacity 100ms ease",
           }}
@@ -98,7 +98,7 @@ export function MobileTabBar() {
           onMouseDown={() => setPressedIndex(0)}
           onMouseUp={() => setPressedIndex(null)}
           onMouseLeave={() => setPressedIndex(null)}
-          className={`relative z-10 flex h-11 w-11 items-center justify-center rounded-full focus-visible:outline-none ${focusRing} ${
+          className={`relative z-10 flex h-[50px] w-[50px] items-center justify-center rounded-full focus-visible:outline-none ${focusRing} ${
             isHome ? "text-white" : "text-white/60 hover:text-white/85"
           }`}
           style={{
@@ -119,9 +119,9 @@ export function MobileTabBar() {
             <Image
               src="/logo-v2.png"
               alt=""
-              width={32}
-              height={32}
-              className={`h-7 w-7 rounded-lg object-contain transition-[filter,opacity] duration-150 ${isHome ? "opacity-100" : "opacity-80"}`}
+              width={40}
+              height={40}
+              className={`h-8 w-8 rounded-lg object-contain transition-[filter,opacity] duration-150 ${isHome ? "opacity-100" : "opacity-80"}`}
             />
           </span>
         </Link>
@@ -137,7 +137,7 @@ export function MobileTabBar() {
           onMouseDown={() => setPressedIndex(1)}
           onMouseUp={() => setPressedIndex(null)}
           onMouseLeave={() => setPressedIndex(null)}
-          className={`relative z-10 flex h-11 w-11 items-center justify-center rounded-full focus-visible:outline-none ${focusRing} ${
+          className={`relative z-10 flex h-[50px] w-[50px] items-center justify-center rounded-full focus-visible:outline-none ${focusRing} ${
             isBrowse ? "text-white" : "text-white/60 hover:text-white/85"
           }`}
           style={{
@@ -155,7 +155,7 @@ export function MobileTabBar() {
             }}
             className="flex"
           >
-            <BrowseIcon className="h-5 w-5" />
+            <BrowseIcon className="h-[22px] w-[22px]" />
           </span>
         </Link>
 
@@ -170,7 +170,7 @@ export function MobileTabBar() {
           onMouseDown={() => setPressedIndex(2)}
           onMouseUp={() => setPressedIndex(null)}
           onMouseLeave={() => setPressedIndex(null)}
-          className={`relative z-10 flex h-11 w-11 items-center justify-center rounded-full focus-visible:outline-none ${focusRing} ${
+          className={`relative z-10 flex h-[50px] w-[50px] items-center justify-center rounded-full focus-visible:outline-none ${focusRing} ${
             isSearch ? "text-white" : "text-white/60 hover:text-white/85"
           }`}
           style={{
@@ -188,7 +188,7 @@ export function MobileTabBar() {
             }}
             className="flex"
           >
-            <SearchIcon className="h-5 w-5" />
+            <SearchIcon className="h-[22px] w-[22px]" />
           </span>
         </Link>
 
@@ -203,7 +203,7 @@ export function MobileTabBar() {
           onMouseDown={() => setPressedIndex(3)}
           onMouseUp={() => setPressedIndex(null)}
           onMouseLeave={() => setPressedIndex(null)}
-          className={`relative z-10 flex h-11 w-11 items-center justify-center rounded-full focus-visible:outline-none ${focusRing} ${
+          className={`relative z-10 flex h-[50px] w-[50px] items-center justify-center rounded-full focus-visible:outline-none ${focusRing} ${
             isLibrary ? "text-white" : "text-white/60 hover:text-white/85"
           }`}
           style={{
@@ -221,17 +221,17 @@ export function MobileTabBar() {
             }}
             className="flex"
           >
-            <LibraryIcon className="h-5 w-5" />
+            <LibraryIcon className="h-[22px] w-[22px]" />
           </span>
         </Link>
 
         {/* Account / Login */}
         {loading ? (
           <span
-            className="relative z-10 flex h-11 w-11 items-center justify-center rounded-full"
+            className="relative z-10 flex h-[50px] w-[50px] items-center justify-center rounded-full"
             aria-hidden
           >
-            <span className="h-7 w-7 animate-pulse rounded-full bg-white/10 backdrop-blur" />
+            <span className="h-8 w-8 animate-pulse rounded-full bg-white/10 backdrop-blur" />
           </span>
         ) : user ? (
           <Link
@@ -244,7 +244,7 @@ export function MobileTabBar() {
             onMouseDown={() => setPressedIndex(4)}
             onMouseUp={() => setPressedIndex(null)}
             onMouseLeave={() => setPressedIndex(null)}
-            className={`relative z-10 flex h-11 w-11 items-center justify-center overflow-hidden rounded-full focus-visible:outline-none ${focusRing} ${
+            className={`relative z-10 flex h-[50px] w-[50px] items-center justify-center overflow-hidden rounded-full focus-visible:outline-none ${focusRing} ${
               isAccount ? "text-white" : "text-white/90"
             }`}
             style={{
@@ -257,7 +257,7 @@ export function MobileTabBar() {
           >
             {avatar?.url ? (
               <span
-                className="relative flex h-7 w-7 items-center justify-center overflow-hidden rounded-full"
+                className="relative flex h-8 w-8 items-center justify-center overflow-hidden rounded-full"
                 style={{
                   transform: isAccount ? "scale(1.08)" : "scale(1)",
                   transition: "transform 250ms cubic-bezier(0.34, 1.56, 0.64, 1)",
@@ -266,14 +266,14 @@ export function MobileTabBar() {
                 <Image
                   src={avatar.url}
                   alt=""
-                  width={28}
-                  height={28}
+                  width={32}
+                  height={32}
                   className="h-full w-full object-cover"
                 />
               </span>
             ) : (
               <span
-                className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold leading-none backdrop-blur ${
+                className={`flex h-8 w-8 items-center justify-center rounded-full text-xs font-bold leading-none backdrop-blur ${
                   isAccount ? "bg-white text-zinc-900" : "bg-white/12 text-white"
                 }`}
                 style={{
@@ -297,7 +297,7 @@ export function MobileTabBar() {
             onMouseDown={() => setPressedIndex(4)}
             onMouseUp={() => setPressedIndex(null)}
             onMouseLeave={() => setPressedIndex(null)}
-            className={`relative z-10 flex h-11 w-11 items-center justify-center rounded-full focus-visible:outline-none ${focusRing} ${
+            className={`relative z-10 flex h-[50px] w-[50px] items-center justify-center rounded-full focus-visible:outline-none ${focusRing} ${
               isAccount ? "text-white" : "text-white/60 hover:text-white/85"
             }`}
             style={{
@@ -315,7 +315,7 @@ export function MobileTabBar() {
               }}
               className="flex"
             >
-              <SignInIcon className="h-5 w-5" />
+              <SignInIcon className="h-[22px] w-[22px]" />
             </span>
           </Link>
         )}

@@ -493,9 +493,10 @@ export function Reader({
 
   const hideChrome = useCallback(() => {
     if (!isMobile) return;
+    if (open || settingsOpen) return;
     window.clearTimeout(controlsTimerRef.current);
     setControls(false);
-  }, [isMobile, setControls]);
+  }, [isMobile, setControls, open, settingsOpen]);
 
   useEffect(() => {
     if (mode !== "webtoon") return;
@@ -793,6 +794,11 @@ export function Reader({
 
   const toggleControls = useCallback(() => {
     if (!isMobile) return;
+    if (open || settingsOpen) {
+      window.clearTimeout(controlsTimerRef.current);
+      setControls(true);
+      return;
+    }
     const next = !controlsVisibleRef.current;
     if (next) {
       window.clearTimeout(controlsTimerRef.current);
@@ -801,7 +807,7 @@ export function Reader({
       window.clearTimeout(controlsTimerRef.current);
     }
     setControls(next);
-  }, [isMobile, setControls]);
+  }, [isMobile, setControls, open, settingsOpen]);
 
   const pageNext = useCallback(() => {
     if (pagedIndex < pages.length - pageStep) {
@@ -1224,8 +1230,16 @@ export function Reader({
             <button
               type="button"
               onClick={() => {
-                setOpen((value) => !value);
+                const willOpen = !open;
+                setOpen(willOpen);
                 setSettingsOpen(false);
+                if (isMobile) {
+                  window.clearTimeout(controlsTimerRef.current);
+                  setControls(true);
+                  if (!willOpen) {
+                    controlsTimerRef.current = window.setTimeout(() => setControls(false), 3500);
+                  }
+                }
               }}
               aria-expanded={open}
               aria-controls="reader-chapter-list"
@@ -1249,7 +1263,13 @@ export function Reader({
                   aria-label="Close chapter list"
                   tabIndex={-1}
                   className="fixed inset-0 z-30 cursor-default"
-                  onClick={() => setOpen(false)}
+                  onClick={() => {
+                    setOpen(false);
+                    if (isMobile) {
+                      window.clearTimeout(controlsTimerRef.current);
+                      controlsTimerRef.current = window.setTimeout(() => setControls(false), 3500);
+                    }
+                  }}
                 />
                 <div
                   ref={listRef}
@@ -1266,7 +1286,13 @@ export function Reader({
                         href={`/read/${mangaId}/${chapter.id}`}
                         prefetch={false}
                         data-active={isActive}
-                        onClick={() => setOpen(false)}
+                        onClick={() => {
+                          setOpen(false);
+                          if (isMobile) {
+                            window.clearTimeout(controlsTimerRef.current);
+                            controlsTimerRef.current = window.setTimeout(() => setControls(false), 3500);
+                          }
+                        }}
                         className={`block rounded-lg px-3 py-2 text-sm transition-colors duration-200 ${
                           isActive
                             ? "bg-red-500/15 font-bold text-red-300"

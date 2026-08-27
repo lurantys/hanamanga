@@ -6,7 +6,7 @@ import {
   subscribeLibrary,
   toggleLibrary,
 } from "@/lib/library";
-import { ctaPrimary, ctaSecondary } from "@/lib/ui";
+import { ctaAccent, ctaSecondary } from "@/lib/ui";
 import type { Manga } from "@/lib/mangadex";
 
 type LibraryButtonProps = {
@@ -26,7 +26,7 @@ export function LibraryButton({ manga, className = "" }: LibraryButtonProps) {
       type="button"
       onClick={() => toggleLibrary(manga)}
       aria-pressed={saved}
-      className={`${saved ? `${ctaPrimary} border border-transparent bg-red-500 text-zinc-950 hover:bg-red-400` : ctaSecondary} ${className}`}
+      className={`${saved ? ctaAccent : ctaSecondary} ${className}`}
     >
       <svg
         viewBox="0 0 24 24"

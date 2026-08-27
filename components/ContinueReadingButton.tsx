@@ -22,16 +22,20 @@ function subscribe(onChange: () => void): () => void {
 
 type ContinueReadingButtonProps = {
   mangaId: string;
+  alternateIds?: (string | null | undefined)[];
+  mangaTitle?: string | null;
   children: ReactNode;
 };
 
 export function ContinueReadingButton({
   mangaId,
+  alternateIds,
+  mangaTitle,
   children,
 }: ContinueReadingButtonProps) {
   const progress = useSyncExternalStore(
     subscribe,
-    () => getProgress(mangaId),
+    () => getProgress(mangaId, alternateIds, mangaTitle),
     () => null,
   );
 
@@ -43,16 +47,18 @@ export function ContinueReadingButton({
     (progress.mangaFraction ?? progress.scrollFraction) * 100,
   );
 
+  const targetMangaId = progress.mangaId || mangaId;
+
   return (
     <Link
-      href={`/read/${mangaId}/${progress.chapterId}`}
+      href={`/read/${targetMangaId}/${progress.chapterId}`}
       aria-label={`${progress.mangaTitle} — continue from ${progress.chapterLabel}, ${pct}% of the manga read`}
       className={ctaPrimary}
     >
       <BookOpenIcon />
-      <span>
+      <span className="flex flex-col items-start leading-tight">
         Continue
-        <span className="ml-1.5 text-xs font-semibold text-zinc-500">
+        <span className="text-[11px] font-semibold text-zinc-500">
           {progress.chapterLabel}
           {pct > 0 ? ` · ${pct}%` : ""}
         </span>

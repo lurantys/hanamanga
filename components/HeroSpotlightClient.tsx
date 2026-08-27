@@ -302,13 +302,15 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
                 <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4" aria-hidden>
                   <path d="M8 5.14v14l11-7z" />
                 </svg>
-                {isContinue ? "Continue" : "Read Now"}
-                {isContinue && chapterLabel ? (
-                  <span className="hidden text-xs font-medium text-zinc-500 sm:inline">
-                    · {chapterLabel}
-                    {pct !== null && pct > 0 ? ` · ${pct}%` : ""}
-                  </span>
-                ) : null}
+                <span className="flex flex-col items-start leading-tight">
+                  {isContinue ? "Continue" : "Read Now"}
+                  {isContinue && chapterLabel ? (
+                    <span className="text-[11px] font-semibold text-zinc-500">
+                      {chapterLabel}
+                      {pct !== null && pct > 0 ? ` · ${pct}%` : ""}
+                    </span>
+                  ) : null}
+                </span>
               </Link>
               <Link
                 href={`/manga/${displayHero.id}`}

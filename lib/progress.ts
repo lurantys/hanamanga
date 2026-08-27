@@ -1,3 +1,5 @@
+import { normalizeTitleKey, titleHits } from "./title";
+
 export type ProgressEntry = {
   mangaId: string;
   chapterId: string;
@@ -79,8 +81,83 @@ export function saveProgress(entry: ProgressEntry): void {
   writeAll(map);
 }
 
-export function getProgress(mangaId: string): ProgressEntry | null {
-  return readAll()[mangaId] ?? null;
+export function getProgress(
+  mangaId: string,
+  alternateIds?: (string | null | undefined)[],
+  mangaTitle?: string | null,
+): ProgressEntry | null {
+  const map = readAll();
+  if (!map || Object.keys(map).length === 0) return null;
+
+  // 1. Direct match
+  if (map[mangaId]) return map[mangaId];
+
+  // 2. Decode/Encode variations
+  const keysToTry: string[] = [];
+  try {
+    const decoded = decodeURIComponent(mangaId);
+    if (decoded !== mangaId) keysToTry.push(decoded);
+    const encoded = encodeURIComponent(mangaId);
+    if (encoded !== mangaId) keysToTry.push(encoded);
+  } catch {
+    // ignore
+  }
+
+  // 3. Prefix variations: al:123 <-> 123, atsu:123 <-> 123
+  for (const k of [mangaId, ...keysToTry]) {
+    if (k.startsWith("al:")) {
+      keysToTry.push(k.slice(3));
+      keysToTry.push(`al%3A${k.slice(3)}`);
+    } else if (k.startsWith("al%3A")) {
+      keysToTry.push(k.slice(5));
+      keysToTry.push(`al:${k.slice(5)}`);
+    } else if (k.startsWith("atsu:")) {
+      keysToTry.push(k.slice(5));
+      keysToTry.push(`atsu%3A${k.slice(5)}`);
+    } else if (k.startsWith("atsu%3A")) {
+      keysToTry.push(k.slice(7));
+      keysToTry.push(`atsu:${k.slice(7)}`);
+    } else {
+      keysToTry.push(`al:${k}`);
+      keysToTry.push(`atsu:${k}`);
+    }
+  }
+
+  // 4. Alternate IDs (e.g. from catalog/atsu match/links)
+  if (alternateIds?.length) {
+    for (const alt of alternateIds) {
+      if (!alt) continue;
+      keysToTry.push(alt);
+      try {
+        const decoded = decodeURIComponent(alt);
+        if (decoded !== alt) keysToTry.push(decoded);
+      } catch {
+        // ignore
+      }
+    }
+  }
+
+  for (const key of keysToTry) {
+    if (map[key]) return map[key];
+  }
+
+  // 5. Fallback: match by normalized title if provided
+  if (mangaTitle) {
+    const normalizedTarget = normalizeTitleKey(mangaTitle);
+    if (normalizedTarget) {
+      for (const entry of Object.values(map)) {
+        if (
+          entry.mangaTitle &&
+          (normalizeTitleKey(entry.mangaTitle) === normalizedTarget ||
+            titleHits(mangaTitle, [entry.mangaTitle]))
+        ) {
+          return entry;
+        }
+      }
+    }
+  }
+
+  return null;
 }
 
 export function getAllProgress(): Record<string, ProgressEntry> {

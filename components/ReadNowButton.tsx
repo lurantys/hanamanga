@@ -11,6 +11,8 @@ import { ctaPrimary } from "@/lib/ui";
 
 type ReadNowButtonProps = {
   mangaId: string;
+  alternateIds?: (string | null | undefined)[];
+  mangaTitle?: string | null;
   scanlators: AtsuScanlator[];
   chapters: AtsuChapter[];
   defaultScanlatorId?: string | null;
@@ -31,19 +33,25 @@ function subscribeProgress(onChange: () => void): () => void {
 
 export function ReadNowButton({
   mangaId,
+  alternateIds,
+  mangaTitle,
   scanlators,
   chapters,
   defaultScanlatorId,
 }: ReadNowButtonProps) {
   const preferred = usePreferredScanlator(mangaId);
-  const progress = useSyncExternalStore(subscribeProgress, () => getProgress(mangaId), () => null);
+  const progress = useSyncExternalStore(
+    subscribeProgress,
+    () => getProgress(mangaId, alternateIds, mangaTitle),
+    () => null,
+  );
   const selected = scanlators.some((scanlator) => scanlator.id === preferred)
     ? (preferred ?? "")
     : (defaultScanlatorId ?? scanlators[0]?.id ?? "");
   const group = chaptersOfScanlator(chapters, selected);
   let target = group[0] ?? chapters[0] ?? null;
   // If user has progress, honor it — continue from last read chapter (or next)
-  if (progress && target) {
+  if (progress) {
     const progressInGroup = group.find((c) => c.id === progress.chapterId);
     if (progressInGroup) {
       target = progressInGroup;
@@ -52,17 +60,31 @@ export function ReadNowButton({
       if (anyProgress) target = anyProgress;
     }
   }
-  if (!target) return null;
+  if (!target && !progress) return null;
 
-  const isContinue = Boolean(progress && progress.chapterId === target.id);
+  const isContinue = Boolean(progress);
+  const pct = progress
+    ? Math.round((progress.mangaFraction ?? progress.scrollFraction) * 100)
+    : 0;
+
+  const targetMangaId = progress?.mangaId || mangaId;
+  const targetChapterId = progress?.chapterId || target?.id;
 
   return (
     <Link
-      href={`/read/${mangaId}/${target.id}`}
+      href={`/read/${targetMangaId}/${targetChapterId}`}
       className={ctaPrimary}
     >
       <BookOpenIcon />
-      {isContinue ? "Continue" : "Read Now"}
+      <span className="flex flex-col items-start leading-tight">
+        {isContinue ? "Continue" : "Read Now"}
+        {isContinue && progress && (
+          <span className="text-[11px] font-semibold text-zinc-500">
+            {progress.chapterLabel}
+            {pct > 0 ? ` · ${pct}%` : ""}
+          </span>
+        )}
+      </span>
     </Link>
   );
 }

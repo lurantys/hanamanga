@@ -15,13 +15,16 @@ export const disabledState =
   "disabled:pointer-events-none disabled:cursor-not-allowed disabled:opacity-40";
 
 /** Base for large rectangular CTAs (hero, detail page actions). */
-const ctaBase = `inline-flex items-center justify-center gap-2 rounded-lg px-6 py-2.5 text-sm font-semibold transition duration-200 active:scale-[0.97] ${focusRing} ${disabledState}`;
+export const ctaBase = `inline-flex items-center justify-center gap-2 rounded-lg px-6 py-2.5 text-sm font-semibold transition duration-200 active:scale-[0.97] ${focusRing} ${disabledState}`;
 
 /** Primary call-to-action: solid white on dark surfaces. */
 export const ctaPrimary = `${ctaBase} bg-white text-zinc-950 hover:bg-white/80`;
 
 /** Secondary call-to-action: bordered zinc chip next to a primary CTA. */
 export const ctaSecondary = `${ctaBase} border border-white/15 bg-zinc-800/60 text-zinc-100 hover:border-white/30 hover:bg-zinc-700/60 hover:text-white`;
+
+/** Accent call-to-action: solid red for toggled/active states (e.g. "In Library"). */
+export const ctaAccent = `${ctaBase} border border-transparent bg-red-500 text-white hover:bg-red-400`;
 
 /** Small pill chip button (chapter "Read", filter actions). */
 export const chipButton = `inline-flex items-center justify-center gap-2 rounded-full border border-white/10 bg-zinc-800/60 px-3.5 py-1.5 text-xs font-semibold text-zinc-200 transition-colors duration-200 hover:border-red-400/40 hover:bg-zinc-700/60 hover:text-white ${focusRing}`;

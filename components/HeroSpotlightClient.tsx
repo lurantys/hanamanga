@@ -237,7 +237,7 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
           style={{ top: "calc(0.75rem + env(safe-area-inset-top))" }}
         >
           <Image src="/logo-v2.png" alt="Hana" width={35} height={35} className="h-[35px] w-[35px] rounded-lg object-contain" />
-          <span className="font-netflix text-[17px] font-black tracking-tight text-white" style={{ fontWeight: 900 }}>Home</span>
+          <span className="font-netflix text-[17px] font-black tracking-tight text-white" style={{ fontWeight: 900 }}>Hana</span>
         </Link>
 
         <div className="relative z-10 mx-auto flex min-h-[78dvh] max-w-6xl flex-col items-center gap-8 px-5 pb-8 pt-[calc(5rem+env(safe-area-inset-top))]">

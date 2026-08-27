@@ -257,6 +257,7 @@ async function pullLibrary(userId: string): Promise<void> {
       merged[row.manga_id] = { ...existing, manga: normalized };
     }
   }
+  for (const id of Object.keys(merged)) lastPushedLibrary.add(id);
   if (!sameJson(local, merged)) replaceLibrary(merged);
 }
 
@@ -285,6 +286,7 @@ async function pullProgress(userId: string): Promise<void> {
       merged[row.manga_id] = entry;
     }
   }
+  for (const id of Object.keys(merged)) lastPushedProgress.add(id);
   if (!sameJson(local, merged)) replaceProgress(merged);
 }
 
@@ -304,6 +306,11 @@ async function pullReadState(userId: string): Promise<void> {
         ...(merged[row.manga_id] ?? {}),
         [row.chapter_id]: row.read_at,
       };
+    }
+  }
+  for (const [mangaId, chapters] of Object.entries(merged)) {
+    for (const chapterId of Object.keys(chapters)) {
+      lastPushedReadState.add(`${mangaId}|${chapterId}`);
     }
   }
   if (!sameJson(local, merged)) replaceReadState(merged);

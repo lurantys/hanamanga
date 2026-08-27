@@ -218,7 +218,7 @@ export default function LoginForm() {
 
           <div className="my-5 flex items-center gap-3">
             <span className="h-px flex-1 bg-zinc-800" />
-            <span className="text-xs font-medium uppercase tracking-wider text-zinc-600">
+            <span className="text-xs font-medium uppercase tracking-wider text-zinc-400">
               or
             </span>
             <span className="h-px flex-1 bg-zinc-800" />
@@ -286,13 +286,13 @@ export default function LoginForm() {
           </button>
         </form>
 
-        <p className="mt-7 text-center text-sm leading-relaxed text-zinc-600">
+        <p className="mt-7 text-center text-sm leading-relaxed text-zinc-400">
           Signing in is optional. Without an account, your library and progress
           stay on this device only. Your existing library, progress, and
           settings merge into your account when you sign in.{" "}
           <Link
             href="/"
-            className="font-semibold text-zinc-400 underline-offset-2 transition-colors hover:text-zinc-200 hover:underline"
+            className="font-semibold text-zinc-300 underline-offset-2 transition-colors hover:text-white hover:underline"
           >
             Back to browsing
           </Link>

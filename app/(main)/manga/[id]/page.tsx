@@ -268,7 +268,7 @@ export default async function MangaPage({ params }: MangaPageProps) {
                 {manga.genres.map((genre) => (
                   <Link
                     key={genre}
-                    href={`/browse?genre=${encodeURIComponent(genre)}`}
+                    href={`/browse?genres=${encodeURIComponent(genre)}`}
                     prefetch={false}
                     className="rounded-full border border-white/10 bg-zinc-800/60 px-3 py-1 text-xs font-medium text-zinc-200 transition-colors duration-200 hover:border-red-400/40 hover:bg-zinc-700/60 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
                   >

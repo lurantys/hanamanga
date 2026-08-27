@@ -75,6 +75,16 @@ export function SearchBar() {
               type="text"
               value={query}
               onChange={(event) => setQuery(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === "ArrowDown") {
+                  const resultsEl = containerRef.current?.querySelector("#header-search-results");
+                  const firstLink = resultsEl?.querySelector("a") as HTMLAnchorElement | null;
+                  if (firstLink) {
+                    event.preventDefault();
+                    firstLink.focus();
+                  }
+                }
+              }}
               placeholder="Search manga or author…"
               aria-label="Search manga"
               role="combobox"

@@ -116,13 +116,27 @@ function YearInput({
   placeholder: string;
   ariaLabel: string;
 }) {
+  const [prevValue, setPrevValue] = useState(value);
   const [draft, setDraft] = useState(value ?? "");
+
+  if (value !== prevValue) {
+    setPrevValue(value);
+    setDraft(value ?? "");
+  }
 
   const commit = () => {
     if (draft === "" || /^\d{4}$/.test(draft)) {
       onChange(draft);
     } else {
       setDraft(value ?? "");
+    }
+  };
+
+  const onKeyDown = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    if (event.key === "Enter") {
+      event.preventDefault();
+      commit();
+      event.currentTarget.blur();
     }
   };
 
@@ -136,6 +150,7 @@ function YearInput({
       value={draft}
       onChange={(event) => setDraft(event.target.value.replace(/\D/g, "").slice(0, 4))}
       onBlur={commit}
+      onKeyDown={onKeyDown}
       placeholder={placeholder}
       aria-label={ariaLabel}
       className="w-24 rounded-lg border border-white/10 bg-zinc-900/60 py-2 pl-3 pr-2 text-[16px] text-zinc-100 outline-none transition-colors placeholder:text-zinc-500 focus:border-red-400/50 sm:text-sm"

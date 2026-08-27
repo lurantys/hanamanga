@@ -141,7 +141,7 @@ const railButton =
   "inline-flex h-11 w-11 items-center justify-center rounded-full text-zinc-200 transition duration-200 active:scale-[0.97] hover:bg-white/5 hover:text-white disabled:pointer-events-none disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70";
 
 const mobileRailButton =
-  "inline-flex h-10 w-10 items-center justify-center rounded-full text-zinc-200 transition duration-200 active:scale-[0.97] hover:bg-white/5 hover:text-white disabled:pointer-events-none disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70";
+  "inline-flex h-11 w-11 items-center justify-center rounded-full text-zinc-200 transition duration-200 active:scale-[0.97] hover:bg-white/5 hover:text-white disabled:pointer-events-none disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70";
 
 function Segmented<T extends string>({
   value,
@@ -322,7 +322,22 @@ export function Reader({
   const [pagedIndex, setPagedIndex] = useState(0);
   const [slideDir, setSlideDir] = useState<1 | -1 | null>(null);
   const [advanceCount, setAdvanceCount] = useState<number | null>(null);
+  const [prevChapterForAdvance, setPrevChapterForAdvance] = useState(currentChapterId);
+  if (currentChapterId !== prevChapterForAdvance) {
+    setPrevChapterForAdvance(currentChapterId);
+    if (advanceCount !== null) setAdvanceCount(null);
+  }
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const fullscreenSupported = useSyncExternalStore(
+    () => () => {},
+    () =>
+      typeof document !== "undefined" &&
+      Boolean(
+        document.fullscreenEnabled ||
+          document.documentElement?.requestFullscreen,
+      ),
+    () => true,
+  );
   const [controlsVisible, setControlsVisible] = useState(true);
   const isMobile = useSyncExternalStore(
     (onChange) => {
@@ -350,6 +365,8 @@ export function Reader({
   const userActiveRef = useRef(false);
   const nextHrefRef = useRef<string | null | undefined>(nextHref);
   const touchStartRef = useRef<{ x: number; y: number } | null>(null);
+  const lastSwipeTimeRef = useRef(0);
+  const webtoonTouchStartRef = useRef<{ x: number; y: number; time: number } | null>(null);
   const pendingScrollTargetRef = useRef<number | null>(null);
   const controlsVisibleRef = useRef(true);
   const controlsTimerRef = useRef(0);
@@ -417,6 +434,10 @@ export function Reader({
   }, [nextHref]);
 
   useEffect(() => {
+    if (advanceTimerRef.current) {
+      window.clearInterval(advanceTimerRef.current);
+      advanceTimerRef.current = 0;
+    }
     navigatingRef.current = false;
   }, [currentChapterId]);
 
@@ -830,11 +851,13 @@ export function Reader({
   }, [pagedIndex, pageStep, prevHref, router, hideChrome, settings.direction]);
 
   const zoneNext = useCallback(() => {
+    if (Date.now() - lastSwipeTimeRef.current < 450) return;
     if (settings.direction === "rtl") pagePrev();
     else pageNext();
   }, [settings.direction, pagePrev, pageNext]);
 
   const zonePrev = useCallback(() => {
+    if (Date.now() - lastSwipeTimeRef.current < 450) return;
     if (settings.direction === "rtl") pageNext();
     else pagePrev();
   }, [settings.direction, pageNext, pagePrev]);
@@ -853,6 +876,7 @@ export function Reader({
       const dx = touch.clientX - start.x;
       const dy = touch.clientY - start.y;
       if (Math.abs(dx) < 48 || Math.abs(dx) < Math.abs(dy)) return;
+      lastSwipeTimeRef.current = Date.now();
       if (dx < 0) {
         if (settings.direction === "ltr") pageNext();
         else pagePrev();
@@ -867,7 +891,7 @@ export function Reader({
   const toggleFullscreen = useCallback(() => {
     if (document.fullscreenElement) {
       document.exitFullscreen().catch(() => {});
-    } else {
+    } else if (document.documentElement.requestFullscreen) {
       document.documentElement.requestFullscreen().catch(() => {});
     }
   }, []);
@@ -1188,18 +1212,20 @@ export function Reader({
       >
         <SettingsIcon />
       </button>
-      <button
-        type="button"
-        onClick={() => {
-          toggleFullscreen();
-          showControls();
-        }}
-        aria-label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
-        title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
-        className={buttonClass}
-      >
-        {isFullscreen ? <MinimizeIcon /> : <FullscreenIcon />}
-      </button>
+      {fullscreenSupported && (
+        <button
+          type="button"
+          onClick={() => {
+            toggleFullscreen();
+            showControls();
+          }}
+          aria-label={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+          title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
+          className={buttonClass}
+        >
+          {isFullscreen ? <MinimizeIcon /> : <FullscreenIcon />}
+        </button>
+      )}
     </>
   );
 
@@ -1384,7 +1410,26 @@ export function Reader({
           <div
             ref={contentRef}
             className="mx-auto mt-5 flex max-w-4xl flex-col px-0 sm:px-4"
-            onClick={toggleControls}
+            onTouchStart={(e) => {
+              const t = e.touches[0];
+              webtoonTouchStartRef.current = { x: t.clientX, y: t.clientY, time: Date.now() };
+            }}
+            onTouchEnd={(e) => {
+              const start = webtoonTouchStartRef.current;
+              webtoonTouchStartRef.current = null;
+              if (!start) return;
+              const t = e.changedTouches[0];
+              const dist = Math.hypot(t.clientX - start.x, t.clientY - start.y);
+              if (dist < 10 && Date.now() - start.time < 350) {
+                toggleControls();
+              }
+            }}
+            onClick={(e) => {
+              if ((e.target as HTMLElement).closest("button, a")) return;
+              if (typeof window !== "undefined" && !("ontouchstart" in window)) {
+                toggleControls();
+              }
+            }}
             style={{
               transform: `scale(${settings.zoom})`,
               transformOrigin: "top center",
@@ -1657,13 +1702,14 @@ export function Reader({
                   options={[
                     { value: "webtoon" as const, label: "Webtoon" },
                     { value: "paged" as const, label: "Paged" },
-                    { value: "twopage" as const, label: "2-Page" },
+                    { value: "twopage" as const, label: isMobile ? "2-Page (Desktop)" : "2-Page" },
                   ]}
                 />
                 {mode === "twopage" && (
-                  <p className="mt-2 text-xs text-zinc-500">
-                    Two-page spreads are shown side by side; on small screens it
-                    falls back to single pages.
+                  <p className="mt-2 text-xs text-zinc-400">
+                    {isMobile
+                      ? "Two-page spread mode requires a tablet or desktop display. Single pages are currently shown on this device."
+                      : "Two-page spreads are shown side by side."}
                   </p>
                 )}
               </section>

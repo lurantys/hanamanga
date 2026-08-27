@@ -45,7 +45,7 @@ export function MangaCard({
       : `${manga.title}. Open detail page.`);
 
   return (
-    <div className={`group relative w-36 shrink-0 md:w-44 ${className}`}>
+    <div className={`group relative w-36 shrink-0 snap-start md:w-44 ${className}`}>
       <Link
         href={href ?? `/manga/${manga.id}`}
         prefetch={false}

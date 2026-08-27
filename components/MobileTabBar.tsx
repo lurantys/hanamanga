@@ -39,10 +39,8 @@ export function MobileTabBar() {
   }, []);
 
   // Fix: logging out/in navigates and focus may stay stuck (login input keeps focusin true).
-  // Reset keyboard state on route or auth change so bar doesn't stay disappeared.
+  // Blur any focused input on route or auth change so focusout fires and tab bar reappears.
   useEffect(() => {
-    setKeyboardOpen(false);
-    // Blur any focused input that survived navigation (login → account → home)
     if (document.activeElement instanceof HTMLElement) {
       const el = document.activeElement;
       if (

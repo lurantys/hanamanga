@@ -36,7 +36,7 @@ export function GenreMenu() {
 
   const selectGenre = (genre: string) => {
     setOpen(false);
-    router.push(`/browse?genre=${encodeURIComponent(genre)}`);
+    router.push(`/browse?genres=${encodeURIComponent(genre)}`);
   };
 
   return (

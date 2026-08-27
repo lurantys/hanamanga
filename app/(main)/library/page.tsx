@@ -480,7 +480,7 @@ export default function LibraryPage() {
   const toolbarVisible = entries.length > 0 || extraReading.length > 0;
 
   return (
-    <main className="bg-zinc-950 pb-24">
+    <main className="bg-zinc-950 pb-8 lg:pb-24">
       <div className="mx-auto max-w-7xl px-5 pt-header md:px-10">
         <header className="mb-6">
           <h1 className="text-2xl font-extrabold tracking-tight text-white md:text-3xl">

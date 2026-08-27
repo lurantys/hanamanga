@@ -19,7 +19,7 @@ export const metadata: Metadata = {
 
 export default function AboutPage() {
   return (
-    <main className="mx-auto max-w-3xl px-5 pt-header pb-24 md:px-10">
+    <main className="mx-auto max-w-3xl px-5 pt-header pb-8 lg:pb-24 md:px-10">
       <article className="prose prose-invert prose-zinc max-w-none">
         <h1 className="text-2xl font-extrabold tracking-tight text-white md:text-3xl">
           About Hana

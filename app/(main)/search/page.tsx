@@ -88,7 +88,7 @@ export default async function SearchPage({
   }
 
   return (
-    <main className="bg-zinc-950 pb-24">
+    <main className="bg-zinc-950 pb-8 lg:pb-24">
       <div className="mx-auto max-w-7xl px-5 pt-header md:px-10">
         <h1 className="mb-1 text-2xl font-extrabold tracking-tight text-white md:text-3xl">
           Search Results

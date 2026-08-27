@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import type { AtsuChapter, AtsuScanlator } from "@/lib/atsu";
 import { atsuChapterLabel } from "@/lib/atsu";
+import { MarkReadButton } from "./MarkReadButton";
 import { markAllRead, useReadChapters } from "@/lib/read-state";
 import { setPreferredScanlator, usePreferredScanlator } from "@/lib/scanlator-preference";
 import { getProgress, PROGRESS_EVENT, invalidateProgressCache } from "@/lib/progress";
@@ -12,6 +13,9 @@ import { useChapterFlash } from "@/lib/use-chapter-flash";
 
 type AtsuChapterListProps = {
   mangaId: string;
+  mangaTitle: string;
+  coverUrl?: string | null;
+  alternateIds?: (string | null | undefined)[];
   scanlators: AtsuScanlator[];
   chapters: AtsuChapter[];
   defaultScanlatorId?: string | null;
@@ -21,6 +25,9 @@ const BATCH = 100;
 
 export function AtsuChapterList({
   mangaId,
+  mangaTitle,
+  coverUrl,
+  alternateIds,
   scanlators,
   chapters,
   defaultScanlatorId,
@@ -69,7 +76,7 @@ export function AtsuChapterList({
   }, [mangaId, chapters, selected]);
 
   const readChapters = useReadChapters(mangaId);
-  const itemRefs = useRef<Record<string, HTMLAnchorElement | null>>({});
+  const itemRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const sentinelRef = useRef<HTMLDivElement>(null);
   const loadingRef = useRef(false);
 
@@ -79,6 +86,15 @@ export function AtsuChapterList({
         .filter((chapter) => chapter.scanlationMangaId === selected)
         .sort((a, b) => a.index - b.index),
     [chapters, selected],
+  );
+
+  const readingOrder = useMemo(
+    () =>
+      groupChapters.map((chapter) => ({
+        id: chapter.id,
+        label: atsuChapterLabel(chapter),
+      })),
+    [groupChapters],
   );
 
   const orderedChapters = useMemo(
@@ -279,19 +295,23 @@ export function AtsuChapterList({
           {visibleChapters.map((chapter) => {
             const isRead = readChapters.has(chapter.id);
             return (
-              <Link
+              <div
                 key={chapter.id}
                 ref={(el) => {
                   itemRefs.current[chapter.id] = el;
                 }}
-                href={`/read/${mangaId}/${chapter.id}`}
-                prefetch={false}
-                className={`group flex items-center justify-between gap-3 rounded-xl border px-4 py-3 backdrop-blur-xl transition-colors duration-200 hover:border-white/25 ${focusRing} ${
+                className={`group relative flex items-center justify-between gap-3 rounded-xl border px-4 py-3 backdrop-blur-xl transition-colors duration-200 hover:border-white/25 ${
                   highlightId === chapter.id
                     ? "animate-chapter-highlight border-red-400/50 bg-red-500/20"
                     : "border-white/10 bg-zinc-900/60"
                 }`}
               >
+                <Link
+                  href={`/read/${mangaId}/${chapter.id}`}
+                  prefetch={false}
+                  aria-label={`Read ${atsuChapterLabel(chapter)}`}
+                  className={`absolute inset-0 rounded-xl ${focusRing}`}
+                />
                 <div className="min-w-0">
                   <p
                     className={`truncate text-sm font-semibold group-hover:text-white ${
@@ -328,10 +348,22 @@ export function AtsuChapterList({
                       : ""}
                   </p>
                 </div>
-                <span className="shrink-0 rounded-full border border-white/10 bg-zinc-800/60 px-3.5 py-1.5 text-xs font-semibold text-zinc-200 transition-colors duration-200 group-hover:border-red-400/40 group-hover:bg-zinc-700/60 group-hover:text-white">
-                  {isRead ? "Re-read" : "Read"}
-                </span>
-              </Link>
+                <div className="pointer-events-none relative flex shrink-0 items-center gap-2">
+                  {!isRead && (
+                    <MarkReadButton
+                      mangaId={mangaId}
+                      mangaTitle={mangaTitle}
+                      coverUrl={coverUrl}
+                      alternateIds={alternateIds}
+                      chapters={readingOrder}
+                      chapterId={chapter.id}
+                    />
+                  )}
+                  <span className="rounded-full border border-white/10 bg-zinc-800/60 px-3.5 py-1.5 text-xs font-semibold text-zinc-200 transition-colors duration-200 group-hover:border-red-400/40 group-hover:bg-zinc-700/60 group-hover:text-white">
+                    {isRead ? "Re-read" : "Read"}
+                  </span>
+                </div>
+              </div>
             );
           })}
         </div>

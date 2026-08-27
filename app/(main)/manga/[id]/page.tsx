@@ -661,6 +661,9 @@ export default async function MangaPage({ params }: MangaPageProps) {
           {atsuMatch ? (
             <AtsuChapterList
               mangaId={manga.id}
+              mangaTitle={manga.title}
+              coverUrl={manga.coverUrl}
+              alternateIds={alternateIds}
               scanlators={atsuMatch.manga.scanlators}
               chapters={atsuChapters}
               defaultScanlatorId={primaryScanlatorId}
@@ -674,6 +677,9 @@ export default async function MangaPage({ params }: MangaPageProps) {
           ) : (
             <MangaChapterList
               mangaId={manga.id}
+              mangaTitle={manga.title}
+              coverUrl={manga.coverUrl}
+              alternateIds={alternateIds}
               volumes={volumes.map(([volume, chapters]) => ({ volume, chapters }))}
             />
           )}

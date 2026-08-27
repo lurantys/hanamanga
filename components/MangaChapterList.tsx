@@ -3,9 +3,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { ChapterReadCheck } from "./ChapterReadCheck";
+import { MarkReadButton } from "./MarkReadButton";
 import { chipButton, focusRing, inputField } from "@/lib/ui";
 import { useChapterFlash } from "@/lib/use-chapter-flash";
-import { useReadChapters } from "@/lib/read-state";
+import { useMangaRead, useReadChapters } from "@/lib/read-state";
 import type { Chapter } from "@/lib/mangadex";
 
 type VolumeGroup = { volume: string | null; chapters: Chapter[] };
@@ -14,6 +15,9 @@ const VOLUME_BATCH = 6;
 
 type MangaChapterListProps = {
   mangaId: string;
+  mangaTitle: string;
+  coverUrl?: string | null;
+  alternateIds?: (string | null | undefined)[];
   volumes: VolumeGroup[];
 };
 
@@ -24,7 +28,13 @@ function chapterLabel(chapter: Chapter): string {
   return "Chapter";
 }
 
-export function MangaChapterList({ mangaId, volumes }: MangaChapterListProps) {
+export function MangaChapterList({
+  mangaId,
+  mangaTitle,
+  coverUrl,
+  alternateIds,
+  volumes,
+}: MangaChapterListProps) {
   const [order, setOrder] = useState<"newest" | "oldest">("newest");
   const [revealedVolumes, setRevealedVolumes] = useState(VOLUME_BATCH);
   const [jump, setJump] = useState("");
@@ -35,6 +45,15 @@ export function MangaChapterList({ mangaId, volumes }: MangaChapterListProps) {
   const sentinelRef = useRef<HTMLDivElement>(null);
   const loadingRef = useRef(false);
   const readChapters = useReadChapters(mangaId);
+  const mangaRead = useMangaRead(mangaId);
+
+  const readingOrder = useMemo(
+    () =>
+      volumes
+        .flatMap((volume) => volume.chapters)
+        .map((chapter) => ({ id: chapter.id, label: chapterLabel(chapter) })),
+    [volumes],
+  );
 
   const orderedVolumes = useMemo(() => {
     const reversed =
@@ -184,6 +203,16 @@ export function MangaChapterList({ mangaId, volumes }: MangaChapterListProps) {
                     </p>
                   </div>
                   <div className="flex shrink-0 items-center gap-2">
+                    {!isRead && !mangaRead && (
+                      <MarkReadButton
+                        mangaId={mangaId}
+                        mangaTitle={mangaTitle}
+                        coverUrl={coverUrl}
+                        alternateIds={alternateIds}
+                        chapters={readingOrder}
+                        chapterId={chapter.id}
+                      />
+                    )}
                     <ChapterReadCheck mangaId={mangaId} chapterId={chapter.id} />
                     {chapter.externalUrl ? (
                       <a

@@ -25,9 +25,9 @@ const zenKaku = Zen_Kaku_Gothic_New({
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: "Hana — A modern web manga reader | Hanamanga",
+  title: "Hana — Modern Web Manga Reader",
   description:
-    "Hana by Hanamanga is a modern manga, manhwa, manhua, and webtoon reader. Read manga online at hanamanga.online, beautifully on any device.",
+    "Hana is a modern manga, manhwa, manhua, and webtoon reader. Discover, read, and track manga online beautifully on any device.",
   applicationName: "Hana",
   appleWebApp: {
     capable: true,
@@ -44,24 +44,24 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     url: siteUrl,
-    siteName: "Hana — Hanamanga",
-    title: "Hana — A modern web manga reader | Hanamanga",
+    siteName: "Hana",
+    title: "Hana — Modern Web Manga Reader",
     description:
-      "Hana by Hanamanga is a modern manga, manhwa, manhua, and webtoon reader. Read manga online at hanamanga.online.",
+      "Hana is a modern manga, manhwa, manhua, and webtoon reader. Discover, read, and track manga online beautifully on any device.",
     images: [
       {
         url: "/logo-v2.png",
         width: 500,
         height: 500,
-        alt: "Hana — Hanamanga manga reader",
+        alt: "Hana manga reader",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Hana — A modern web manga reader | Hanamanga",
+    title: "Hana — Modern Web Manga Reader",
     description:
-      "Hana by Hanamanga is a modern manga, manhwa, manhua, and webtoon reader. Read manga online at hanamanga.online.",
+      "Hana is a modern manga, manhwa, manhua, and webtoon reader. Discover, read, and track manga online beautifully on any device.",
     images: ["/logo-v2.png"],
   },
   alternates: {
@@ -84,7 +84,7 @@ const structuredData = {
       "@id": `${siteUrl}/#website`,
       url: siteUrl,
       name: "Hana",
-      alternateName: "Hanamanga",
+      alternateName: ["Hanamanga", "hanamanga.online"],
       description:
         "A modern web manga reader for manga, manhwa, manhua, and webtoons.",
       publisher: { "@id": `${siteUrl}/#organization` },
@@ -101,7 +101,7 @@ const structuredData = {
       "@type": "Organization",
       "@id": `${siteUrl}/#organization`,
       name: "Hana",
-      alternateName: "Hanamanga",
+      alternateName: ["Hanamanga"],
       url: siteUrl,
       logo: `${siteUrl}/logo-v2.png`,
       sameAs: [

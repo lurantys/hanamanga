@@ -187,7 +187,7 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
       {/* ===== MOBILE ONLY — premium streaming presentation ===== */}
       <section
         key={`${displayHero.id}:${imageSrc ?? "none"}:mobile`}
-        className="animate-hero-in relative w-full overflow-hidden bg-zinc-950 md:hidden"
+        className="animate-hero-in relative w-full overflow-hidden bg-zinc-950 pt-[env(safe-area-inset-top)] md:hidden"
       >
         <div className="absolute inset-0">
           {imageSrc ? (
@@ -229,17 +229,19 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
           <div aria-hidden className="absolute inset-0 bg-gradient-to-b from-zinc-950/40 via-transparent to-transparent" />
         </div>
 
-        {/* Top-left branding — no border/bg, 25% bigger, tighter gap */}
+        {/* Top-left branding — offset for OS status bar */}
         <Link
           href="/"
           aria-label="Hana home"
-          className="absolute left-5 top-5 z-20 flex items-center gap-1.5"
+          className="absolute left-5 z-20 flex items-center gap-1.5"
+          style={{ top: "calc(0.75rem + env(safe-area-inset-top))" }}
         >
           <Image src="/logo-v2.png" alt="Hana" width={35} height={35} className="h-[35px] w-[35px] rounded-lg object-contain" />
           <span className="font-netflix text-[17px] font-black tracking-tight text-white" style={{ fontWeight: 900 }}>Home</span>
         </Link>
 
-        <div className="relative z-10 mx-auto flex min-h-[78dvh] max-w-6xl flex-col items-center gap-8 px-5 pb-8 pt-20">
+        <div className="relative z-10 mx-auto flex min-h-[78dvh] max-w-6xl flex-col items-center gap-8 px-5 pb-8 pt-[calc(5rem+env(safe-area-inset-top))]">
+
           <Link
             href={`/manga/${displayHero.id}`}
             aria-label={displayHero.title}

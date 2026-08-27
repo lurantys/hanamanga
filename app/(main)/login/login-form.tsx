@@ -289,14 +289,17 @@ export default function LoginForm() {
         <p className="mt-7 text-center text-sm leading-relaxed text-zinc-400">
           Signing in is optional. Without an account, your library and progress
           stay on this device only. Your existing library, progress, and
-          settings merge into your account when you sign in.{" "}
+          settings merge into your account when you sign in.
+        </p>
+
+        <div className="mt-4 text-center">
           <Link
             href="/"
-            className="font-semibold text-zinc-300 underline-offset-2 transition-colors hover:text-white hover:underline"
+            className="text-sm font-semibold text-zinc-300 underline-offset-2 transition-colors hover:text-white hover:underline"
           >
             Back to browsing
           </Link>
-        </p>
+        </div>
       </div>
     </main>
   );

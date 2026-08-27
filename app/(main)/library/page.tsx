@@ -517,7 +517,7 @@ export default function LibraryPage() {
               onChange={(event) => setQuery(event.target.value)}
               placeholder="Search your library..."
               aria-label="Search your library"
-              className="w-full appearance-none rounded-full border border-white/10 bg-zinc-900/60 py-2.5 pl-10 pr-4 text-sm font-medium text-zinc-200 outline-none backdrop-blur-xl transition-colors duration-200 placeholder:text-zinc-500 hover:border-white/25 focus:border-red-400/50"
+              className="w-full appearance-none rounded-full border border-white/10 bg-zinc-900/60 py-2.5 pl-10 pr-4 text-[16px] font-medium text-zinc-200 outline-none backdrop-blur-xl transition-colors duration-200 placeholder:text-zinc-500 hover:border-white/25 focus:border-red-400/50 sm:text-sm"
             />
           </div>
 

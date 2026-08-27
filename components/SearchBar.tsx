@@ -81,7 +81,7 @@ export function SearchBar() {
               aria-expanded
               aria-controls="header-search-results"
               enterKeyHint="search"
-              className="min-w-0 flex-1 bg-transparent text-sm text-zinc-100 outline-none placeholder:text-zinc-500"
+              className="min-w-0 flex-1 bg-transparent text-[16px] text-zinc-100 outline-none placeholder:text-zinc-500 sm:text-sm"
             />
             <button
               type="button"

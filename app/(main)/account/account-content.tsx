@@ -331,7 +331,7 @@ export default function AccountContent() {
                     autoFocus
                     value={nameValue}
                     onChange={(e) => setNameValue(e.target.value)}
-                    className="w-48 rounded-lg border border-white/10 bg-zinc-900/60 px-2 py-1 text-sm text-zinc-100 outline-none transition-colors duration-200 placeholder:text-zinc-500 hover:border-white/25 focus:border-red-400/50"
+                    className="w-48 rounded-lg border border-white/10 bg-zinc-900/60 px-2 py-1 text-[16px] text-zinc-100 outline-none transition-colors duration-200 placeholder:text-zinc-500 hover:border-white/25 focus:border-red-400/50 sm:text-sm"
                     placeholder="Display name"
                   />
                   <button

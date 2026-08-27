@@ -30,7 +30,7 @@ export function SearchField({ initialQuery = "" }: { initialQuery?: string }) {
         placeholder="Search manga or author…"
         aria-label="Search manga"
         enterKeyHint="search"
-        className="min-w-0 flex-1 bg-transparent text-sm text-zinc-100 outline-none placeholder:text-zinc-500"
+        className="min-w-0 flex-1 bg-transparent text-[16px] text-zinc-100 outline-none placeholder:text-zinc-500 sm:text-sm"
       />
       {query && (
         <button

@@ -138,7 +138,7 @@ function YearInput({
       onBlur={commit}
       placeholder={placeholder}
       aria-label={ariaLabel}
-      className="w-24 rounded-lg border border-white/10 bg-zinc-900/60 py-2 pl-3 pr-2 text-sm text-zinc-100 outline-none transition-colors placeholder:text-zinc-500 focus:border-red-400/50"
+      className="w-24 rounded-lg border border-white/10 bg-zinc-900/60 py-2 pl-3 pr-2 text-[16px] text-zinc-100 outline-none transition-colors placeholder:text-zinc-500 focus:border-red-400/50 sm:text-sm"
     />
   );
 }

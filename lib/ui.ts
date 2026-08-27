@@ -28,11 +28,11 @@ export const chipButton = `inline-flex items-center justify-center gap-2 rounded
 
 /** Text input treatment shared by search/filter/jump fields. */
 export const inputField =
-  "rounded-lg border border-white/10 bg-zinc-900/60 text-sm text-zinc-100 outline-none transition-colors duration-200 placeholder:text-zinc-500 focus:border-red-400/50";
+  "rounded-lg border border-white/10 bg-zinc-900/60 text-[16px] text-zinc-100 outline-none transition-colors duration-200 placeholder:text-zinc-500 focus:border-red-400/50 sm:text-sm";
 
 /** Select treatment matching inputField (pill variant). */
 export const selectField =
-  "appearance-none rounded-full border border-white/10 bg-zinc-900/60 text-sm font-medium text-zinc-200 outline-none backdrop-blur-xl transition-colors duration-200 hover:border-white/25 focus:border-red-400/50";
+  "appearance-none rounded-full border border-white/10 bg-zinc-900/60 text-[16px] font-medium text-zinc-200 outline-none backdrop-blur-xl transition-colors duration-200 hover:border-white/25 focus:border-red-400/50 sm:text-sm";
 
 /** Hero fallback gradient shared by server + client hero renderers. */
 export const HERO_FALLBACK_GRADIENT =

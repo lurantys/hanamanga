@@ -138,6 +138,24 @@ h3 {
   animation: kenburns 18s ease-out both;
 }
 
+/* Keeps hero artwork in motion without moving the foreground content. */
+@keyframes hero-pan {
+  0%,
+  100% {
+    transform: scale(1.06) translateX(-2%);
+  }
+  50% {
+    transform: scale(1.06) translateX(2%);
+  }
+}
+
+@media (min-width: 768px) {
+  .hero-artwork-motion {
+    animation: hero-pan 28s ease-in-out infinite;
+    will-change: transform;
+  }
+}
+
 @keyframes modal-in {
   from {
     opacity: 0;
@@ -237,6 +255,7 @@ h3 {
 
 @media (prefers-reduced-motion: reduce) {
   .animate-kenburns,
+  .hero-artwork-motion,
   .animate-hero-in,
   .animate-modal-in,
   .animate-page-in,

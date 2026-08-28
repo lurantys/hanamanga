@@ -337,7 +337,7 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
             sizes="100vw"
             onLoad={() => setImageLoaded(true)}
             className={`object-cover object-[center_20%] object-top transition-opacity duration-300 ${
-              bannerSrc ? "" : "scale-125 blur-2xl"
+              bannerSrc ? "hero-artwork-motion" : "scale-125 blur-2xl"
             } ${ready ? "opacity-100" : "opacity-0"}`}
           />
         ) : (

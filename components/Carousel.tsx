@@ -13,13 +13,16 @@ type CarouselProps = {
 
 export function Carousel({ title, ariaLabel, children, headerRight }: CarouselProps) {
   const scrollerRef = useRef<HTMLDivElement>(null);
-  const [atStart, setAtStart] = useState(false);
+  const [atStart, setAtStart] = useState(true);
   const [atEnd, setAtEnd] = useState(false);
 
   useEffect(() => {
     const el = scrollerRef.current;
     if (!el) return;
     let raf = 0;
+
+    // Always show the first card when a row mounts.
+    el.scrollLeft = 0;
 
     const updateBoundaries = () => {
       if (raf) return;
@@ -97,7 +100,7 @@ export function Carousel({ title, ariaLabel, children, headerRight }: CarouselPr
       </div>
       <div
         ref={scrollerRef}
-        className="carousel-scroller scrollbar-hide flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 py-2 md:px-10 md:py-10"
+        className="carousel-scroller scrollbar-hide flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 py-2 scroll-px-5 md:px-10 md:py-10 md:scroll-px-10"
         onWheel={handleWheel}
         style={{ overscrollBehaviorX: "none" }}
       >

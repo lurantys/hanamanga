@@ -244,6 +244,7 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
 
           <Link
             href={`/manga/${displayHero.id}`}
+            prefetch={false}
             aria-label={displayHero.title}
             className={`group relative shrink-0 overflow-hidden rounded-[14px] bg-zinc-900 shadow-[0_24px_64px_rgba(0,0,0,0.65),0_8px_24px_rgba(0,0,0,0.5)] ring-1 ring-white/10 transition duration-300 hover:ring-white/20 md:rounded-[16px] ${focusRing}`}
           >
@@ -286,6 +287,7 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
             {descriptionMobile && (
               <Link
                 href={`/manga/${displayHero.id}`}
+                prefetch={false}
                 className="mx-auto block max-w-2xl rounded-2xl border border-white/[0.06] bg-white/[0.04] p-4 backdrop-blur-xl transition-colors hover:bg-white/[0.06] hover:border-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20"
               >
                 <p className="line-clamp-3 text-sm leading-relaxed text-zinc-200">
@@ -297,6 +299,7 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
             <div className="flex flex-wrap justify-center gap-3 pt-1">
               <Link
                 href={primaryHref}
+                prefetch={false}
                 className={ctaPrimary}
               >
                 <svg viewBox="0 0 24 24" fill="currentColor" className="h-4 w-4" aria-hidden>
@@ -314,6 +317,7 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
               </Link>
               <Link
                 href={`/manga/${displayHero.id}`}
+                prefetch={false}
                 className={ctaSecondary}
               >
                 More Info
@@ -366,6 +370,7 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
             {displayHero.coverUrl && (
               <Link
                 href={`/manga/${displayHero.id}`}
+                prefetch={false}
                 aria-label={displayHero.title}
                 className={`shrink-0 rounded-xl ${focusRing}`}
               >
@@ -406,6 +411,7 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
               <div className="mt-2 flex flex-wrap gap-3">
                 <Link
                   href={primaryHref}
+                  prefetch={false}
                   className={`inline-flex items-center justify-center gap-2 rounded-lg bg-white px-6 py-2.5 text-sm font-semibold text-zinc-950 transition duration-200 hover:bg-white/80 active:scale-[0.97] ${focusRing}`}
                 >
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>
@@ -423,6 +429,7 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
                 </Link>
                 <Link
                   href={`/manga/${displayHero.id}`}
+                  prefetch={false}
                   className={`inline-flex items-center justify-center gap-2 rounded-lg border border-white/15 bg-zinc-800/60 px-6 py-2.5 text-sm font-semibold text-zinc-100 backdrop-blur-sm transition duration-200 hover:border-white/30 hover:bg-zinc-700/60 hover:text-white ${focusRing}`}
                 >
                   More Info

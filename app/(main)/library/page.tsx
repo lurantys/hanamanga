@@ -316,7 +316,7 @@ function GridCard({
           onToggleRead={onToggleRead}
           onRemove={onRemove}
           removeLabel={removeLabel}
-          wrapperClassName="absolute right-1 top-1 z-10 md:group-hover:z-50 md:group-focus-within:z-50"
+          wrapperClassName="manga-card-menu absolute right-1 top-1 z-50"
           revealOnHover
           buttonClassName="flex h-5 w-5 items-center justify-center rounded-full border border-white/20 bg-zinc-950/80 text-zinc-300 transition-all duration-200 hover:border-white/40 hover:text-white"
           iconClassName="h-2.5 w-2.5"

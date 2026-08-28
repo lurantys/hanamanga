@@ -158,7 +158,7 @@ export function MangaCard({
           </div>
         )}
         <div className="pointer-events-auto mt-3 flex items-stretch gap-1.5">
-          <Link href={readHref} className="flex h-9 min-w-0 flex-1 flex-col items-center justify-center rounded-md bg-white px-2 text-[10px] font-bold leading-tight text-zinc-950 transition-colors hover:bg-zinc-200">
+          <Link href={readHref} prefetch={false} className="flex h-9 min-w-0 flex-1 flex-col items-center justify-center rounded-md bg-white px-2 text-[10px] font-bold leading-tight text-zinc-950 transition-colors hover:bg-zinc-200">
             {progress ? "Continue" : "Read"}
             {progress?.chapterLabel && (
               <span className="mt-0.5 text-[9px] font-semibold text-zinc-500">

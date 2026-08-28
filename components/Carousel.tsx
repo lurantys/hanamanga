@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState, type ReactNode, type WheelEvent } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { ChevronLeftIcon, ChevronRightIcon } from "./icons";
 import { focusRing } from "@/lib/ui";
 
@@ -63,13 +63,6 @@ export function Carousel({ title, ariaLabel, children, headerRight }: CarouselPr
     });
   };
 
-  const handleWheel = (event: WheelEvent<HTMLDivElement>) => {
-    const el = scrollerRef.current;
-    if (!el || Math.abs(event.deltaY) <= Math.abs(event.deltaX)) return;
-    event.preventDefault();
-    el.scrollLeft += event.deltaY;
-  };
-
   return (
     <section aria-label={ariaLabel}>
       <div className="mb-3 flex items-center justify-between px-5 md:px-10">
@@ -101,8 +94,6 @@ export function Carousel({ title, ariaLabel, children, headerRight }: CarouselPr
       <div
         ref={scrollerRef}
         className="carousel-scroller scrollbar-hide flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 py-2 scroll-px-5 md:px-10 md:py-10 md:scroll-px-10"
-        onWheel={handleWheel}
-        style={{ overscrollBehaviorX: "none" }}
       >
         {children}
       </div>

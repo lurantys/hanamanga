@@ -280,6 +280,41 @@ h3 {
   }
 }
 
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  .manga-card-surface {
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 24px rgb(0 0 0 / 0.2);
+    transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 300ms cubic-bezier(0.22, 1, 0.36, 1),
+      border-radius 300ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .manga-card-hover-panel {
+    border-radius: 0.5rem;
+    transform: translateY(4px);
+    transition: opacity 200ms ease-out, transform 200ms ease-out;
+  }
+
+  .group:hover .manga-card-surface,
+  .group:focus-within .manga-card-surface {
+    z-index: 30;
+    border-radius: 0.75rem;
+    box-shadow: 0 24px 50px rgb(0 0 0 / 0.55);
+    transform: scale(1.24);
+    transition-delay: 600ms;
+  }
+
+  .group:hover .manga-card-hover-panel,
+  .group:focus-within .manga-card-hover-panel {
+    z-index: 40;
+    border-radius: 0.75rem;
+    opacity: 1;
+    transform: scale(1.24) translateY(0);
+    transition-delay: 600ms;
+  }
+
+}
+
 @media (prefers-reduced-transparency: reduce) {
   * {
     backdrop-filter: none !important;

@@ -250,7 +250,7 @@ function GridCard({
         className="block rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-white/60"
         aria-label={ariaLabel}
       >
-        <div className="relative aspect-[2/3] overflow-hidden rounded-md bg-zinc-800 transition-transform duration-200 group-hover:scale-[1.03] group-active:scale-[1.03]">
+        <div className="manga-card-surface relative aspect-[2/3] overflow-hidden rounded-md bg-zinc-800">
           {coverUrl ? (
             <Image
               src={coverUrl}
@@ -292,6 +292,22 @@ function GridCard({
         </div>
       </Link>
 
+      <div className="manga-card-hover-panel pointer-events-none absolute inset-0 z-20 hidden translate-y-1 flex-col justify-end overflow-hidden rounded-md bg-gradient-to-t from-zinc-950 via-zinc-950/80 to-transparent p-3 pt-16 opacity-0 md:flex">
+        <p className="line-clamp-2 text-sm font-bold leading-tight text-white">{title}</p>
+        <p className="mt-2 line-clamp-2 text-[10px] font-medium text-zinc-300">{meta}</p>
+        {progressPct !== null && (
+          <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/15" aria-label={`${progressPct}% read`}>
+            <div className="h-full rounded-full bg-red-500" style={{ width: `${progressPct}%` }} />
+          </div>
+        )}
+        <Link
+          href={href}
+          className="pointer-events-auto mt-3 flex h-9 items-center justify-center rounded-md bg-white px-2 text-[10px] font-bold text-zinc-950 transition-colors hover:bg-zinc-200"
+        >
+          {meta.startsWith("Continue") ? "Continue" : "Read"}
+        </Link>
+      </div>
+
       {onRemove && (
         <CardMenu
           title={title}
@@ -299,7 +315,7 @@ function GridCard({
           onToggleRead={onToggleRead}
           onRemove={onRemove}
           removeLabel={removeLabel}
-          wrapperClassName="absolute right-1 top-1 z-10"
+          wrapperClassName="absolute right-1 top-1 z-10 md:group-hover:z-50 md:group-focus-within:z-50"
           revealOnHover
           buttonClassName="flex h-5 w-5 items-center justify-center rounded-full border border-white/20 bg-zinc-950/80 text-zinc-300 transition-all duration-200 hover:border-white/40 hover:text-white"
           iconClassName="h-2.5 w-2.5"

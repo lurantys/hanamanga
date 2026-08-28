@@ -144,7 +144,7 @@ export function BrowseGrid({
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6">
         {items.map((manga) => (
-          <div key={manga.id} style={{ contentVisibility: "auto", containIntrinsicSize: "260px" }}>
+          <div key={manga.id}>
             <MangaCard manga={manga} className="w-full!" />
           </div>
         ))}

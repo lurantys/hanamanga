@@ -12,7 +12,8 @@ import {
   STATUS_OPTIONS,
   type SortKey,
 } from "@/lib/genres";
-import { selectField, focusRing } from "@/lib/ui";
+import { focusRing } from "@/lib/ui";
+import { CustomSelect } from "./CustomSelect";
 
 type BrowseFiltersProps = {
   sort: SortKey;
@@ -54,47 +55,6 @@ function hrefFor({
   if (yearTo) params.set("yearTo", yearTo);
   if (minScore) params.set("minScore", minScore);
   return `/browse?${params.toString()}`;
-}
-
-function Select({
-  label,
-  value,
-  options,
-  onChange,
-}: {
-  label: string;
-  value: string;
-  options: { key: string; label: string }[];
-  onChange: (value: string) => void;
-}) {
-  return (
-    <div className="relative">
-      <select
-        value={value}
-        onChange={(event) => onChange(event.target.value)}
-        aria-label={label}
-        className={`${selectField} py-2 pl-4 pr-9 ${focusRing}`}
-      >
-        {options.map((option) => (
-          <option key={option.key} value={option.key}>
-            {option.label}
-          </option>
-        ))}
-      </select>
-      <svg
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        strokeWidth="2"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400"
-        aria-hidden
-      >
-        <path d="m6 9 6 6 6-6" />
-      </svg>
-    </div>
-  );
 }
 
 function FilterSectionLabel({ children }: { children: string }) {
@@ -247,14 +207,14 @@ export function BrowseFilters({
           ))}
         </div>
 
-        <Select
+        <CustomSelect
           label="Filter by status"
           value={status ?? ""}
           options={STATUS_OPTIONS}
           onChange={(value) => push({ status: value })}
         />
 
-        <Select
+        <CustomSelect
           label="Filter by content rating"
           value={rating ?? ""}
           options={RATING_OPTIONS}
@@ -326,7 +286,7 @@ export function BrowseFilters({
             <div className="space-y-5">
               <div>
                 <FilterSectionLabel>Origin / type</FilterSectionLabel>
-                <Select
+                <CustomSelect
                   label="Filter by origin"
                   value={origin ?? ""}
                   options={ORIGIN_OPTIONS}
@@ -357,7 +317,7 @@ export function BrowseFilters({
 
               <div>
                 <FilterSectionLabel>Minimum score</FilterSectionLabel>
-                <Select
+                <CustomSelect
                   label="Filter by minimum score"
                   value={minScore ?? ""}
                   options={MIN_SCORE_OPTIONS}

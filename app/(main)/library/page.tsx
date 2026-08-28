@@ -23,8 +23,9 @@ import {
   type ProgressEntry,
 } from "@/lib/progress";
 import { statusLabel } from "@/lib/mangadex";
-import { popoverSurface, selectField, focusRing } from "@/lib/ui";
+import { popoverSurface, focusRing } from "@/lib/ui";
 import { EmptyState } from "@/components/EmptyState";
+import { CustomSelect } from "@/components/CustomSelect";
 
 const EMPTY_LIBRARY_SNAPSHOT = {};
 
@@ -577,32 +578,12 @@ export default function LibraryPage() {
             ))}
           </div>
 
-          <div className="relative">
-            <select
-              value={sort}
-              onChange={(event) => setSort(event.target.value as SortKey)}
-              aria-label="Sort library"
-              className={`${selectField} py-2.5 pl-4 pr-9`}
-            >
-              {SORTS.map((option) => (
-                <option key={option.key} value={option.key}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="pointer-events-none absolute right-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-zinc-400"
-              aria-hidden
-            >
-              <path d="m6 9 6 6 6-6" />
-            </svg>
-          </div>
+          <CustomSelect
+            label="Sort library"
+            value={sort}
+            options={SORTS}
+            onChange={(value) => setSort(value as SortKey)}
+          />
 
           <div className="flex gap-1.5 rounded-full border border-white/10 bg-zinc-900/60 p-1 backdrop-blur-xl">
             <button

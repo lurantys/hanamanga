@@ -119,7 +119,7 @@ export function ContinueRow() {
                 aria-label={`Remove ${title} from Continue Reading`}
                 title="Remove from Continue Reading"
                 onClick={() => clearProgress(entry.mangaId)}
-                className={`absolute left-1.5 top-1.5 z-20 inline-flex h-7 w-7 items-center justify-center rounded-full bg-zinc-950/80 text-zinc-300 shadow-lg transition-all duration-300 origin-top-left hover:bg-red-500 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 md:group-hover:z-50 md:group-focus-within:z-50 md:group-hover:scale-[1.24] md:group-focus-within:scale-[1.24] pointer-coarse:opacity-100 ${focusRing}`}
+                className={`continue-remove absolute left-1.5 top-1.5 z-20 inline-flex h-7 w-7 items-center justify-center rounded-full bg-zinc-950/80 text-zinc-300 shadow-lg origin-top-left hover:bg-red-500 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 md:group-hover:z-50 md:group-focus-within:z-50 pointer-coarse:opacity-100 ${focusRing}`}
               >
                 <svg
                   viewBox="0 0 24 24"

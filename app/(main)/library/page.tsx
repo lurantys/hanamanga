@@ -19,6 +19,7 @@ import {
   clearProgress,
   getContinueList,
   getAllProgress,
+  getProgress,
   subscribeProgress,
   type ProgressEntry,
 } from "@/lib/progress";
@@ -243,6 +244,18 @@ function GridCard({
   onRemove?: () => void;
   removeLabel?: string;
 }) {
+  const mangaIdFromHref = href.split("/")[2] ?? "";
+  const progress = useSyncExternalStore(
+    subscribeProgress,
+    () => getProgress(mangaIdFromHref, undefined, title),
+    () => null,
+  );
+  const readHref = progress?.chapterId
+    ? `/read/${progress.mangaId}/${progress.chapterId}`
+    : href.startsWith("/read/")
+      ? href
+      : `/read/${mangaIdFromHref}`;
+
   return (
     <div className="group relative">
       <Link
@@ -302,7 +315,8 @@ function GridCard({
           </div>
         )}
         <Link
-          href={href}
+          href={readHref}
+          prefetch={false}
           className="pointer-events-auto mt-3 flex h-9 items-center justify-center rounded-md bg-white px-2 text-[10px] font-bold text-zinc-950 transition-colors hover:bg-zinc-200"
         >
           {meta.startsWith("Continue") ? "Continue" : "Read"}

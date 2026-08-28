@@ -5,6 +5,7 @@ import { LibraryRow } from "@/components/LibraryRow";
 import { RecommendedRow } from "@/components/RecommendedRow";
 import { NewChaptersRow } from "@/components/NewChaptersRow";
 import { MangaRow } from "@/components/MangaRow";
+import { PWAInstallIcon } from "@/components/PWAInstallIcon";
 import {
   getTrending,
   getWebtoons,
@@ -106,10 +107,11 @@ function HeroSkeleton() {
 
 export default function Home() {
   return (
-    <main className="bg-zinc-950">
+    <main className="relative bg-zinc-950">
       <h1 className="sr-only">
         Hana — read manga, manhwa, manhua, and webtoons online
       </h1>
+      <PWAInstallIcon />
       <Suspense fallback={<HeroSkeleton />}>
         <HeroSpotlight />
       </Suspense>

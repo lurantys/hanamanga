@@ -1,4 +1,4 @@
-import { normalizeTitleKey, titleHits } from "./title";
+import { normalizeTitleKey } from "./title";
 
 export type ProgressEntry = {
   mangaId: string;
@@ -141,16 +141,14 @@ export function getProgress(
     if (map[key]) return map[key];
   }
 
-  // 5. Fallback: match by normalized title if provided
+  // 5. Fallback: exact title match only (no token-subset fuzzy match).
+  // Previously used titleHits which treated "Jujutsu Kaisen" ⊂ "Jujutsu Kaisen 0"
+  // as same work, causing Continue/Chapter 145 to leak onto spin-offs/sequels.
   if (mangaTitle) {
     const normalizedTarget = normalizeTitleKey(mangaTitle);
     if (normalizedTarget) {
       for (const entry of Object.values(map)) {
-        if (
-          entry.mangaTitle &&
-          (normalizeTitleKey(entry.mangaTitle) === normalizedTarget ||
-            titleHits(mangaTitle, [entry.mangaTitle]))
-        ) {
+        if (entry.mangaTitle && normalizeTitleKey(entry.mangaTitle) === normalizedTarget) {
           return entry;
         }
       }

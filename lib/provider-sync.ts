@@ -29,6 +29,7 @@ export type ProviderSyncResult = {
   provider: ProviderName;
   additions: number;
   progressUpdates: number;
+  statusUpdates: number;
   pulled: number;
   removed: number;
   unmatched?: number;
@@ -357,11 +358,12 @@ async function setProviderState(
   state: ProviderState,
 ): Promise<void> {
   const supabase = await createClient();
-  await supabase
+  const { error } = await supabase
     .from("hana_library")
     .update({ provider_state: state })
     .eq("user_id", userId)
     .eq("manga_id", mangaId);
+  if (error) throw error;
 }
 
 function providerIdFor(provider: ProviderName, manga: Manga): number | null {
@@ -374,10 +376,11 @@ async function pushToProvider(
   userId: string,
   provider: ProviderName,
   token: string,
-): Promise<{ additions: number; progressUpdates: number }> {
+): Promise<{ additions: number; progressUpdates: number; statusUpdates: number }> {
   const library = await readLibrary(userId);
   let additions = 0;
   let progressUpdates = 0;
+  let statusUpdates = 0;
 
   for (const row of library.values()) {
     const manga = (row.manga ?? {}) as Manga;
@@ -413,27 +416,43 @@ async function pushToProvider(
           },
         });
         additions++;
-      } else if (
-        progress != null &&
-        progress !== existing.pushedProgress &&
+      } else {
+        // AniList is the status authority when both providers are connected.
+        // This prevents sequential sync order from letting stale MAL data
+        // overwrite a newer AniList status. MAL follows AniList instead.
+        const authoritativeStatus =
+          provider === "mal" && state.anilist?.status
+            ? ANILIST_TO_MAL_STATUS[state.anilist.status]
+            : undefined;
+        const status = authoritativeStatus ?? existing.status ?? (provider === "anilist" ? "CURRENT" : "reading");
+        const statusChanged = authoritativeStatus != null && status !== existing.status;
+        const progressChanged =
+          progress != null &&
+          progress !== existing.pushedProgress &&
         // Push only when the local value moved since our last write and the
         // provider hasn't changed on its own (or we would regress it). A
         // conflict where both sides advanced resolves toward the higher
         // progress so remote edits are never silently reverted.
-        (existing.progress === existing.pushedProgress ||
-          progress > (existing.progress ?? Number.NEGATIVE_INFINITY))
-      ) {
-        const status = existing.status ?? (provider === "anilist" ? "CURRENT" : "reading");
-        if (provider === "anilist") {
-          await saveAniListEntry(token, mediaId, status, progress);
-        } else {
-          await patchMalEntry(token, mediaId, status, progress);
+          (existing.progress === existing.pushedProgress ||
+            progress > (existing.progress ?? Number.NEGATIVE_INFINITY));
+        if (statusChanged || progressChanged) {
+          await (provider === "anilist"
+            ? saveAniListEntry(token, mediaId, status, progressChanged ? progress : null)
+            : patchMalEntry(token, mediaId, status, progressChanged ? progress : null));
+          const nextProgress = progressChanged ? progress! : existing.progress;
+          await setProviderState(userId, row.manga_id, {
+            ...state,
+            [provider]: {
+              ...existing,
+              status,
+              progress: nextProgress,
+              pushedProgress: progressChanged ? progress : existing.pushedProgress,
+              syncedAt: Date.now(),
+            },
+          });
+          if (statusChanged) statusUpdates++;
+          if (progressChanged) progressUpdates++;
         }
-        await setProviderState(userId, row.manga_id, {
-          ...state,
-          [provider]: { ...existing, progress, pushedProgress: progress, syncedAt: Date.now() },
-        });
-        progressUpdates++;
       }
     } catch (error) {
       console.error(`[provider-sync] push ${provider} failed for ${row.manga_id}`, error);
@@ -449,7 +468,7 @@ async function pushToProvider(
     }
   }
 
-  return { additions, progressUpdates };
+  return { additions, progressUpdates, statusUpdates };
 }
 
 async function pullFromProvider(
@@ -529,23 +548,42 @@ async function pullFromProvider(
   }
 
   if (upserts.length) {
-    await supabase.from("hana_library").upsert(upserts, {
+    const { error } = await supabase.from("hana_library").upsert(upserts, {
       onConflict: "user_id,manga_id",
     });
+    if (error) throw error;
   }
 
   const toDelete: string[] = [];
+  const stateUpdates: { mangaId: string; state: ProviderState }[] = [];
+  const otherProvider: ProviderName = provider === "anilist" ? "mal" : "anilist";
   for (const [mangaId, row] of library) {
     const state: ProviderState = row.provider_state ?? {};
     const st = state[provider];
-    if (st && !st.error && !seen.has(mangaId)) toDelete.push(mangaId);
+    if (!st || st.error || seen.has(mangaId)) continue;
+    if (state[otherProvider]) {
+      const nextState = { ...state };
+      // Keep the local row for the other provider, but prevent this sync from
+      // immediately re-adding it to the provider that removed it.
+      nextState[provider] = {
+        error: "removed remotely",
+        syncedAt,
+      };
+      stateUpdates.push({ mangaId, state: nextState });
+    } else {
+      toDelete.push(mangaId);
+    }
+  }
+  for (const update of stateUpdates) {
+    await setProviderState(userId, update.mangaId, update.state);
   }
   if (toDelete.length) {
-    await supabase
+    const { error } = await supabase
       .from("hana_library")
       .delete()
       .eq("user_id", userId)
       .in("manga_id", toDelete);
+    if (error) throw error;
   }
   return {
     pulled: upserts.length,
@@ -765,7 +803,7 @@ async function syncProvider(
     pulled: 0,
     removed: 0,
   };
-  let pushResult = { additions: 0, progressUpdates: 0 };
+  let pushResult = { additions: 0, progressUpdates: 0, statusUpdates: 0 };
   let error: string | undefined;
   let pullFailed = false;
 
@@ -860,6 +898,7 @@ export async function syncProviders(userId: string): Promise<SyncSummary> {
         provider,
         additions: 0,
         progressUpdates: 0,
+        statusUpdates: 0,
         pulled: 0,
         removed: 0,
         error: error instanceof Error ? error.message : "sync failed",

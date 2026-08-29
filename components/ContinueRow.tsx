@@ -119,7 +119,7 @@ export function ContinueRow() {
                 aria-label={`Remove ${title} from Continue Reading`}
                 title="Remove from Continue Reading"
                 onClick={() => clearProgress(entry.mangaId)}
-                className={`continue-remove absolute left-1.5 top-1.5 z-20 inline-flex h-7 w-7 items-center justify-center rounded-full bg-zinc-950/80 text-zinc-300 shadow-lg origin-top-left hover:bg-red-500 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 md:group-hover:z-50 md:group-focus-within:z-50 pointer-coarse:opacity-100 ${focusRing}`}
+                className={`continue-remove pointer-events-auto absolute left-1.5 top-1.5 z-20 inline-flex h-5 w-5 items-center justify-center rounded-full border border-white/20 bg-zinc-950/80 text-zinc-300 shadow-lg transition-all duration-200 hover:border-white/40 hover:bg-red-500 hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-white/80 md:opacity-0 md:group-hover:opacity-100 md:group-focus-within:opacity-100 md:group-hover:z-50 md:group-focus-within:z-50 pointer-coarse:opacity-100 ${focusRing}`}
               >
                 <svg
                   viewBox="0 0 24 24"
@@ -128,7 +128,7 @@ export function ContinueRow() {
                   strokeWidth="2"
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  className="h-3.5 w-3.5"
+                  className="h-2.5 w-2.5"
                   aria-hidden
                 >
                   <path d="M18 6 6 18" />

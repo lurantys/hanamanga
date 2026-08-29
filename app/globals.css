@@ -289,10 +289,10 @@ h3 {
       border-radius 300ms cubic-bezier(0.22, 1, 0.36, 1);
   }
 
-  .manga-card-hover-panel {
-    border-radius: 0.5rem;
+  .manga-card-hover-layer {
     transform: translateY(4px);
     transition: opacity 200ms ease-out, transform 200ms ease-out;
+    opacity: 0;
   }
 
   .group:hover .manga-card-surface,
@@ -304,36 +304,11 @@ h3 {
     transition-delay: 600ms;
   }
 
-  .group:hover .manga-card-hover-panel,
-  .group:focus-within .manga-card-hover-panel {
+  .group:hover .manga-card-hover-layer,
+  .group:focus-within .manga-card-hover-layer {
     z-index: 40;
-    border-radius: 0.75rem;
     opacity: 1;
     transform: scale(1.24) translateY(0);
-    transition-delay: 600ms;
-  }
-
-  .manga-card-menu {
-    transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1), translate 300ms cubic-bezier(0.22, 1, 0.36, 1);
-    transform-origin: top right;
-  }
-
-  .group:hover .manga-card-menu,
-  .group:focus-within .manga-card-menu {
-    translate: 14px -18px;
-    scale: 1.24;
-    transition-delay: 600ms;
-  }
-
-  .continue-remove {
-    transition: transform 300ms cubic-bezier(0.22, 1, 0.36, 1), translate 300ms cubic-bezier(0.22, 1, 0.36, 1), opacity 200ms;
-    transform-origin: top left;
-  }
-
-  .group:hover .continue-remove,
-  .group:focus-within .continue-remove {
-    translate: -14px -18px;
-    scale: 1.24;
     transition-delay: 600ms;
   }
 

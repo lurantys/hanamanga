@@ -306,36 +306,39 @@ function GridCard({
         </div>
       </Link>
 
-      <div className="manga-card-hover-panel pointer-events-none absolute inset-0 z-20 hidden translate-y-1 flex-col justify-end overflow-hidden rounded-md bg-gradient-to-t from-zinc-950 via-zinc-950/80 to-transparent p-3 pt-16 opacity-0 md:flex">
-        <p className="line-clamp-2 text-sm font-bold leading-tight text-white">{title}</p>
-        <p className="mt-2 line-clamp-2 text-[10px] font-medium text-zinc-300">{meta}</p>
-        {progressPct !== null && (
-          <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/15" aria-label={`${progressPct}% read`}>
-            <div className="h-full rounded-full bg-red-500" style={{ width: `${progressPct}%` }} />
+      <div className="manga-card-hover-layer pointer-events-none absolute inset-0 z-40">
+        <div className="manga-card-hover-panel absolute inset-0 hidden flex-col justify-end rounded-md bg-gradient-to-t from-zinc-950 via-zinc-950/80 to-transparent p-3 pt-16 md:flex">
+          <p className="line-clamp-2 text-sm font-bold leading-tight text-white">{title}</p>
+          <p className="mt-2 line-clamp-2 text-[10px] font-medium text-zinc-300">{meta}</p>
+          {progressPct !== null && (
+            <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/15" aria-label={`${progressPct}% read`}>
+              <div className="h-full rounded-full bg-red-500" style={{ width: `${progressPct}%` }} />
+            </div>
+          )}
+          <div className="pointer-events-auto mt-3 flex items-stretch gap-1.5">
+            <Link
+              href={readHref}
+              prefetch={false}
+              className="flex h-9 min-w-0 flex-1 items-center justify-center rounded-md bg-white px-2 text-[10px] font-bold text-zinc-950 transition-colors hover:bg-zinc-200"
+            >
+              {meta.startsWith("Continue") ? "Continue" : "Read"}
+            </Link>
+            {onRemove && (
+              <CardMenu
+                title={title}
+                isRead={isRead}
+                onToggleRead={onToggleRead}
+                onRemove={onRemove}
+                removeLabel={removeLabel}
+                wrapperClassName="manga-card-menu relative z-50"
+                revealOnHover
+                buttonClassName="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border border-white/20 bg-zinc-800/80 text-zinc-100 transition-colors hover:bg-zinc-700"
+                iconClassName="h-3.5 w-3.5"
+              />
+            )}
           </div>
-        )}
-        <Link
-          href={readHref}
-          prefetch={false}
-          className="pointer-events-auto mt-3 flex h-9 items-center justify-center rounded-md bg-white px-2 text-[10px] font-bold text-zinc-950 transition-colors hover:bg-zinc-200"
-        >
-          {meta.startsWith("Continue") ? "Continue" : "Read"}
-        </Link>
+        </div>
       </div>
-
-      {onRemove && (
-        <CardMenu
-          title={title}
-          isRead={isRead}
-          onToggleRead={onToggleRead}
-          onRemove={onRemove}
-          removeLabel={removeLabel}
-          wrapperClassName="manga-card-menu absolute right-1 top-1 z-50"
-          revealOnHover
-          buttonClassName="flex h-5 w-5 items-center justify-center rounded-full border border-white/20 bg-zinc-950/80 text-zinc-300 transition-all duration-200 hover:border-white/40 hover:text-white"
-          iconClassName="h-2.5 w-2.5"
-        />
-      )}
 
       <div className="mt-1 px-0.5">
         <p className="line-clamp-1 text-xs font-semibold text-zinc-200">

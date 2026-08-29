@@ -3,13 +3,10 @@ import { unstable_cache } from "next/cache";
 import {
   fetchAggregate,
   fetchFeed,
-  fetchMangaList,
-  fetchTrending,
   type Chapter,
   type Manga,
   type MangaListResult,
 } from "./mangadex";
-import { tagIdFor } from "./genres";
 import {
   chaptersOfScanlator,
   fetchAtsuChapters,
@@ -41,56 +38,31 @@ const HOME_ROWS_REVALIDATE = 300;
 const SOURCE_REVALIDATE = 3600;
 
 const cachedTrending = unstable_cache(
-  async (limit = 18): Promise<MangaListResult> => {
-    try {
-      return await fetchAniListList({ limit, sort: "trending" });
-    } catch {
-      return fetchTrending(limit);
-    }
-  },
-  ["home-trending"],
-  { revalidate: HOME_ROWS_REVALIDATE },
+  async (limit = 18): Promise<MangaListResult> =>
+    fetchAniListList({ limit, sort: "trending" }),
+  ["home-trending-v2"],
+  { revalidate: HOME_ROWS_REVALIDATE, tags: ["home-trending"] },
 );
 
 const cachedPopular = unstable_cache(
-  async (limit = 18): Promise<MangaListResult> => {
-    try {
-      return await fetchAniListList({ limit, sort: "popular" });
-    } catch {
-      return fetchMangaList({ limit, order: { followedCount: "desc" } });
-    }
-  },
-  ["home-popular"],
-  { revalidate: HOME_ROWS_REVALIDATE },
+  async (limit = 18): Promise<MangaListResult> =>
+    fetchAniListList({ limit, sort: "popular" }),
+  ["home-popular-v2"],
+  { revalidate: HOME_ROWS_REVALIDATE, tags: ["home-popular"] },
 );
 
 const cachedTopRated = unstable_cache(
-  async (limit = 18): Promise<MangaListResult> => {
-    try {
-      return await fetchAniListList({ limit, sort: "top" });
-    } catch {
-      return fetchMangaList({ limit, order: { rating: "desc" } });
-    }
-  },
-  ["home-top-rated"],
-  { revalidate: HOME_ROWS_REVALIDATE },
+  async (limit = 18): Promise<MangaListResult> =>
+    fetchAniListList({ limit, sort: "top" }),
+  ["home-top-rated-v2"],
+  { revalidate: HOME_ROWS_REVALIDATE, tags: ["home-top-rated"] },
 );
 
 const cachedByGenre = unstable_cache(
-  async (genre: string, limit = 18): Promise<MangaListResult> => {
-    try {
-      return await fetchAniListList({ limit, genre, sort: "popular" });
-    } catch {
-      const tagId = tagIdFor(genre);
-      return fetchMangaList({
-        limit,
-        order: { followedCount: "desc" },
-        includedTags: tagId ? [tagId] : undefined,
-      });
-    }
-  },
-  ["home-by-genre"],
-  { revalidate: HOME_ROWS_REVALIDATE },
+  async (genre: string, limit = 18): Promise<MangaListResult> =>
+    fetchAniListList({ limit, genre, sort: "popular" }),
+  ["home-by-genre-v2"],
+  { revalidate: HOME_ROWS_REVALIDATE, tags: ["home-by-genre"] },
 );
 
 export const getTrending = cache((limit = 18) => cachedTrending(limit));

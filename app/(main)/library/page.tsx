@@ -225,6 +225,7 @@ function GridCard({
   title,
   coverUrl,
   href,
+  readHref,
   ariaLabel,
   progressPct,
   meta,
@@ -236,6 +237,7 @@ function GridCard({
   title: string;
   coverUrl?: string | null;
   href: string;
+  readHref: string;
   ariaLabel: string;
   progressPct: number | null;
   meta: string;
@@ -250,12 +252,6 @@ function GridCard({
     () => getProgress(mangaIdFromHref, undefined, title),
     () => null,
   );
-  const readHref = progress?.chapterId
-    ? `/read/${progress.mangaId}/${progress.chapterId}`
-    : href.startsWith("/read/")
-      ? href
-      : `/read/${mangaIdFromHref}`;
-
   return (
     <div className="group relative">
       <Link
@@ -802,13 +798,14 @@ export default function LibraryPage() {
               return (
                 <GridCard
                   key={manga.id}
-                  title={manga.title}
-                  coverUrl={thumbUrl(manga.coverUrl)}
-                  href={
-                    isRead || !mangaProgress
-                      ? `/manga/${manga.id}`
-                      : `/read/${manga.id}/${mangaProgress.chapterId}`
-                  }
+                   title={manga.title}
+                   coverUrl={thumbUrl(manga.coverUrl)}
+                   href={`/manga/${manga.id}`}
+                   readHref={
+                     mangaProgress?.chapterId
+                       ? `/read/${manga.id}/${mangaProgress.chapterId}`
+                       : `/read/${manga.id}`
+                   }
                   ariaLabel={
                     isRead
                       ? `${manga.title} — finished`
@@ -851,7 +848,8 @@ export default function LibraryPage() {
                     key={`continue-${entry.mangaId}`}
                     title={entry.mangaTitle}
                     coverUrl={thumbUrl(entry.coverUrl)}
-                    href={`/read/${entry.mangaId}/${entry.chapterId}`}
+                    href={`/manga/${entry.mangaId}`}
+                    readHref={`/read/${entry.mangaId}/${entry.chapterId}`}
                     ariaLabel={`${entry.mangaTitle} — continue from ${entry.chapterLabel}, ${pct}% read`}
                     progressPct={pct}
                     meta={`Continue · ${entry.chapterLabel}`}

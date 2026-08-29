@@ -2,7 +2,6 @@ import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import {
   fetchMangaById,
-  fetchMangaList,
   fetchSearch,
   MangaDexError,
   type Manga,
@@ -28,12 +27,7 @@ import {
 import { createClient } from "@/lib/supabase/server";
 import { parseMangaId, toMangaId } from "./source";
 import { normalizeTitleKey, titleHits } from "./title";
-import {
-  RATING_VALUES,
-  SORT_ORDER,
-  tagIdFor,
-  type SortKey,
-} from "./genres";
+import { type SortKey } from "./genres";
 
 type AtsuLike = {
   id: string;
@@ -148,38 +142,26 @@ const cachedBrowseCatalog = unstable_cache(
   async (options: BrowseOptions): Promise<MangaListResult> => {
     const page = Math.max(1, options.page ?? 1);
     const offset = (page - 1) * CATALOG_PAGE_SIZE;
-    try {
-      return await fetchAniListList({
-        limit: CATALOG_PAGE_SIZE,
-        offset,
-        sort: options.sort,
-        genres: options.genres,
-        status: options.status,
-        rating: options.rating,
-        origin: options.origin,
-        yearFrom: options.yearFrom,
-        yearTo: options.yearTo,
-        minScore: options.minScore,
-      });
-    } catch {
-      return fetchMangaList({
-        limit: CATALOG_PAGE_SIZE,
-        offset,
-        order: SORT_ORDER[options.sort],
-        includedTags: options.genres.map(tagIdFor).filter(
-          (id): id is string => Boolean(id),
-        ),
-        status: options.status ? [options.status] : undefined,
-        contentRating: options.rating ? RATING_VALUES[options.rating] : undefined,
-        year:
-          options.yearFrom && options.yearFrom === options.yearTo
-            ? options.yearFrom
-            : undefined,
-      });
-    }
+    // Browse is AniList-only. The previous MangaDex fallback poisoned the
+    // Data Cache in prod (transient AniList 429 -> watermarked
+    // uploads.mangadex.org covers cached for 300s, mixed al:/mangadex ids
+    // across pages). Let callers handle AniList errors as "unavailable"
+    // instead of caching a degraded dataset.
+    return fetchAniListList({
+      limit: CATALOG_PAGE_SIZE,
+      offset,
+      sort: options.sort,
+      genres: options.genres,
+      status: options.status,
+      rating: options.rating,
+      origin: options.origin,
+      yearFrom: options.yearFrom,
+      yearTo: options.yearTo,
+      minScore: options.minScore,
+    });
   },
-  ["catalog-browse"],
-  { revalidate: 300 },
+  ["catalog-browse-v2"],
+  { revalidate: 300, tags: ["catalog-browse"] },
 );
 
 export function fetchBrowseCatalog(options: BrowseOptions): Promise<MangaListResult> {

@@ -11,6 +11,7 @@ import {
   replaceProgress,
   clearProgress,
   PROGRESS_EVENT,
+  setProgressUserId,
   type ProgressEntry,
 } from "./progress";
 import {
@@ -25,6 +26,7 @@ import {
   getReaderSettingsUpdatedAt,
   replaceReaderSettings,
   READER_SETTINGS_EVENT,
+  setReaderSettingsUserId,
   type ReaderSettings,
 } from "./reader-settings";
 import {
@@ -33,6 +35,7 @@ import {
   SCANLATOR_PREFERENCE_EVENT,
   type ScanlatorMap,
 } from "./scanlator-preference";
+import { setStorageUserId } from "./storage";
 import type { SyncSummary } from "./provider-sync";
 
 type LibraryRow = {
@@ -567,6 +570,21 @@ export async function syncNow(): Promise<SyncSummary | null> {
   return summary;
 }
 
+function switchAccountStores(userId: string | null): void {
+  // Make every local cache account-isolated so data never bleeds
+  // between accounts and logged-in progress is independent from the
+  // anonymous localStorage bucket. Each store keeps a per-user key
+  // like `hana:progress:<userId>`; switching clears the in-memory
+  // cache so the next read hits the correct key (or an empty map on
+  // a fresh device that will be populated from Supabase).
+  setStorageUserId(userId);
+  setProgressUserId(userId);
+  setReaderSettingsUserId(userId);
+  lastPushedLibrary.clear();
+  lastPushedProgress.clear();
+  lastPushedReadState.clear();
+}
+
 export async function handleAuthStateChange(
   userId: string | null,
 ): Promise<void> {
@@ -574,6 +592,10 @@ export async function handleAuthStateChange(
   await stopRealtime();
   for (const dispose of localDisposers) dispose();
   localDisposers = [];
+  // Switch local stores before any pull/push so we read/write the
+  // correct per-account bucket and never merge anon data into an
+  // account or leak one account's data into another.
+  switchAccountStores(userId);
   currentUserId = userId;
   if (userId) {
     await syncAll(userId);

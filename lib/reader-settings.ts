@@ -20,6 +20,23 @@ export const READER_SETTINGS_KEY = "hana:reader-settings";
 const READER_SETTINGS_UPDATED_AT_KEY = "hana:reader-settings-updated-at";
 export const READER_SETTINGS_EVENT = "hana:reader-settings-updated";
 
+let activeUserId: string | null = null;
+
+function effectiveSettingsKey(): string {
+  return activeUserId ? `${READER_SETTINGS_KEY}:${activeUserId}` : READER_SETTINGS_KEY;
+}
+
+function effectiveUpdatedAtKey(): string {
+  return activeUserId ? `${READER_SETTINGS_UPDATED_AT_KEY}:${activeUserId}` : READER_SETTINGS_UPDATED_AT_KEY;
+}
+
+export function setReaderSettingsUserId(userId: string | null): void {
+  if (activeUserId === userId) return;
+  activeUserId = userId;
+  cached = undefined;
+  cachedUpdatedAt = undefined;
+}
+
 export const DEFAULT_READER_SETTINGS: ReaderSettings = {
   mode: "webtoon",
   direction: "ltr",
@@ -44,7 +61,7 @@ function loadUpdatedAt(): number {
   if (cachedUpdatedAt !== undefined) return cachedUpdatedAt;
   if (typeof window === "undefined") return 0;
   try {
-    const raw = window.localStorage.getItem(READER_SETTINGS_UPDATED_AT_KEY);
+    const raw = window.localStorage.getItem(effectiveUpdatedAtKey());
     cachedUpdatedAt = raw ? Number(raw) || 0 : 0;
   } catch {
     cachedUpdatedAt = 0;
@@ -60,7 +77,7 @@ export function getReaderSettings(): ReaderSettings {
   if (typeof window === "undefined") return DEFAULT_READER_SETTINGS;
   if (cached) return cached;
   try {
-    const raw = window.localStorage.getItem(READER_SETTINGS_KEY);
+    const raw = window.localStorage.getItem(effectiveSettingsKey());
     if (raw) {
       const parsed = JSON.parse(raw) as Partial<ReaderSettings>;
       cached = {
@@ -103,8 +120,8 @@ export function setReaderSettings(patch: Partial<ReaderSettings>): void {
   cachedUpdatedAt = Date.now();
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.setItem(READER_SETTINGS_KEY, JSON.stringify(next));
-    window.localStorage.setItem(READER_SETTINGS_UPDATED_AT_KEY, String(cachedUpdatedAt));
+    window.localStorage.setItem(effectiveSettingsKey(), JSON.stringify(next));
+    window.localStorage.setItem(effectiveUpdatedAtKey(), String(cachedUpdatedAt));
   } catch {
     // storage full or blocked — ignore
   }
@@ -114,7 +131,13 @@ export function setReaderSettings(patch: Partial<ReaderSettings>): void {
 export function subscribeReaderSettings(onChange: () => void): () => void {
   if (typeof window === "undefined") return () => {};
   const onStorage = (event: StorageEvent) => {
-    if (event.key === READER_SETTINGS_KEY || event.key === READER_SETTINGS_UPDATED_AT_KEY) invalidateReaderSettings();
+    if (
+      event.key === effectiveSettingsKey() ||
+      event.key === effectiveUpdatedAtKey() ||
+      event.key === READER_SETTINGS_KEY ||
+      event.key === READER_SETTINGS_UPDATED_AT_KEY
+    )
+      invalidateReaderSettings();
     onChange();
   };
   window.addEventListener("storage", onStorage);
@@ -134,8 +157,8 @@ export function replaceReaderSettings(settings: ReaderSettings, remoteUpdatedAt?
   cachedUpdatedAt = remoteUpdatedAt ?? Date.now();
   if (typeof window === "undefined") return;
   try {
-    window.localStorage.setItem(READER_SETTINGS_KEY, JSON.stringify(next));
-    window.localStorage.setItem(READER_SETTINGS_UPDATED_AT_KEY, String(cachedUpdatedAt));
+    window.localStorage.setItem(effectiveSettingsKey(), JSON.stringify(next));
+    window.localStorage.setItem(effectiveUpdatedAtKey(), String(cachedUpdatedAt));
   } catch {
     // storage full or blocked — ignore
   }

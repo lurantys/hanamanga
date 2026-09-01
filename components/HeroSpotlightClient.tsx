@@ -32,7 +32,6 @@ type HeroState = {
 
 export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
   const [hero, setHero] = useState<HeroState | null>(null);
-  const [imageLoaded, setImageLoaded] = useState(false);
 
   const displayHero = hero?.manga ?? initial;
   const isContinue = hero?.isContinue ?? false;
@@ -40,8 +39,6 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
   const chapterLabel = hero?.chapterLabel;
   const bannerSrc = displayHero.bannerUrl ?? null;
   const imageSrc: string | null = bannerSrc ?? displayHero.coverUrl ?? null;
-
-  const ready = !imageSrc || imageLoaded;
 
   useEffect(() => {
     let active = true;
@@ -186,8 +183,7 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
     <>
       {/* ===== MOBILE ONLY — premium streaming presentation ===== */}
       <section
-        key={`${displayHero.id}:${imageSrc ?? "none"}:mobile`}
-        className="animate-hero-in relative w-full overflow-hidden bg-zinc-950 pt-[env(safe-area-inset-top)] md:hidden"
+        className="relative w-full overflow-hidden bg-zinc-950 pt-[env(safe-area-inset-top)] md:hidden"
       >
         <div className="absolute inset-0">
           {imageSrc ? (
@@ -197,10 +193,9 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
               priority
               fill
               sizes="100vw"
-              onLoad={() => setImageLoaded(true)}
-              className={`object-cover object-top scale-105 transition-opacity duration-500 ${
+              className={`object-cover object-top scale-105 ${
                 bannerSrc ? "" : "scale-110 blur-[30px]"
-              } ${ready ? "opacity-100" : "opacity-0"}`}
+              }`}
             />
           ) : (
             <div className="absolute inset-0" style={{ background: HERO_FALLBACK_GRADIENT }} />
@@ -217,14 +212,6 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
             </div>
           )}
           <div aria-hidden className="absolute inset-0 bg-zinc-950/55" />
-          {imageSrc && (
-            <div
-              aria-hidden
-              className={`absolute inset-0 bg-zinc-800 transition-opacity duration-300 ${
-                ready ? "opacity-0" : "opacity-100"
-              }`}
-            />
-          )}
           <div aria-hidden className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/75 to-zinc-950/10" />
           <div aria-hidden className="absolute inset-0 bg-gradient-to-b from-zinc-950/40 via-transparent to-transparent" />
         </div>
@@ -329,8 +316,7 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
 
       {/* ===== DESKTOP ONLY — original conventional hero ===== */}
       <section
-        key={`${displayHero.id}:${imageSrc ?? "none"}:desktop`}
-        className="animate-hero-in relative hidden w-full overflow-hidden bg-zinc-950 md:block md:h-[80dvh] md:min-h-[480px]"
+        className="relative hidden w-full overflow-hidden bg-zinc-950 md:block md:h-[80dvh] md:min-h-[480px]"
       >
         {imageSrc ? (
           <Image
@@ -339,10 +325,9 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
             priority
             fill
             sizes="100vw"
-            onLoad={() => setImageLoaded(true)}
-            className={`object-cover object-[center_20%] object-top transition-opacity duration-300 ${
+            className={`object-cover object-[center_20%] object-top ${
               bannerSrc ? "hero-artwork-motion" : "scale-125 blur-2xl"
-            } ${ready ? "opacity-100" : "opacity-0"}`}
+            }`}
           />
         ) : (
           <div
@@ -352,15 +337,6 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
         )}
 
         {imageSrc && <div aria-hidden className="absolute inset-0 bg-zinc-950/40" />}
-
-        {imageSrc && (
-          <div
-            aria-hidden
-            className={`absolute inset-0 bg-zinc-800 transition-opacity duration-300 ${
-              ready ? "opacity-0" : "opacity-100"
-            }`}
-          />
-        )}
 
         <div className="absolute inset-0 bg-gradient-to-t from-zinc-950 via-zinc-950/25 to-zinc-950/60" />
         <div className="absolute inset-0 bg-gradient-to-r from-zinc-950 via-zinc-950/50 to-transparent" />

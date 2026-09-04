@@ -6,6 +6,7 @@ import { MangaCard } from "./MangaCard";
 import { getLibrarySnapshot, subscribeLibrary } from "@/lib/library";
 import { getAllProgress } from "@/lib/progress";
 import { loadUserManga } from "@/lib/userManga";
+import { fetchJsonCached } from "@/lib/api-fetch";
 import type { Manga } from "@/lib/mangadex";
 
 const EMPTY_LIBRARY = {} as Record<string, never>;
@@ -81,8 +82,9 @@ export function RecommendedRow() {
           limit: "18",
           seed: String(Math.abs(h) % 1_000_000),
         });
-        return fetch(`/api/recommend?${params.toString()}`)
-          .then((res) => (res.ok ? res.json() : null))
+        return fetchJsonCached<{ data?: Manga[] }>(
+          `/api/recommend?${params.toString()}`,
+        )
           .then((json) => {
             if (!active) return;
             const data: Manga[] = json?.data ?? [];

@@ -1,5 +1,6 @@
 import { getLibrarySnapshot } from "./library";
 import { getContinueList } from "./progress";
+import { fetchJsonCached } from "./api-fetch";
 import type { Manga } from "./mangadex";
 
 export async function loadUserManga(): Promise<Manga[]> {
@@ -20,12 +21,11 @@ export async function loadUserManga(): Promise<Manga[]> {
 
   if (missing.length) {
     try {
-      const res = await fetch(`/api/manga?ids=${missing.join(",")}`);
-      if (res.ok) {
-        const json = await res.json();
-        for (const manga of (json?.data ?? []) as Manga[]) {
-          byId.set(manga.id, manga);
-        }
+      const json = await fetchJsonCached<{ data?: Manga[] }>(
+        `/api/manga?ids=${missing.join(",")}`,
+      );
+      for (const manga of json?.data ?? []) {
+        byId.set(manga.id, manga);
       }
     } catch {
       // ignore — fall back to library-only profile

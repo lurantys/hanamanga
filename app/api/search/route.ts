@@ -44,7 +44,7 @@ export async function GET(request: Request) {
         { data, total: pool.data.length, page, authorName: pool.authorName, authorImageUrl: pool.authorImageUrl },
         {
           headers: {
-            "Cache-Control": "public, max-age=300, stale-while-revalidate=600",
+            "Cache-Control": "public, max-age=300, s-maxage=300, stale-while-revalidate=600",
           },
         },
       );
@@ -59,7 +59,7 @@ export async function GET(request: Request) {
       { data, total: pool.data.length, page, authors: staff },
       {
         headers: {
-          "Cache-Control": "public, max-age=300, stale-while-revalidate=600",
+          "Cache-Control": "public, max-age=300, s-maxage=300, stale-while-revalidate=600",
         },
       },
     );

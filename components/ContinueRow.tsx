@@ -13,6 +13,7 @@ import {
   type ProgressEntry,
 } from "@/lib/progress";
 import type { Manga } from "@/lib/mangadex";
+import { fetchJsonCached } from "@/lib/api-fetch";
 import { getFinishedSnapshot, subscribeFinished } from "@/lib/read-state";
 
 const EMPTY_LIST: ProgressEntry[] = [];
@@ -55,8 +56,9 @@ export function ContinueRow() {
     if (!visibleEntries.length) return;
     const ids = visibleEntries.map((entry) => entry.mangaId).join(",");
     let active = true;
-    fetch(`/api/manga?ids=${encodeURIComponent(ids)}`)
-      .then((res) => (res.ok ? res.json() : null))
+    fetchJsonCached<{ data?: Manga[] }>(
+      `/api/manga?ids=${encodeURIComponent(ids)}`,
+    )
       .then((json) => {
         if (!active || !json?.data) return;
         const byId = Object.fromEntries(

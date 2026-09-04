@@ -34,9 +34,10 @@ export function SearchLiveResults({ query, onPick }: SearchLiveResultsProps) {
   const [failed, setFailed] = useState(false);
 
   useEffect(() => {
-    if (!query.trim()) return;
+    const q = query.trim();
+    if (q.length < 2) return;
     const controller = new AbortController();
-    fetch(`/api/search?q=${encodeURIComponent(query)}`, {
+    fetch(`/api/search?q=${encodeURIComponent(q)}`, {
       signal: controller.signal,
     })
       .then((res) => (res.ok ? res.json() : null))
@@ -67,6 +68,16 @@ export function SearchLiveResults({ query, onPick }: SearchLiveResultsProps) {
       });
     return () => controller.abort();
   }, [query]);
+
+  if (query.trim().length < 2) {
+    return (
+      <div className="px-2 py-6 text-center">
+        <p className="text-sm font-medium text-zinc-500">
+          Type at least 2 characters to search.
+        </p>
+      </div>
+    );
+  }
 
   if (data === null) {
     return <ListSkeleton />;

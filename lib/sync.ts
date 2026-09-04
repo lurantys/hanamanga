@@ -548,7 +548,7 @@ async function runProviderSync(): Promise<SyncSummary | null> {
 function scheduleProviderSync(): void {
   if (document.visibilityState === "hidden") return;
   if (providerSyncTimer) return;
-  const wait = Math.max(1000, providerSyncLast + 60_000 - Date.now());
+  const wait = Math.max(1000, providerSyncLast + 300_000 - Date.now());
   providerSyncTimer = setTimeout(() => {
     providerSyncTimer = undefined;
     if (document.visibilityState === "hidden") return;

@@ -8,7 +8,7 @@ import { fetchCatalogMangaWithFallback } from "@/lib/catalog";
 export const alt = "Manga page on Hana";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
-export const revalidate = 3600;
+export const revalidate = 86400;
 export const generateStaticParams = async () => [];
 
 type OgMangaCard = {
@@ -16,7 +16,6 @@ type OgMangaCard = {
   description: string;
   subtitle: string;
   cover: string | null;
-  banner: string | null;
 };
 
 /**
@@ -40,16 +39,8 @@ async function fetchCoverDataUrl(url: string): Promise<string | null> {
 const cachedMangaCard = unstable_cache(
   async (id: string): Promise<OgMangaCard> => {
     const manga = await fetchCatalogMangaWithFallback(id, { withStats: false });
-    let cover: string | null = null;
-    let banner: string | null = null;
     const coverUrl = manga.coverUrl ? rasterizableCoverUrl(manga.coverUrl) : null;
-    const bannerUrl = manga.bannerUrl
-      ? rasterizableCoverUrl(manga.bannerUrl)
-      : null;
-    [cover, banner] = await Promise.all([
-      coverUrl ? fetchCoverDataUrl(coverUrl) : Promise.resolve(null),
-      bannerUrl ? fetchCoverDataUrl(bannerUrl) : Promise.resolve(null),
-    ]);
+    const cover = coverUrl ? await fetchCoverDataUrl(coverUrl) : null;
     const genres = manga.genres.slice(0, 3);
     const status = statusLabel(manga.status);
     const subtitle = [status, ...genres].filter(Boolean).join(" · ");
@@ -58,7 +49,6 @@ const cachedMangaCard = unstable_cache(
       description: manga.description ? truncate(manga.description, 200) : "",
       subtitle,
       cover,
-      banner,
     };
   },
   ["og-manga-card"],
@@ -107,62 +97,36 @@ export default async function Image({
             overflow: "hidden",
           }}
         >
-          {card.banner ? (
-            <>
-              <img
-                src={card.banner}
-                alt=""
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  width: "100%",
-                  height: "100%",
-                  objectFit: "cover",
-                }}
-              />
-              <div
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  background:
-                    "linear-gradient(90deg, rgba(9,9,11,0.92) 0%, rgba(9,9,11,0.55) 45%, rgba(9,9,11,0.18) 100%)",
-                }}
-              />
-            </>
+          {card.cover ? (
+            <img
+              src={card.cover}
+              alt=""
+              style={{
+                position: "absolute",
+                inset: 0,
+                width: "100%",
+                height: "100%",
+                objectFit: "cover",
+                opacity: 0.32,
+              }}
+            />
           ) : (
-            <>
-              {card.cover ? (
-                <img
-                  src={card.cover}
-                  alt=""
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    width: "100%",
-                    height: "100%",
-                    objectFit: "cover",
-                    opacity: 0.32,
-                  }}
-                />
-              ) : (
-                <div
-                  style={{
-                    position: "absolute",
-                    inset: 0,
-                    background:
-                      "radial-gradient(ellipse 80% 60% at 15% 0%, rgba(239,68,68,0.16), transparent 60%), radial-gradient(ellipse 60% 50% at 85% 100%, rgba(255,255,255,0.06), transparent 60%)",
-                  }}
-                />
-              )}
-              <div
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  backgroundColor: "rgba(9,9,11,0.55)",
-                }}
-              />
-            </>
+            <div
+              style={{
+                position: "absolute",
+                inset: 0,
+                background:
+                  "radial-gradient(ellipse 80% 60% at 15% 0%, rgba(239,68,68,0.16), transparent 60%), radial-gradient(ellipse 60% 50% at 85% 100%, rgba(255,255,255,0.06), transparent 60%)",
+              }}
+            />
           )}
+          <div
+            style={{
+              position: "absolute",
+              inset: 0,
+              backgroundColor: "rgba(9,9,11,0.55)",
+            }}
+          />
           <div
             style={{
               position: "relative",

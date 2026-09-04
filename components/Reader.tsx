@@ -1051,12 +1051,6 @@ export function Reader({
     window.scrollTo(0, Math.max(0, newAnchor - center));
   }, [settings.zoom, mode]);
 
-  const nextNextHref = useMemo(() => {
-    const index = chapters.findIndex((chapter) => chapter.id === currentChapterId);
-    if (index < 0 || index >= chapters.length - 2) return null;
-    return `/read/${mangaId}/${chapters[index + 2].id}`;
-  }, [chapters, currentChapterId, mangaId]);
-
   const nextChapterId = useMemo(() => {
     if (!nextHref) return null;
     const parts = nextHref.split("/");
@@ -1064,22 +1058,13 @@ export function Reader({
   }, [nextHref]);
 
   const prefetchedNextRef = useRef<string | null>(null);
-  const prefetchedNextNextRef = useRef<string | null>(null);
 
   useEffect(() => {
     if (nextHref && prefetchedNextRef.current !== nextHref) {
       prefetchedNextRef.current = nextHref;
       router.prefetch(nextHref);
     }
-    if (
-      displayProgress > 0.6 &&
-      nextNextHref &&
-      prefetchedNextNextRef.current !== nextNextHref
-    ) {
-      prefetchedNextNextRef.current = nextNextHref;
-      router.prefetch(nextNextHref);
-    }
-  }, [router, nextHref, nextNextHref, displayProgress]);
+  }, [router, nextHref]);
 
   const preloadedChapterRef = useRef<string | null>(null);
 

@@ -43,7 +43,7 @@ export function SearchBar() {
 
   useEffect(() => {
     if (!open) return;
-    const id = window.setTimeout(() => setDebouncedQuery(query.trim()), 400);
+    const id = window.setTimeout(() => setDebouncedQuery(query.trim()), 600);
     return () => window.clearTimeout(id);
   }, [open, query]);
 

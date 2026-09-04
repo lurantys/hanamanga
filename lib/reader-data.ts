@@ -78,7 +78,7 @@ const cachedReaderProps = unstable_cache(
     return buildReaderPropsUncached(mangaId, chapterId);
   },
   ["reader-props"],
-  { revalidate: 600 },
+  { revalidate: 1800 },
 );
 
 async function buildReaderPropsUncached(

@@ -8,7 +8,7 @@ type ReadPageProps = {
   params: Promise<{ mangaId: string; chapterId: string }>;
 };
 
-export const revalidate = 600;
+export const revalidate = 1800;
 export const generateStaticParams = async () => [];
 
 export async function generateMetadata({

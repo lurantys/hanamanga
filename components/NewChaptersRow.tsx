@@ -7,6 +7,7 @@ import { getLibrarySnapshot, subscribeLibrary } from "@/lib/library";
 import { getContinueList } from "@/lib/progress";
 import { getReadSnapshot } from "@/lib/read-state";
 import type { Chapter, Manga } from "@/lib/mangadex";
+import { fetchJsonCached } from "@/lib/api-fetch";
 
 const EMPTY_LIBRARY = {} as Record<string, never>;
 
@@ -39,12 +40,10 @@ export function NewChaptersRow() {
 
     let active = true;
     Promise.all([
-      fetch(`/api/manga?ids=${ids.join(",")}`).then((res) =>
-        res.ok ? res.json() : null,
-      ),
-      fetch(
+      fetchJsonCached<{ data?: Manga[] }>(`/api/manga?ids=${ids.join(",")}`),
+      fetchJsonCached<{ data?: Record<string, Chapter[]> }>(
         `/api/feed?ids=${ids.map(encodeURIComponent).join(",")}&limit=3`,
-      ).then((res) => (res.ok ? res.json() : null)),
+      ),
     ])
       .then(([mangaJson, feedJson]) => {
         if (!active) return;

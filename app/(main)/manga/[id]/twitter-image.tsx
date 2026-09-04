@@ -5,5 +5,5 @@ export {
   contentType,
 } from "./opengraph-image";
 
-export const revalidate = 3600;
+export const revalidate = 86400;
 export const generateStaticParams = async () => [];

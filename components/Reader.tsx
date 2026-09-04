@@ -1326,7 +1326,7 @@ export function Reader({
 
           <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
             {prevHref ? (
-              <Link href={prevHref} aria-label="Previous chapter" title="Previous chapter" className={iconButton}>
+              <Link href={prevHref} prefetch={false} aria-label="Previous chapter" title="Previous chapter" className={iconButton}>
                 <ChevronLeftIcon />
               </Link>
             ) : (
@@ -1337,6 +1337,7 @@ export function Reader({
             {nextHref ? (
               <Link
                 href={nextHref}
+                prefetch={false}
                 aria-label="Next chapter"
                 title="Next chapter"
                 className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-red-500/40 bg-red-500/15 text-red-300 transition duration-200 active:scale-[0.97] hover:bg-red-500/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
@@ -1356,7 +1357,7 @@ export function Reader({
         <>
           <nav className="mx-auto flex max-w-4xl items-center justify-between gap-2 px-4 pt-5">
             {prevHref ? (
-              <Link href={prevHref} className={controlButton}>
+              <Link href={prevHref} prefetch={false} className={controlButton}>
                 <ChevronLeftIcon className="h-4 w-4" />
                 Previous
               </Link>
@@ -1376,6 +1377,7 @@ export function Reader({
             {nextHref ? (
               <Link
                 href={nextHref}
+                prefetch={false}
                 className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-500/40 bg-red-500/15 px-3.5 py-2 text-sm font-semibold text-red-300 transition duration-200 active:scale-[0.97] hover:bg-red-500/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
               >
                 Next
@@ -1427,7 +1429,7 @@ export function Reader({
 
           <nav className="mx-auto mt-10 flex max-w-4xl flex-wrap items-center justify-center gap-3 px-4">
             {prevHref ? (
-              <Link href={prevHref} className={controlButton}>
+              <Link href={prevHref} prefetch={false} className={controlButton}>
                 <ChevronLeftIcon className="h-4 w-4" />
                 Previous
               </Link>
@@ -1442,6 +1444,7 @@ export function Reader({
             )}
             <Link
               href={mangaHref}
+              prefetch={false}
               className={controlButton}
             >
               All Chapters
@@ -1449,6 +1452,7 @@ export function Reader({
             {nextHref ? (
               <Link
                 href={nextHref}
+                prefetch={false}
                 className="inline-flex items-center justify-center gap-2 rounded-lg border border-red-500/40 bg-red-500/15 px-3.5 py-2 text-sm font-semibold text-red-300 transition duration-200 active:scale-[0.97] hover:bg-red-500/25 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
               >
                 Next

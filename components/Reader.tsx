@@ -33,6 +33,12 @@ import {
   markFinishedIfLastChapter,
   useReadChapters,
 } from "@/lib/read-state";
+import {
+  estimateChapterSeconds,
+  formatEtaLeft,
+  recordReadingTime,
+  useSecPerPage,
+} from "@/lib/eta";
 import type { ReaderProps } from "@/lib/reader-data";
 import { useDialogFocus } from "@/lib/use-dialog-focus";
 import { focusRing } from "@/lib/ui";
@@ -379,6 +385,49 @@ export function Reader({
     currentPageRef.current = currentPage;
   }, [currentPage]);
 
+  // --- Live reading pace: learn sec/page from real page turns ---
+  const secPerPage = useSecPerPage();
+  const lastTurnAtRef = useRef(0);
+  const lastPagedRef = useRef(pagedIndex);
+  const lastWebtoonAtRef = useRef(0);
+  const lastWebtoonPageRef = useRef(currentPage);
+
+  // Reset pace timers on chapter change (restores/jumps aren't real turns).
+  useEffect(() => {
+    const now = Date.now();
+    lastTurnAtRef.current = now;
+    lastPagedRef.current = pagedIndex;
+    lastWebtoonAtRef.current = now;
+    lastWebtoonPageRef.current = currentPage;
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentChapterId]);
+
+  // Paged / two-page turns.
+  useEffect(() => {
+    const now = Date.now();
+    const prev = lastPagedRef.current;
+    const last = lastTurnAtRef.current;
+    lastPagedRef.current = pagedIndex;
+    lastTurnAtRef.current = now;
+    if (!last) return;
+    const moved = Math.abs(pagedIndex - prev);
+    if (moved === 0 || moved > 2) return;
+    recordReadingTime(moved, (now - last) / 1000);
+  }, [pagedIndex]);
+
+  // Webtoon scroll-through pages.
+  useEffect(() => {
+    const now = Date.now();
+    const prev = lastWebtoonPageRef.current;
+    const last = lastWebtoonAtRef.current;
+    lastWebtoonPageRef.current = currentPage;
+    lastWebtoonAtRef.current = now;
+    if (!last) return;
+    const moved = Math.abs(currentPage - prev);
+    if (moved === 0 || moved > 3) return;
+    recordReadingTime(moved, (now - last) / 1000);
+  }, [currentPage]);
+
   const mode = settings.mode;
   const isTwoPage = mode === "twopage" && !isMobile;
   const isSinglePage = mode === "paged" || (mode === "twopage" && isMobile);
@@ -422,6 +471,21 @@ export function Reader({
         ? (Math.min(pagedIndex + pageStep - 1, pages.length - 1) + 1) / pages.length
         : 0
       : progress;
+
+  // Live chapter ETA from personal pace.
+  const isWebtoonMode = mode === "webtoon";
+  const remainingPages =
+    pages.length <= 0
+      ? 0
+      : isWebtoonMode
+        ? Math.max(0, pages.length - currentPage - 1)
+        : Math.max(0, pages.length - (pagedIndex + pageStep));
+  const etaLabel =
+    remainingPages > 0
+      ? formatEtaLeft(
+          estimateChapterSeconds(remainingPages, secPerPage, isWebtoonMode),
+        )
+      : null;
 
   const imageFilterCss = useMemo(() => {
     let css = `brightness(${settings.brightness})`;
@@ -1262,6 +1326,7 @@ export function Reader({
                 </span>
                 <span className="block truncate text-xs text-zinc-400">
                   {chapterLabel}
+                  {etaLabel ? ` · ${etaLabel}` : ""}
                 </span>
               </span>
               <ChevronDownIcon className="h-3.5 w-3.5 shrink-0 text-zinc-500" />
@@ -1372,7 +1437,7 @@ export function Reader({
             )}
             <span className="hidden text-xs font-medium uppercase tracking-widest text-zinc-500 sm:block">
               {chapterPrefix ? `${chapterPrefix} · ` : ""}Page {currentPage + 1} of{" "}
-              {pages.length} · use ← → keys
+              {pages.length}
             </span>
             {nextHref ? (
               <Link
@@ -1596,6 +1661,7 @@ export function Reader({
               {isTwoPage
                 ? `${pagedIndex + 1}–${Math.min(pagedIndex + 2, pages.length)} / ${pages.length}`
                 : `${pagedIndex + 1} / ${pages.length}`}
+              {etaLabel ? ` · ${etaLabel}` : ""}
             </span>
           </div>
         </div>

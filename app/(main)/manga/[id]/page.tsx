@@ -9,6 +9,7 @@ import { ContinueReadingButton } from "@/components/ContinueReadingButton";
 import { MangaChapterList } from "@/components/MangaChapterList";
 import { ExpandableDescription } from "@/components/ExpandableDescription";
 import { LibraryButton } from "@/components/LibraryButton";
+import { SeriesEta } from "@/components/SeriesEta";
 import { PlayButton } from "@/components/PlayButton";
 import { ReadNowButton } from "@/components/ReadNowButton";
 import { StarRating } from "@/components/StarRating";
@@ -201,6 +202,26 @@ export default async function MangaPage({ params }: MangaPageProps) {
     atsuMatch ? atsuMatch.manga.id : null,
     source === "mangadex" ? ref : null,
   ].filter((v): v is string => Boolean(v));
+
+  // Whole-manga ETA inputs: chapter ids in reading order + average page
+  // count (ignoring unknown/zero counts, falling back to 20).
+  const seriesChapterIds = atsuMatch
+    ? atsuReadingOrder.map((chapter) => chapter.id)
+    : fallbackChapters.map((chapter) => chapter.id);
+  const seriesPageCounts = atsuMatch
+    ? atsuReadingOrder.map((chapter) => chapter.pageCount ?? 0)
+    : fallbackChapters.map((chapter) =>
+        typeof chapter.pages === "number" ? chapter.pages : 0,
+      );
+  const knownCounts = seriesPageCounts.filter(
+    (count) => Number.isFinite(count) && count > 0,
+  );
+  const seriesAvgPages =
+    knownCounts.length > 0
+      ? Math.round(
+          knownCounts.reduce((sum, count) => sum + count, 0) / knownCounts.length,
+        )
+      : 20;
 
   /* ---- Shared sub-components ---- */
 
@@ -635,10 +656,18 @@ export default async function MangaPage({ params }: MangaPageProps) {
       {/* ===== Chapters section ===== */}
       <div className="relative z-10 mx-auto max-w-5xl px-5 md:px-10">
         <section className="mt-12" aria-label="Chapters">
-          <div className="mb-5 flex items-baseline gap-3">
+          <div className="mb-5 flex flex-wrap items-baseline gap-x-3 gap-y-1">
             <h2 className="text-xl font-bold tracking-tight text-white">
               {atsuMatch ? "Read on Hana" : "Chapters"}
             </h2>
+            {seriesChapterIds.length > 0 && (
+              <SeriesEta
+                mangaId={manga.id}
+                chapterIds={seriesChapterIds}
+                avgPagesPerChapter={seriesAvgPages}
+                alternateIds={alternateIds}
+              />
+            )}
             {atsuMatch ? (
               <span className="text-sm text-zinc-500">
                 {atsuReadingOrder.length.toLocaleString()} chapters in English

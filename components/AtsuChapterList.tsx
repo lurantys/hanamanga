@@ -15,6 +15,7 @@ import {
   invalidateProgressCache,
 } from "@/lib/progress";
 import { chipButton, focusRing, inputField } from "@/lib/ui";
+import { estimateChapterSeconds, formatEta, useSecPerPage } from "@/lib/eta";
 
 type AtsuChapterListProps = {
   mangaId: string;
@@ -78,6 +79,7 @@ export function AtsuChapterList({
   }, [mangaId, chapters, selected]);
 
   const readChapters = useReadChapters(mangaId);
+  const secPerPage = useSecPerPage();
   const sentinelRef = useRef<HTMLDivElement>(null);
   const loadingRef = useRef(false);
 
@@ -296,7 +298,7 @@ export function AtsuChapterList({
                     {chapter.pageCount > 0
                       ? `${chapter.pageCount} ${
                           chapter.pageCount === 1 ? "page" : "pages"
-                        }`
+                        } · ~${formatEta(estimateChapterSeconds(chapter.pageCount, secPerPage))}`
                       : null}
                     {chapter.createdAt
                       ? `${chapter.pageCount > 0 ? " · " : ""}${new Date(chapter.createdAt).toLocaleDateString()}`

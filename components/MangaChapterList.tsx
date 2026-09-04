@@ -7,6 +7,7 @@ import { MarkReadButton } from "./MarkReadButton";
 import { chipButton, focusRing } from "@/lib/ui";
 import { markAllRead, markMangaRead, useMangaRead, useReadChapters } from "@/lib/read-state";
 import { clearProgress, getProgress, saveProgress } from "@/lib/progress";
+import { estimateChapterSeconds, formatEta, useSecPerPage } from "@/lib/eta";
 import type { Chapter } from "@/lib/mangadex";
 
 type VolumeGroup = { volume: string | null; chapters: Chapter[] };
@@ -42,6 +43,7 @@ export function MangaChapterList({
   const loadingRef = useRef(false);
   const readChapters = useReadChapters(mangaId);
   const mangaRead = useMangaRead(mangaId);
+  const secPerPage = useSecPerPage();
 
   const readingOrder = useMemo(
     () =>
@@ -158,7 +160,7 @@ export function MangaChapterList({
                     </p>
                     <p className="text-xs text-zinc-500">
                       {chapter.pages > 0
-                        ? `${chapter.pages} ${chapter.pages === 1 ? "page" : "pages"}`
+                        ? `${chapter.pages} ${chapter.pages === 1 ? "page" : "pages"} · ~${formatEta(estimateChapterSeconds(chapter.pages, secPerPage))}`
                         : null}
                       {chapter.publishedAt
                         ? `${chapter.pages > 0 ? " · " : ""}${new Date(chapter.publishedAt).toLocaleDateString()}`

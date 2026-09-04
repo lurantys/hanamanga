@@ -51,17 +51,19 @@ export function getProgressUserId(): string | null {
   return activeUserId;
 }
 
+let cachedHeroSnapshot: ContinueHeroSnapshot | null | undefined;
+let cachedContinueSorted: ProgressEntry[] | null = null;
+const cachedContinueSlices = new Map<number, ProgressEntry[]>();
+let cachedProgressMap: Record<string, ProgressEntry> | null = null;
+
 export function setProgressUserId(userId: string | null): void {
   if (activeUserId === userId) return;
   activeUserId = userId;
   cachedProgressMap = null;
   cachedHeroSnapshot = undefined;
   cachedContinueSorted = null;
+  cachedContinueSlices.clear();
 }
-
-let cachedHeroSnapshot: ContinueHeroSnapshot | null | undefined;
-let cachedContinueSorted: ProgressEntry[] | null = null;
-let cachedProgressMap: Record<string, ProgressEntry> | null = null;
 
 function readAll(): Record<string, ProgressEntry> {
   if (typeof window === "undefined") return {};
@@ -81,6 +83,7 @@ function writeAll(map: Record<string, ProgressEntry>): void {
     window.localStorage.setItem(effectiveProgressKey(), JSON.stringify(map));
     cachedProgressMap = map;
     cachedContinueSorted = null;
+    cachedContinueSlices.clear();
     window.dispatchEvent(new CustomEvent(PROGRESS_EVENT));
   } catch {
     // storage full or blocked — ignore
@@ -90,6 +93,7 @@ function writeAll(map: Record<string, ProgressEntry>): void {
 export function invalidateProgressCache(): void {
   cachedProgressMap = null;
   cachedContinueSorted = null;
+  cachedContinueSlices.clear();
 }
 
 /** Replace the entire progress map (used by sync/import). */
@@ -202,8 +206,18 @@ export function getContinueList(limit = 18): ProgressEntry[] {
     cachedContinueSorted = Object.values(readAll()).sort(
       (a, b) => b.updatedAt - a.updatedAt,
     );
+    cachedContinueSlices.clear();
   }
-  return cachedContinueSorted.slice(0, limit);
+  // Return a stable reference per limit: useSyncExternalStore subscribers
+  // (ContinueRow, library page) require getSnapshot to return the same
+  // object unless the underlying data changed, otherwise React throws
+  // an infinite-loop error and the error boundary takes over the page.
+  let slice = cachedContinueSlices.get(limit);
+  if (!slice) {
+    slice = cachedContinueSorted.slice(0, limit);
+    cachedContinueSlices.set(limit, slice);
+  }
+  return slice;
 }
 
 export function saveContinueHero(snapshot: ContinueHeroSnapshot): void {

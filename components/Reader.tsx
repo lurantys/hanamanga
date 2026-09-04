@@ -141,7 +141,7 @@ const railButton =
   "inline-flex h-11 w-11 items-center justify-center rounded-full text-zinc-200 transition duration-200 active:scale-[0.97] hover:bg-white/5 hover:text-white disabled:pointer-events-none disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70";
 
 const mobileRailButton =
-  "inline-flex h-11 w-11 items-center justify-center rounded-full text-zinc-200 transition duration-200 active:scale-[0.97] hover:bg-white/5 hover:text-white disabled:pointer-events-none disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70";
+  "inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-full text-zinc-200 transition duration-200 active:scale-[0.97] hover:bg-white/5 hover:text-white disabled:pointer-events-none disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70";
 
 function Segmented<T extends string>({
   value,
@@ -1132,7 +1132,7 @@ export function Reader({
         }
       : {
           maxHeight: "calc(100dvh - 9rem)",
-          maxWidth: "100vw",
+          maxWidth: "100%",
           width: "100%",
           height: "auto",
         };
@@ -1151,7 +1151,7 @@ export function Reader({
           height: "auto",
         };
 
-  const renderControls = (buttonClass: string) => (
+  const renderControls = (buttonClass: string, compact = false) => (
     <>
       <Link href="/" aria-label="Home" title="Home" className={buttonClass}>
         <HomeIcon />
@@ -1212,7 +1212,7 @@ export function Reader({
       >
         <SettingsIcon />
       </button>
-      {fullscreenSupported && (
+      {fullscreenSupported && !compact && (
         <button
           type="button"
           onClick={() => {
@@ -1230,12 +1230,12 @@ export function Reader({
   );
 
   return (
-    <div className="min-h-screen bg-zinc-950 pb-24">
+    <div className="min-h-screen overflow-x-clip bg-zinc-950 pb-24">
       {preloadUrls.map((url) => (
         <link key={url} rel="preload" as="image" href={url} />
       ))}
 
-      <header className={`sticky top-[env(safe-area-inset-top)] z-20 border-b border-white/10 bg-zinc-950/70 backdrop-blur-xl transition-all duration-300 ${uiHidden ? "pointer-events-none -translate-y-full opacity-0" : ""}`}>
+      <header className={`sticky top-0 z-20 border-b border-white/10 bg-zinc-950/70 backdrop-blur-xl transition-all duration-300 ${uiHidden ? "pointer-events-none -translate-y-full opacity-0" : ""}`}>
         <div aria-hidden className="absolute inset-x-0 top-0 h-[3px] bg-white/5">
           <div
             className="h-full bg-red-500 transition-[width] duration-150 ease-out"
@@ -1243,7 +1243,7 @@ export function Reader({
           />
         </div>
 
-        <div className="mx-auto flex max-w-4xl items-center gap-2 px-3 py-3 sm:px-4">
+        <div className="mx-auto flex max-w-4xl items-center gap-2 px-3 pb-3 pt-[calc(0.75rem+env(safe-area-inset-top))] sm:px-4">
           <Link
             href={mangaHref}
             aria-label={`Back to ${mangaTitle}`}
@@ -1628,7 +1628,7 @@ export function Reader({
           }`}
         >
           <div className="flex items-center gap-1 rounded-full border border-zinc-700/50 bg-zinc-950/70 px-1.5 py-1.5 shadow-[0_8px_40px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.08)] ring-1 ring-inset ring-white/10 backdrop-blur-xl">
-            {renderControls(mobileRailButton)}
+            {renderControls(mobileRailButton, true)}
           </div>
         </div>
       )}

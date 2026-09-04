@@ -5,11 +5,12 @@ import { syncProviders } from "@/lib/provider-sync";
 export async function POST() {
   const supabase = await createClient();
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session) {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+  if (authError || !user) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  const summary = await syncProviders(session.user.id);
+  const summary = await syncProviders(user.id);
   return NextResponse.json(summary);
 }

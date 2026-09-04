@@ -4,16 +4,17 @@ import { createClient } from "@/lib/supabase/server";
 export async function GET() {
   const supabase = await createClient();
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session) {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+  if (authError || !user) {
     return NextResponse.json({ connected: false }, { status: 401 });
   }
 
   const { data } = await supabase
     .from("hana_oauth")
     .select("access_token, synced_at")
-    .eq("user_id", session.user.id)
+    .eq("user_id", user.id)
     .eq("provider", "mal")
     .maybeSingle();
 

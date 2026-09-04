@@ -52,12 +52,13 @@ async function fetchMalAvatar(token: string): Promise<string | null> {
 export async function GET() {
   const supabase = await createClient();
   const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session) {
+    data: { user },
+    error: authError,
+  } = await supabase.auth.getUser();
+  if (authError || !user) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
-  const userId = session.user.id;
+  const userId = user.id;
 
   const cached = avatarCache.get(userId);
   if (cached && cached.expires > Date.now()) {

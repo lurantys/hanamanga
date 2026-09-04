@@ -158,6 +158,21 @@ h3 {
   animation: modal-in 0.18s ease-out;
 }
 
+/* Indeterminate loading bar — fill slides across the track on a loop. */
+@keyframes loading-bar-slide {
+  0% {
+    transform: translateX(-110%);
+  }
+  100% {
+    transform: translateX(320%);
+  }
+}
+
+@utility animate-loading-bar {
+  animation: loading-bar-slide 1.1s ease-in-out infinite;
+  will-change: transform;
+}
+
 /* Page-section reveal (rises from below, unlike dropdowns which drop in). */
 @keyframes page-in {
   from {

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Analytics } from "@vercel/analytics/next";
 import { Geist, Zen_Kaku_Gothic_New } from "next/font/google";
 import { WipProvider } from "@/components/WipProvider";
+import { NavigationLoader } from "@/components/NavigationLoader";
 import { AuthProvider } from "@/lib/auth";
 import { SITE_URL } from "@/lib/site";
 import "./globals.css";
@@ -116,7 +117,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
     >
       <body className="flex min-h-full flex-col bg-zinc-950 text-zinc-50">
         <AuthProvider>
-          <WipProvider>{children}</WipProvider>
+          <WipProvider>
+            {children}
+            <NavigationLoader />
+          </WipProvider>
         </AuthProvider>
         <script
           type="application/ld+json"

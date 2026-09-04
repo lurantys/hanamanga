@@ -48,8 +48,15 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
       const continueEntry = getContinueList(1)[0];
       if (continueEntry) {
         const snapshot = readContinueHero();
-        const placeholder = snapshot
-          ? (snapshot.manga as Manga)
+        // Only reuse the cached snapshot when it belongs to the latest entry.
+        // Otherwise (e.g. progress saved via "mark read" without a hero save)
+        // the snapshot points at a previously read manga and the hero would
+        // keep showing stale content instead of the latest read.
+        const snapshotMatches =
+          snapshot?.manga.id === continueEntry.mangaId;
+        const placeholder =
+          snapshotMatches && snapshot
+            ? (snapshot.manga as Manga)
           : {
               id: continueEntry.mangaId,
               title: continueEntry.mangaTitle,

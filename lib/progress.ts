@@ -56,13 +56,11 @@ export function setProgressUserId(userId: string | null): void {
   activeUserId = userId;
   cachedProgressMap = null;
   cachedHeroSnapshot = undefined;
-  cachedContinueList = null;
-  cachedContinueLimit = 0;
+  cachedContinueSorted = null;
 }
 
 let cachedHeroSnapshot: ContinueHeroSnapshot | null | undefined;
-let cachedContinueLimit = 0;
-let cachedContinueList: ProgressEntry[] | null = null;
+let cachedContinueSorted: ProgressEntry[] | null = null;
 let cachedProgressMap: Record<string, ProgressEntry> | null = null;
 
 function readAll(): Record<string, ProgressEntry> {
@@ -82,7 +80,7 @@ function writeAll(map: Record<string, ProgressEntry>): void {
   try {
     window.localStorage.setItem(effectiveProgressKey(), JSON.stringify(map));
     cachedProgressMap = map;
-    cachedContinueList = null;
+    cachedContinueSorted = null;
     window.dispatchEvent(new CustomEvent(PROGRESS_EVENT));
   } catch {
     // storage full or blocked — ignore
@@ -91,7 +89,7 @@ function writeAll(map: Record<string, ProgressEntry>): void {
 
 export function invalidateProgressCache(): void {
   cachedProgressMap = null;
-  cachedContinueList = null;
+  cachedContinueSorted = null;
 }
 
 /** Replace the entire progress map (used by sync/import). */
@@ -200,13 +198,12 @@ export function subscribeProgress(onChange: () => void): () => void {
 }
 
 export function getContinueList(limit = 18): ProgressEntry[] {
-  if (!cachedContinueList || cachedContinueLimit !== limit) {
-    cachedContinueList = Object.values(readAll())
-      .sort((a, b) => b.updatedAt - a.updatedAt)
-      .slice(0, limit);
-    cachedContinueLimit = limit;
+  if (!cachedContinueSorted) {
+    cachedContinueSorted = Object.values(readAll()).sort(
+      (a, b) => b.updatedAt - a.updatedAt,
+    );
   }
-  return cachedContinueList;
+  return cachedContinueSorted.slice(0, limit);
 }
 
 export function saveContinueHero(snapshot: ContinueHeroSnapshot): void {

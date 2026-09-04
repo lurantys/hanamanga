@@ -1,4 +1,5 @@
 import type { Metadata, Viewport } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import { Geist, Zen_Kaku_Gothic_New } from "next/font/google";
 import { WipProvider } from "@/components/WipProvider";
 import { AuthProvider } from "@/lib/auth";
@@ -123,6 +124,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
             __html: JSON.stringify(structuredData),
           }}
         />
+        <Analytics />
       </body>
     </html>
   );

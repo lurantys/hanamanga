@@ -31,6 +31,33 @@ type HeroState = {
   scrollFraction?: number;
 };
 
+// Snapshots saved by the reader carry title/cover only (bannerUrl: null,
+// no description). A hero showing one must be upgraded in the background —
+// same manga id, so the upgrade never remounts and never flashes identity.
+function hasHeroMetadata(manga: Manga): boolean {
+  return Boolean(
+    manga.bannerUrl || manga.description || (manga.rating ?? 0) > 0,
+  );
+}
+
+async function fetchEnrichedManga(
+  mangaId: string,
+  signal: AbortSignal,
+): Promise<Manga | null> {
+  try {
+    const res = await fetch(
+      `/api/manga?ids=${encodeURIComponent(mangaId)}&banners=1`,
+      { signal },
+    );
+    if (!res.ok) return null;
+    return (
+      ((await res.json().catch(() => null))?.data?.[0] ?? null) as Manga | null
+    );
+  } catch {
+    return null;
+  }
+}
+
 export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
   const [hero, setHero] = useState<HeroState | null>(null);
   // Gated reveal: server + first client paint render the server hero hidden
@@ -109,43 +136,52 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
       enrichAbort.current?.abort();
       const controller = new AbortController();
       enrichAbort.current = controller;
-      try {
-        const res = await fetch(
-          `/api/manga?ids=${encodeURIComponent(entry.mangaId)}&banners=1`,
-          { signal: controller.signal },
-        );
-        const manga = (
-          res.ok ? ((await res.json().catch(() => null))?.data?.[0] ?? null) : null
-        ) as Manga | null;
-        if (!active || enrichSeq.current !== seq) return;
-        // Re-verify: auth switches / realtime pulls may have moved on.
-        const desired = getContinueList(1)[0];
-        if (!desired || desired.mangaId !== entry.mangaId) return;
-        if (manga) {
-          commit({
-            manga,
-            isContinue: true,
-            chapterId: desired.chapterId,
-            chapterLabel: desired.chapterLabel,
-            mangaFraction: desired.mangaFraction,
-            scrollFraction: desired.scrollFraction,
-          });
-          saveContinueHero({
-            manga,
-            chapterId: desired.chapterId,
-            chapterLabel: desired.chapterLabel,
-            scrollFraction: desired.scrollFraction,
-            mangaFraction: desired.mangaFraction,
-            updatedAt: desired.updatedAt,
-          });
-        } else {
-          commit(placeholderFor(desired));
-        }
-      } catch {
-        if (!active || enrichSeq.current !== seq) return;
-        const desired = getContinueList(1)[0];
-        if (!desired || desired.mangaId !== entry.mangaId) return;
+      const manga = await fetchEnrichedManga(entry.mangaId, controller.signal);
+      if (!active || enrichSeq.current !== seq) return;
+      // Re-verify: auth switches / realtime pulls may have moved on.
+      const desired = getContinueList(1)[0];
+      if (!desired || desired.mangaId !== entry.mangaId) return;
+      if (manga) {
+        commit({
+          manga,
+          isContinue: true,
+          chapterId: desired.chapterId,
+          chapterLabel: desired.chapterLabel,
+          mangaFraction: desired.mangaFraction,
+          scrollFraction: desired.scrollFraction,
+        });
+        saveContinueHero({
+          manga,
+          chapterId: desired.chapterId,
+          chapterLabel: desired.chapterLabel,
+          scrollFraction: desired.scrollFraction,
+          mangaFraction: desired.mangaFraction,
+          updatedAt: desired.updatedAt,
+        });
+      } else {
         commit(placeholderFor(desired));
+      }
+    }
+
+    // Same upgrade for library heroes: stored library manga often lack
+    // banners, so fetch full metadata and swap same-id in place.
+    async function enrichLibrary(mangaId: string): Promise<void> {
+      const seq = ++enrichSeq.current;
+      enrichAbort.current?.abort();
+      const controller = new AbortController();
+      enrichAbort.current = controller;
+      const manga = await fetchEnrichedManga(mangaId, controller.signal);
+      if (!active || enrichSeq.current !== seq) return;
+      const latest = getLibraryList(1)[0];
+      if (!latest || latest.manga.id !== mangaId) return;
+      const current = heroRef.current;
+      if (!current || current.isContinue || current.manga.id !== mangaId) {
+        return;
+      }
+      // Only swap when the fetch actually brought metadata; otherwise keep
+      // the stored manga instead of churning renders on a lateral move.
+      if (manga && hasHeroMetadata(manga)) {
+        commit({ manga, isContinue: false });
       }
     }
 
@@ -170,6 +206,11 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
             });
           }
           setReady(true);
+          // Self-heal: a previous enrich may have failed while the hero was
+          // already showing this manga without metadata — retry in place.
+          if (!hasHeroMetadata(current.manga)) {
+            void enrichContinue(continueEntry);
+          }
           return;
         }
         // Identity change with a full-metadata snapshot: single swap,
@@ -179,6 +220,12 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
           enrichSeq.current += 1;
           commit(snap);
           setReady(true);
+          // Reader-saved snapshots carry no banner/description: upgrade the
+          // same manga in the background (no remount, no identity flash)
+          // and persist it so the next load shows the banner instantly.
+          if (!hasHeroMetadata(snap.manga)) {
+            void enrichContinue(continueEntry);
+          }
           return;
         }
         // No snapshot (e.g. progress saved without a hero save): commit the
@@ -201,10 +248,16 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
           current.manga.id === libraryEntry.manga.id
         ) {
           setReady(true);
+          if (!hasHeroMetadata(current.manga)) {
+            void enrichLibrary(current.manga.id);
+          }
           return;
         }
         commit({ manga: libraryEntry.manga, isContinue: false });
         setReady(true);
+        if (!hasHeroMetadata(libraryEntry.manga)) {
+          void enrichLibrary(libraryEntry.manga.id);
+        }
         return;
       }
 

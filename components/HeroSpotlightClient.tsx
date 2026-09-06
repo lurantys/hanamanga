@@ -33,6 +33,12 @@ type HeroState = {
 
 export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
   const [hero, setHero] = useState<HeroState | null>(null);
+  // Gated reveal: server + first client paint render the server hero hidden
+  // (opacity-0, layout preserved). The effect below swaps in the correct
+  // continue/library hero in the same batched render that flips `ready`,
+  // so the wrong (trending) manga is never visibly painted — fixing the
+  // 1-frame hero flash on load.
+  const [ready, setReady] = useState(false);
   // Sync mirror of the displayed hero so event-driven apply() can compare
   // identities without waiting for a render.
   const heroRef = useRef<HeroState | null>(null);
@@ -94,10 +100,10 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
       };
     }
 
-    // Enrich the continue entry BEFORE swapping it on screen: the current
-    // hero stays put until the new one arrives with banner + description,
-    // so identity changes are a single crossfade instead of a
-    // placeholder pop-in followed by a metadata pop-in.
+    // Upgrade a committed placeholder with full banner + description.
+    // The correct-manga placeholder is already on screen (committed
+    // synchronously in apply()), so this same-id upgrade never remounts
+    // and never flashes a different manga.
     async function enrichContinue(entry: ProgressEntry): Promise<void> {
       const seq = ++enrichSeq.current;
       enrichAbort.current?.abort();
@@ -163,15 +169,25 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
               scrollFraction: continueEntry.scrollFraction,
             });
           }
+          setReady(true);
           return;
         }
-        // Identity change with a full-metadata snapshot: single swap.
+        // Identity change with a full-metadata snapshot: single swap,
+        // revealed together with `ready` so no wrong hero is ever visible.
         const snap = snapshotFor(continueEntry);
         if (snap) {
           enrichSeq.current += 1;
           commit(snap);
+          setReady(true);
           return;
         }
+        // No snapshot (e.g. progress saved without a hero save): commit the
+        // correct-manga placeholder *synchronously* and enrich in the
+        // background. Previously the trending hero stayed on screen for the
+        // whole fetch — the long version of the flash. Same-id upgrade below
+        // never remounts (keyed by manga id), so no second swap is visible.
+        commit(placeholderFor(continueEntry));
+        setReady(true);
         void enrichContinue(continueEntry);
         return;
       }
@@ -184,13 +200,16 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
           !current.isContinue &&
           current.manga.id === libraryEntry.manga.id
         ) {
+          setReady(true);
           return;
         }
         commit({ manga: libraryEntry.manga, isContinue: false });
+        setReady(true);
         return;
       }
 
       if (current !== null) commit(null);
+      setReady(true);
     }
 
     apply();
@@ -228,8 +247,15 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
     : `/read/${displayHero.id}`;
 
   return (
+    // Opacity-gated until the client has resolved continue/library: the
+    // server hero is in the DOM (layout preserved, no shift) but never
+    // visibly painted, so returning users never see the trending pick flash.
     // Keyed by manga identity: swaps crossfade via animate-hero-swap
     // instead of snapping, and same-manga progress updates never remount.
+    <div
+      className={ready ? "opacity-100 transition-opacity duration-300" : "opacity-0"}
+      aria-hidden={!ready}
+    >
     <Fragment key={displayHero.id}>
       {/* ===== MOBILE ONLY — premium streaming presentation ===== */}
       <section
@@ -466,5 +492,6 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
         </div>
       </section>
     </Fragment>
+    </div>
   );
 }

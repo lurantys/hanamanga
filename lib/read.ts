@@ -74,9 +74,15 @@ export const getByGenre = cache((genre: string, limit = 18) =>
 export const getWebtoons = cache((limit = 18) => getAtsuRow("Manwha", limit));
 export const getManhua = cache((limit = 18) => getAtsuRow("Manhua", limit));
 
+// Deterministic rotation (not Math.random): every server render in the
+// same window picks the same hero, so navigations, revalidations and
+// Suspense re-streams don't swap the hero identity — the #1 hero-flash
+// source. Rotates slowly enough to feel alive, rarely enough to be stable.
+const HERO_ROTATION_MS = 6 * 60 * 60 * 1000;
+
 export function pickHero(manga: Manga[]): Manga | null {
   if (!manga.length) return null;
-  return manga[Math.floor(Math.random() * manga.length)] ?? null;
+  return manga[Math.floor(Date.now() / HERO_ROTATION_MS) % manga.length] ?? null;
 }
 
 export type AtsuMatchData = {

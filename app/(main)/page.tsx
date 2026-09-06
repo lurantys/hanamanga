@@ -97,10 +97,12 @@ function RowSkeleton({ title }: { title: string }) {
 }
 
 function HeroSkeleton() {
+  // Same footprint as the real hero so Suspense streaming swaps content
+  // without shifting the page.
   return (
     <section
       aria-hidden
-      className="h-96 w-full bg-gradient-to-t from-zinc-900 to-zinc-800 md:h-[80dvh] md:min-h-[480px]"
+      className="min-h-[78dvh] w-full bg-gradient-to-t from-zinc-900 to-zinc-800 md:h-[80dvh] md:min-h-[480px]"
     />
   );
 }

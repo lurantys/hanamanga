@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useRef, useState } from "react";
 import {
   CONTINUE_HERO_EVENT,
   CONTINUE_HERO_STORAGE_KEY,
@@ -10,6 +10,7 @@ import {
   readContinueHero,
   saveContinueHero,
   PROGRESS_EVENT,
+  type ProgressEntry,
 } from "@/lib/progress";
 import { getLibraryList, LIBRARY_EVENT } from "@/lib/library";
 import { statusLabel, truncate, type Manga } from "@/lib/mangadex";
@@ -32,6 +33,16 @@ type HeroState = {
 
 export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
   const [hero, setHero] = useState<HeroState | null>(null);
+  // Sync mirror of the displayed hero so event-driven apply() can compare
+  // identities without waiting for a render.
+  const heroRef = useRef<HeroState | null>(null);
+  const enrichSeq = useRef(0);
+  const enrichAbort = useRef<AbortController | null>(null);
+
+  const commit = (next: HeroState | null) => {
+    heroRef.current = next;
+    setHero(next);
+  };
 
   const displayHero = hero?.manga ?? initial;
   const isContinue = hero?.isContinue ?? false;
@@ -43,68 +54,143 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
   useEffect(() => {
     let active = true;
 
-    function apply() {
-      if (!active) return;
-      const continueEntry = getContinueList(1)[0];
-      if (continueEntry) {
-        const snapshot = readContinueHero();
-        // Only reuse the cached snapshot when it belongs to the latest entry.
-        // Otherwise (e.g. progress saved via "mark read" without a hero save)
-        // the snapshot points at a previously read manga and the hero would
-        // keep showing stale content instead of the latest read.
-        const snapshotMatches =
-          snapshot?.manga.id === continueEntry.mangaId;
-        const placeholder =
-          snapshotMatches && snapshot
-            ? (snapshot.manga as Manga)
+    function snapshotFor(entry: ProgressEntry): HeroState | null {
+      const snapshot = readContinueHero();
+      // Only reuse the cached snapshot when it belongs to the latest entry.
+      // Otherwise (e.g. progress saved via "mark read" without a hero save)
+      // the snapshot points at a previously read manga and the hero would
+      // keep showing stale content instead of the latest read.
+      if (snapshot?.manga.id !== entry.mangaId) return null;
+      return {
+        manga: snapshot.manga as Manga,
+        isContinue: true,
+        chapterId: entry.chapterId,
+        chapterLabel: entry.chapterLabel,
+        mangaFraction: entry.mangaFraction,
+        scrollFraction: entry.scrollFraction,
+      };
+    }
+
+    function placeholderFor(entry: ProgressEntry): HeroState {
+      const snapshot = readContinueHero();
+      const placeholder =
+        snapshot && snapshot.manga.id === entry.mangaId
+          ? (snapshot.manga as Manga)
           : {
-              id: continueEntry.mangaId,
-              title: continueEntry.mangaTitle,
-              coverUrl: continueEntry.coverUrl,
+              id: entry.mangaId,
+              title: entry.mangaTitle,
+              coverUrl: entry.coverUrl,
               bannerUrl: null,
               genres: [],
               availableLanguages: [],
             };
-        const nextHero: HeroState = {
-          manga: placeholder,
-          isContinue: true,
-          chapterId: continueEntry.chapterId,
-          chapterLabel: continueEntry.chapterLabel,
-          mangaFraction: continueEntry.mangaFraction,
-          scrollFraction: continueEntry.scrollFraction,
-        };
-        setHero((current) => {
-          if (!current || current.manga.id !== nextHero.manga.id) return nextHero;
-          const currentHasMetadata = Boolean(
-            current.manga.bannerUrl || current.manga.description || current.manga.rating,
-          );
-          const nextHasMetadata = Boolean(
-            nextHero.manga.bannerUrl || nextHero.manga.description || nextHero.manga.rating,
-          );
-          if (currentHasMetadata && !nextHasMetadata) return current;
+      return {
+        manga: placeholder,
+        isContinue: true,
+        chapterId: entry.chapterId,
+        chapterLabel: entry.chapterLabel,
+        mangaFraction: entry.mangaFraction,
+        scrollFraction: entry.scrollFraction,
+      };
+    }
+
+    // Enrich the continue entry BEFORE swapping it on screen: the current
+    // hero stays put until the new one arrives with banner + description,
+    // so identity changes are a single crossfade instead of a
+    // placeholder pop-in followed by a metadata pop-in.
+    async function enrichContinue(entry: ProgressEntry): Promise<void> {
+      const seq = ++enrichSeq.current;
+      enrichAbort.current?.abort();
+      const controller = new AbortController();
+      enrichAbort.current = controller;
+      try {
+        const res = await fetch(
+          `/api/manga?ids=${encodeURIComponent(entry.mangaId)}&banners=1`,
+          { signal: controller.signal },
+        );
+        const manga = (
+          res.ok ? ((await res.json().catch(() => null))?.data?.[0] ?? null) : null
+        ) as Manga | null;
+        if (!active || enrichSeq.current !== seq) return;
+        // Re-verify: auth switches / realtime pulls may have moved on.
+        const desired = getContinueList(1)[0];
+        if (!desired || desired.mangaId !== entry.mangaId) return;
+        if (manga) {
+          commit({
+            manga,
+            isContinue: true,
+            chapterId: desired.chapterId,
+            chapterLabel: desired.chapterLabel,
+            mangaFraction: desired.mangaFraction,
+            scrollFraction: desired.scrollFraction,
+          });
+          saveContinueHero({
+            manga,
+            chapterId: desired.chapterId,
+            chapterLabel: desired.chapterLabel,
+            scrollFraction: desired.scrollFraction,
+            mangaFraction: desired.mangaFraction,
+            updatedAt: desired.updatedAt,
+          });
+        } else {
+          commit(placeholderFor(desired));
+        }
+      } catch {
+        if (!active || enrichSeq.current !== seq) return;
+        const desired = getContinueList(1)[0];
+        if (!desired || desired.mangaId !== entry.mangaId) return;
+        commit(placeholderFor(desired));
+      }
+    }
+
+    function apply() {
+      if (!active) return;
+      const current = heroRef.current;
+      const continueEntry = getContinueList(1)[0];
+      if (continueEntry) {
+        // Same manga: progress-only update in place, never swap content.
+        if (current?.isContinue && current.manga.id === continueEntry.mangaId) {
           if (
-            current.chapterId === nextHero.chapterId &&
-            current.mangaFraction === nextHero.mangaFraction &&
-            current.scrollFraction === nextHero.scrollFraction
+            current.chapterId !== continueEntry.chapterId ||
+            current.mangaFraction !== continueEntry.mangaFraction ||
+            current.scrollFraction !== continueEntry.scrollFraction
           ) {
-            return current;
+            commit({
+              ...current,
+              chapterId: continueEntry.chapterId,
+              chapterLabel: continueEntry.chapterLabel,
+              mangaFraction: continueEntry.mangaFraction,
+              scrollFraction: continueEntry.scrollFraction,
+            });
           }
-          return nextHero;
-        });
+          return;
+        }
+        // Identity change with a full-metadata snapshot: single swap.
+        const snap = snapshotFor(continueEntry);
+        if (snap) {
+          enrichSeq.current += 1;
+          commit(snap);
+          return;
+        }
+        void enrichContinue(continueEntry);
         return;
       }
 
+      enrichSeq.current += 1;
       const libraryEntry = getLibraryList(1)[0];
       if (libraryEntry) {
-        setHero((current) =>
-          current?.manga.id === libraryEntry.manga.id && !current.isContinue
-            ? current
-            : { manga: libraryEntry.manga, isContinue: false },
-        );
+        if (
+          current &&
+          !current.isContinue &&
+          current.manga.id === libraryEntry.manga.id
+        ) {
+          return;
+        }
+        commit({ manga: libraryEntry.manga, isContinue: false });
         return;
       }
 
-      setHero((current) => (current === null ? current : null));
+      if (current !== null) commit(null);
     }
 
     apply();
@@ -118,59 +204,14 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
     window.addEventListener(LIBRARY_EVENT, apply);
     return () => {
       active = false;
+      enrichSeq.current += 1;
+      enrichAbort.current?.abort();
       window.removeEventListener("storage", onStorage);
       window.removeEventListener(CONTINUE_HERO_EVENT, apply);
       window.removeEventListener(PROGRESS_EVENT, apply);
       window.removeEventListener(LIBRARY_EVENT, apply);
     };
   }, []);
-
-  const heroId = hero?.manga.id ?? null;
-  const heroIsContinue = hero?.isContinue ?? false;
-  const heroKey = heroId
-    ? `${heroIsContinue ? "continue" : "library"}:${heroId}`
-    : null;
-  useEffect(() => {
-    if (!heroId || !heroKey) return;
-    const controller = new AbortController();
-    fetch(`/api/manga?ids=${encodeURIComponent(heroId)}&banners=1`, {
-      signal: controller.signal,
-    })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((json) => {
-        const manga = json?.data?.[0] as Manga | undefined;
-        if (!manga || controller.signal.aborted) {
-          return;
-        }
-        setHero((current) => {
-          if (
-            !current ||
-            current.manga.id !== heroId ||
-            current.isContinue !== heroIsContinue
-          ) {
-            return current;
-          }
-          return { ...current, manga };
-        });
-
-        if (heroIsContinue) {
-          const entry = getContinueList(1)[0];
-          if (entry?.mangaId === heroId) {
-            saveContinueHero({
-              manga,
-              chapterId: entry.chapterId,
-              chapterLabel: entry.chapterLabel,
-              scrollFraction: entry.scrollFraction,
-              mangaFraction: entry.mangaFraction,
-              updatedAt: entry.updatedAt,
-            });
-          }
-        }
-      })
-      .catch(() => {});
-
-    return () => controller.abort();
-  }, [heroId, heroIsContinue, heroKey]);
 
   const rating = displayHero.rating ?? 0;
   const match = rating.toFixed(1);
@@ -187,10 +228,12 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
     : `/read/${displayHero.id}`;
 
   return (
-    <>
+    // Keyed by manga identity: swaps crossfade via animate-hero-swap
+    // instead of snapping, and same-manga progress updates never remount.
+    <Fragment key={displayHero.id}>
       {/* ===== MOBILE ONLY — premium streaming presentation ===== */}
       <section
-        className="relative w-full overflow-hidden bg-zinc-950 pt-[env(safe-area-inset-top)] md:hidden"
+        className="relative w-full overflow-hidden bg-zinc-950 pt-[env(safe-area-inset-top)] animate-hero-swap md:hidden"
       >
         <div className="absolute inset-0">
           {imageSrc ? (
@@ -323,7 +366,7 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
 
       {/* ===== DESKTOP ONLY — original conventional hero ===== */}
       <section
-        className="relative hidden w-full overflow-hidden bg-zinc-950 md:block md:h-[80dvh] md:min-h-[480px]"
+        className="relative hidden w-full overflow-hidden bg-zinc-950 animate-hero-swap md:block md:h-[80dvh] md:min-h-[480px]"
       >
         {imageSrc ? (
           <Image
@@ -422,6 +465,6 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
           </div>
         </div>
       </section>
-    </>
+    </Fragment>
   );
 }

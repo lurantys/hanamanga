@@ -5,7 +5,9 @@ export const dynamic = "force-dynamic";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
-  const title = searchParams.get("title")?.trim() ?? "";
+  // Truncate: the title feeds the Data Cache key, so unbounded input
+  // would mint unbounded cache entries.
+  const title = (searchParams.get("title")?.trim() ?? "").slice(0, 120);
   const anilistId = searchParams.get("anilistId")?.trim() || undefined;
   if (!title && !anilistId) return NextResponse.json({ bannerUrl: null });
   try {

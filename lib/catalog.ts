@@ -164,8 +164,40 @@ const cachedBrowseCatalog = unstable_cache(
   { revalidate: 300, tags: ["catalog-browse"] },
 );
 
+async function fetchBrowseUncached(options: BrowseOptions): Promise<MangaListResult> {
+  const page = Math.max(1, options.page ?? 1);
+  const offset = (page - 1) * CATALOG_PAGE_SIZE;
+  return fetchAniListList({
+    limit: CATALOG_PAGE_SIZE,
+    offset,
+    sort: options.sort,
+    genres: options.genres,
+    status: options.status,
+    rating: options.rating,
+    origin: options.origin,
+    yearFrom: options.yearFrom,
+    yearTo: options.yearTo,
+    minScore: options.minScore,
+  });
+}
+
+// Deep browse pages are crawler territory (page=1..N enumerations) and
+// almost never re-hit. Persisting each one to the Data Cache burns
+// ISR-write quota for zero benefit, so pages past this cut fetch fresh.
+const BROWSE_CACHED_PAGES = 25;
+
 export function fetchBrowseCatalog(options: BrowseOptions): Promise<MangaListResult> {
-  return cachedBrowseCatalog(options);
+  // Sort genres so equivalent filter sets share one cache key regardless
+  // of the order query params arrived in.
+  const normalized: BrowseOptions = {
+    ...options,
+    genres: [...options.genres].sort(),
+    page: Math.max(1, options.page ?? 1),
+  };
+  if ((normalized.page ?? 1) > BROWSE_CACHED_PAGES) {
+    return fetchBrowseUncached(normalized);
+  }
+  return cachedBrowseCatalog(normalized);
 }
 
 const cachedSearchCatalog = unstable_cache(
@@ -180,12 +212,24 @@ const cachedAuthorCatalog = unstable_cache(
   { revalidate: 300 },
 );
 
+// Search keys are raw user input with unbounded cardinality ("fire force",
+// "Fire Force ", "FIRE  FORCE", ...). Normalize so cosmetic variants share
+// one Data Cache entry, and skip the cache entirely for <2-char stubs —
+// live-as-you-type keystrokes would otherwise write an entry per prefix.
+function normalizeSearchKey(value: string): string {
+  return value.trim().toLowerCase().replace(/\s+/g, " ").slice(0, 100);
+}
+
 export function fetchCachedSearchCatalog(query: string): Promise<MangaListResult> {
-  return cachedSearchCatalog(query);
+  const key = normalizeSearchKey(query);
+  if (key.length < 2) return searchCatalog(query, SEARCH_POOL_SIZE);
+  return cachedSearchCatalog(key);
 }
 
 export function fetchCachedAuthorCatalog(author: string): Promise<AuthorSearchResult> {
-  return cachedAuthorCatalog(author);
+  const key = normalizeSearchKey(author);
+  if (key.length < 2) return searchCatalogByAuthor(author, SEARCH_POOL_SIZE);
+  return cachedAuthorCatalog(key);
 }
 
 export function isNotFoundError(error: unknown): boolean {
@@ -356,7 +400,7 @@ const cachedCatalogManga = unstable_cache(
     return enhanceWithAniList(manga);
   },
   ["catalog-manga"],
-  { revalidate: 300 },
+  { revalidate: 1800 },
 );
 
 /**

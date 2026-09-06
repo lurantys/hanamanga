@@ -18,6 +18,12 @@ const cachedStaffSearch = unstable_cache(
   { revalidate: 300 },
 );
 
+function staffSearch(query: string) {
+  const key = query.trim().toLowerCase().replace(/\s+/g, " ").slice(0, 100);
+  if (key.length < 2) return searchAniListStaff(query, 2);
+  return cachedStaffSearch(key);
+}
+
 export async function GET(request: Request) {
   const sp = new URL(request.url).searchParams;
   const q = sp.get("q")?.trim() ?? "";
@@ -51,7 +57,7 @@ export async function GET(request: Request) {
     }
     const [pool, staff] = await Promise.all([
       fetchCachedSearchCatalog(q),
-      cachedStaffSearch(q).catch(() => []),
+      staffSearch(q).catch(() => []),
     ]);
     const start = (page - 1) * PAGE_LIMIT;
     const data = pool.data.slice(start, start + PAGE_LIMIT);

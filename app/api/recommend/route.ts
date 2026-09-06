@@ -127,10 +127,19 @@ export async function GET(request: Request) {
   }
 
   const offsetBase = (seed % 12) * POOL_FETCH_LIMIT;
-  const pools = await cachedPools(
-    weighted.map((tag) => tag.name),
-    offsetBase,
-  );
+  // Dedupe (case-insensitive, weight order preserved) and slice to the 4
+  // tags actually fetched: trailing tags were part of the cache key but
+  // never used, minting distinct entries for identical fetches.
+  const seenTags = new Set<string>();
+  const tagNames: string[] = [];
+  for (const tag of weighted.map((entry) => entry.name.trim()).filter(Boolean)) {
+    const key = tag.toLowerCase();
+    if (seenTags.has(key)) continue;
+    seenTags.add(key);
+    tagNames.push(tag);
+    if (tagNames.length === 4) break;
+  }
+  const pools = await cachedPools(tagNames, offsetBase);
 
   let candidates: Manga[] = [];
   if (pools.length) {

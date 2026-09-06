@@ -1,6 +1,5 @@
 import { readFile } from "node:fs/promises";
 import path from "node:path";
-import { unstable_cache } from "next/cache";
 import { ImageResponse } from "next/og";
 import { statusLabel, truncate } from "@/lib/mangadex";
 import { fetchCatalogMangaWithFallback } from "@/lib/catalog";
@@ -36,24 +35,24 @@ async function fetchCoverDataUrl(url: string): Promise<string | null> {
   return `data:${mime};base64,${bytes.toString("base64")}`;
 }
 
-const cachedMangaCard = unstable_cache(
-  async (id: string): Promise<OgMangaCard> => {
-    const manga = await fetchCatalogMangaWithFallback(id, { withStats: false });
-    const coverUrl = manga.coverUrl ? rasterizableCoverUrl(manga.coverUrl) : null;
-    const cover = coverUrl ? await fetchCoverDataUrl(coverUrl) : null;
-    const genres = manga.genres.slice(0, 3);
-    const status = statusLabel(manga.status);
-    const subtitle = [status, ...genres].filter(Boolean).join(" · ");
-    return {
-      title: manga.title,
-      description: manga.description ? truncate(manga.description, 200) : "",
-      subtitle,
-      cover,
-    };
-  },
-  ["og-manga-card"],
-  { revalidate: 300 },
-);
+async function mangaCardFor(id: string): Promise<OgMangaCard> {
+  // No unstable_cache here on purpose: the rendered PNG itself is the ISR
+  // cache entry (revalidate above), and the manga metadata comes from the
+  // shared catalog cache. A per-id card cache would double Data Cache
+  // writes (card revalidated every 300s while the image lives 24h).
+  const manga = await fetchCatalogMangaWithFallback(id, { withStats: false });
+  const coverUrl = manga.coverUrl ? rasterizableCoverUrl(manga.coverUrl) : null;
+  const cover = coverUrl ? await fetchCoverDataUrl(coverUrl) : null;
+  const genres = manga.genres.slice(0, 3);
+  const status = statusLabel(manga.status);
+  const subtitle = [status, ...genres].filter(Boolean).join(" · ");
+  return {
+    title: manga.title,
+    description: manga.description ? truncate(manga.description, 200) : "",
+    subtitle,
+    cover,
+  };
+}
 
 function titleSize(title: string): number {
   if (title.length > 42) return 42;
@@ -84,7 +83,7 @@ export default async function Image({
   const { id } = await params;
   const icon = await appIconDataUrl();
   try {
-    const card = await cachedMangaCard(id);
+    const card = await mangaCardFor(id);
     return new ImageResponse(
       (
         <div

@@ -9,9 +9,40 @@ import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
 
-const cachedProviderFetch = unstable_cache(
-  async (ids: string[], withBanners: boolean) => {
-    const { mangadex, atsu, al } = splitMangaIds(ids);
+// Per-ref cache for Atsumaru lookups only. The old combo-key cache took the
+// whole `ids` array as its key, so every user's unique library/continue set
+// wrote a Data Cache entry that never hit again — pure ISR-write burn.
+// MangaDex (batched, one upstream call) and AniList (single batched GraphQL
+// query) are fetched uncached per request; only the per-ref Atsu lookups,
+// which fan out 1:1 and are shared across users, keep a bounded per-manga
+// cache entry.
+const cachedAtsuOne = unstable_cache(
+  async (ref: string) => {
+    try {
+      return atsuToManga(await fetchAtsuManga(ref));
+    } catch {
+      return null;
+    }
+  },
+  ["api-manga-atsu-one"],
+  { revalidate: 300 },
+);
+
+export async function GET(request: Request) {
+  const { searchParams } = new URL(request.url);
+  const ids = (searchParams.get("ids") ?? "")
+    .split(",")
+    .map((id) => id.trim())
+    .filter(Boolean);
+  const withBanners = searchParams.get("banners") === "1";
+  if (!ids.length || ids.length > 100) {
+    return NextResponse.json(
+      { data: [] },
+      { headers: { "Cache-Control": "public, max-age=60, s-maxage=60" } },
+    );
+  }
+  try {
+    const { mangadex, atsu, al } = splitMangaIds([...new Set(ids)]);
     const [mdData, atsuData, alData] = await Promise.all([
       (async () => {
         const results: Manga[] = [];
@@ -25,15 +56,7 @@ const cachedProviderFetch = unstable_cache(
         }
         return results;
       })(),
-      Promise.all(
-        atsu.map(async (ref) => {
-          try {
-            return atsuToManga(await fetchAtsuManga(ref));
-          } catch {
-            return null;
-          }
-        }),
-      ),
+      Promise.all(atsu.map((ref) => cachedAtsuOne(ref))),
       fetchAniListByIds(al),
     ]);
     const data = [
@@ -55,27 +78,6 @@ const cachedProviderFetch = unstable_cache(
         }),
       );
     }
-    return data;
-  },
-  ["api-manga-v2"],
-  { revalidate: 300 },
-);
-
-export async function GET(request: Request) {
-  const { searchParams } = new URL(request.url);
-  const ids = (searchParams.get("ids") ?? "")
-    .split(",")
-    .map((id) => id.trim())
-    .filter(Boolean);
-  const withBanners = searchParams.get("banners") === "1";
-  if (!ids.length || ids.length > 100) {
-    return NextResponse.json(
-      { data: [] },
-      { headers: { "Cache-Control": "public, max-age=60, s-maxage=60" } },
-    );
-  }
-  try {
-    const data = await cachedProviderFetch(ids, withBanners);
     const foundAl = new Set(data.filter((m) => m.id.startsWith("al:")).map((m) => m.id));
     const missingAl = splitMangaIds(ids).al.filter(
       (ref) => !foundAl.has(`al:${ref}`),

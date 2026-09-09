@@ -6,6 +6,7 @@ import Link from "next/link";
 import { StarRating } from "./StarRating";
 import { focusRing } from "@/lib/ui";
 import { statusLabel, type Manga } from "@/lib/mangadex";
+import { coverDisplayUrl } from "@/lib/cover-proxy";
 import { ratingTextClass, ratingTier } from "@/lib/rating";
 import { isInLibrary, subscribeLibrary, toggleLibrary } from "@/lib/library";
 import { getProgress, subscribeProgress } from "@/lib/progress";
@@ -55,6 +56,9 @@ export function MangaCard({
   const progressPercent = progress
     ? Math.round((progress.mangaFraction ?? progress.scrollFraction) * 100)
     : null;
+  // Heal legacy stored covers: pre-proxy library snapshots still carry raw
+  // uploads.mangadex.org URLs, which hotlink-protect in the browser.
+  const coverSrc = coverDisplayUrl(manga.coverUrl);
 
   const label =
     ariaLabel ??
@@ -71,7 +75,7 @@ export function MangaCard({
         className={`block rounded-lg text-left ${focusRing}`}
       >
         <div className="manga-card-surface relative aspect-[2/3] overflow-hidden rounded-lg bg-zinc-800 shadow-lg">
-          {manga.coverUrl ? (
+          {coverSrc ? (
             <>
               {!loaded && (
                 <div
@@ -80,7 +84,7 @@ export function MangaCard({
                 />
               )}
               <Image
-                src={manga.coverUrl}
+                src={coverSrc}
                 alt={manga.title}
                 fill
                 sizes="(max-width: 768px) 144px, 176px"

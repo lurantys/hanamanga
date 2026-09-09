@@ -14,6 +14,7 @@ import {
 } from "@/lib/progress";
 import { getLibraryList, LIBRARY_EVENT } from "@/lib/library";
 import { statusLabel, truncate, type Manga } from "@/lib/mangadex";
+import { coverDisplayUrl } from "@/lib/cover-proxy";
 import { ratingBadgeClass, ratingTier } from "@/lib/rating";
 import { HERO_FALLBACK_GRADIENT, ctaPrimary, ctaSecondary, focusRing } from "@/lib/ui";
 import { StarIcon } from "./icons";
@@ -82,7 +83,8 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
   const chapterId = hero?.chapterId;
   const chapterLabel = hero?.chapterLabel;
   const bannerSrc = displayHero.bannerUrl ?? null;
-  const imageSrc: string | null = bannerSrc ?? displayHero.coverUrl ?? null;
+  const coverSrc = coverDisplayUrl(displayHero.coverUrl);
+  const imageSrc: string | null = bannerSrc ?? coverSrc;
 
   useEffect(() => {
     let active = true;
@@ -329,10 +331,10 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
           ) : (
             <div className="absolute inset-0" style={{ background: HERO_FALLBACK_GRADIENT }} />
           )}
-          {displayHero.coverUrl && bannerSrc && (
+          {coverSrc && bannerSrc && (
             <div className="absolute inset-0 opacity-20">
               <Image
-                src={displayHero.coverUrl}
+                src={coverSrc}
                 alt=""
                 fill
                 sizes="100vw"
@@ -364,9 +366,9 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
             aria-label={displayHero.title}
             className={`group relative shrink-0 overflow-hidden rounded-[14px] bg-zinc-900 shadow-[0_24px_64px_rgba(0,0,0,0.65),0_8px_24px_rgba(0,0,0,0.5)] ring-1 ring-white/10 transition duration-300 hover:ring-white/20 md:rounded-[16px] ${focusRing}`}
           >
-            {displayHero.coverUrl ? (
+            {coverSrc ? (
               <Image
-                src={displayHero.coverUrl}
+                src={coverSrc}
                 alt=""
                 priority
                 width={360}
@@ -472,7 +474,7 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
 
         <div className="absolute inset-x-0 bottom-0 z-10 px-10 pb-20">
           <div className="flex items-end gap-8">
-            {displayHero.coverUrl && (
+            {coverSrc && (
               <Link
                 href={`/manga/${displayHero.id}`}
                 prefetch={false}
@@ -480,7 +482,7 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
                 className={`shrink-0 rounded-xl ${focusRing}`}
               >
                 <Image
-                  src={displayHero.coverUrl}
+                  src={coverSrc}
                   alt=""
                   priority
                   width={224}

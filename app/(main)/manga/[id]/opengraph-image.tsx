@@ -2,6 +2,7 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { ImageResponse } from "next/og";
 import { statusLabel, truncate } from "@/lib/mangadex";
+import { upstreamCoverUrl } from "@/lib/cover-proxy";
 import { fetchCatalogMangaWithFallback } from "@/lib/catalog";
 
 export const alt = "Manga page on Hana";
@@ -41,7 +42,10 @@ async function mangaCardFor(id: string): Promise<OgMangaCard> {
   // shared catalog cache. A per-id card cache would double Data Cache
   // writes (card revalidated every 300s while the image lives 24h).
   const manga = await fetchCatalogMangaWithFallback(id, { withStats: false });
-  const coverUrl = manga.coverUrl ? rasterizableCoverUrl(manga.coverUrl) : null;
+  // Proxy URLs are same-origin relative paths — resolve to the upstream for
+  // the server-side fetch (avoids a self-hop, same bytes).
+  const upstream = upstreamCoverUrl(manga.coverUrl);
+  const coverUrl = upstream ? rasterizableCoverUrl(upstream) : null;
   const cover = coverUrl ? await fetchCoverDataUrl(coverUrl) : null;
   const genres = manga.genres.slice(0, 3);
   const status = statusLabel(manga.status);

@@ -24,6 +24,7 @@ import {
   type ProgressEntry,
 } from "@/lib/progress";
 import { statusLabel } from "@/lib/mangadex";
+import { coverDisplayUrl } from "@/lib/cover-proxy";
 import { popoverSurface, focusRing } from "@/lib/ui";
 import { EmptyState } from "@/components/EmptyState";
 import { CustomSelect } from "@/components/CustomSelect";
@@ -53,7 +54,11 @@ function getContinueServerSnapshot(): ProgressEntry[] {
 }
 
 function thumbUrl(coverUrl?: string | null): string | null {
-  return coverUrl?.replace(/\.512\.jpg$/, ".256.jpg") ?? coverUrl ?? null;
+  const healed = coverDisplayUrl(coverUrl);
+  if (!healed) return null;
+  // Legacy upstream 512px thumbnails -> 256px for the grid; proxy URLs
+  // already point at the 256px variant, so this is a no-op for them.
+  return healed.replace(/\.512\.jpg$/, ".256.jpg");
 }
 
 type SortKey = "added" | "updated" | "title" | "rating" | "released";

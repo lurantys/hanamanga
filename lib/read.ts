@@ -3,10 +3,12 @@ import { unstable_cache } from "next/cache";
 import {
   fetchAggregate,
   fetchFeed,
+  fetchMangaList,
   type Chapter,
   type Manga,
   type MangaListResult,
 } from "./mangadex";
+import { tagIdFor } from "./genres";
 import {
   chaptersOfScanlator,
   fetchAtsuChapters,
@@ -65,12 +67,59 @@ const cachedByGenre = unstable_cache(
   { revalidate: HOME_ROWS_REVALIDATE, tags: ["home-by-genre"] },
 );
 
-export const getTrending = cache((limit = 18) => cachedTrending(limit));
-export const getPopular = cache((limit = 18) => cachedPopular(limit));
-export const getTopRated = cache((limit = 18) => cachedTopRated(limit));
-export const getByGenre = cache((genre: string, limit = 18) =>
-  cachedByGenre(genre, limit),
-);
+/**
+ * Home rows are AniList-backed; when AniList is down they fall back to
+ * uncached MangaDex equivalents (covers already proxied) so the home page
+ * stays populated. Fallbacks are NOT Data-Cached — a transient AniList 429
+ * must not stick `mangadex:` rows into the 300s home cache.
+ */
+async function trendingFallback(limit: number): Promise<MangaListResult> {
+  const { data } = await fetchMangaList({
+    limit: Math.max(limit, 60),
+    order: { followedCount: "desc" },
+    withStats: true,
+  });
+  return { data: data.slice(0, limit), total: limit, offset: 0, limit };
+}
+
+export const getTrending = cache(async (limit = 18) => {
+  try {
+    return await cachedTrending(limit);
+  } catch {
+    return trendingFallback(limit);
+  }
+});
+export const getPopular = cache(async (limit = 18) => {
+  try {
+    return await cachedPopular(limit);
+  } catch {
+    return fetchMangaList({
+      limit,
+      order: { followedCount: "desc" },
+      withStats: true,
+    });
+  }
+});
+export const getTopRated = cache(async (limit = 18) => {
+  try {
+    return await cachedTopRated(limit);
+  } catch {
+    return fetchMangaList({ limit, order: { rating: "desc" }, withStats: true });
+  }
+});
+export const getByGenre = cache(async (genre: string, limit = 18) => {
+  try {
+    return await cachedByGenre(genre, limit);
+  } catch {
+    const tagId = tagIdFor(genre);
+    return fetchMangaList({
+      limit,
+      order: { followedCount: "desc" },
+      includedTags: tagId ? [tagId] : undefined,
+      withStats: true,
+    });
+  }
+});
 export const getWebtoons = cache((limit = 18) => getAtsuRow("Manwha", limit));
 export const getManhua = cache((limit = 18) => getAtsuRow("Manhua", limit));
 

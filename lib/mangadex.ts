@@ -1,4 +1,5 @@
 import { tagIdFor } from "./genres";
+import { proxiedMangadexCover } from "./cover-proxy";
 
 const API = "https://api.mangadex.org";
 export const UPLOADS = "https://uploads.mangadex.org";
@@ -237,6 +238,11 @@ function normalizeManga(api: ApiManga): Manga {
   );
   const coverFile = cover?.attributes?.fileName;
 
+  // Route covers through the same-origin `/api/cover` proxy: MangaDex
+  // hotlink protection serves the "You can read this at..." placeholder to
+  // direct browser requests. See `lib/cover-proxy.ts`.
+  const coverUrl = coverFile ? proxiedMangadexCover(api.id, coverFile) : null;
+
   return {
     id: api.id,
     title: pickTitle(attrs.title, attrs.altTitles),
@@ -248,9 +254,7 @@ function normalizeManga(api: ApiManga): Manga {
       )
       .filter((value): value is string => Boolean(value)),
     description: pickDescription(attrs.description) || undefined,
-    coverUrl: coverFile
-      ? `${UPLOADS}/covers/${api.id}/${coverFile}.256.jpg`
-      : null,
+    coverUrl,
     genres: (attrs.tags ?? [])
       .map((tag) => tag.attributes?.name?.en)
       .filter((name): name is string => Boolean(name)),

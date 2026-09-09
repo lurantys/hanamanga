@@ -43,21 +43,28 @@ export async function GET(request: Request) {
   }
   try {
     const { mangadex, atsu, al } = splitMangaIds([...new Set(ids)]);
+    // Each source resolves independently: when AniList is down the MangaDex
+    // + Atsu results must still return (hero/continue/library enrichment),
+    // instead of the whole batch 502ing on one provider.
     const [mdData, atsuData, alData] = await Promise.all([
       (async () => {
-        const results: Manga[] = [];
-        for (let i = 0; i < mangadex.length; i += 100) {
-          results.push(
-            ...(await fetchMangaList({
-              ids: mangadex.slice(i, i + 100),
-              limit: 100,
-            })).data,
-          );
+        try {
+          const results: Manga[] = [];
+          for (let i = 0; i < mangadex.length; i += 100) {
+            results.push(
+              ...(await fetchMangaList({
+                ids: mangadex.slice(i, i + 100),
+                limit: 100,
+              })).data,
+            );
+          }
+          return results;
+        } catch {
+          return [] as Manga[];
         }
-        return results;
       })(),
       Promise.all(atsu.map((ref) => cachedAtsuOne(ref))),
-      fetchAniListByIds(al),
+      fetchAniListByIds(al).catch(() => [] as Manga[]),
     ]);
     const data = [
       ...mdData,

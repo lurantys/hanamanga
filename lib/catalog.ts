@@ -2,6 +2,7 @@ import { unstable_cache } from "next/cache";
 import { cache } from "react";
 import {
   fetchMangaById,
+  fetchMangaList,
   fetchSearch,
   MangaDexError,
   type Manga,
@@ -25,6 +26,8 @@ import {
   type AtsuCandidate,
 } from "./atsu";
 import { createClient } from "@/lib/supabase/server";
+import { coverDisplayUrl } from "./cover-proxy";
+import { RATING_VALUES, SORT_ORDER, tagIdFor } from "./genres";
 import { parseMangaId, toMangaId } from "./source";
 import { normalizeTitleKey, titleHits } from "./title";
 import { type SortKey } from "./genres";
@@ -164,21 +167,71 @@ const cachedBrowseCatalog = unstable_cache(
   { revalidate: 300, tags: ["catalog-browse"] },
 );
 
+/**
+ * Uncached fallback when AniList is unreachable. MangaDex first (it honors
+ * sort/genre/status/content-rating and pagination, so filtered browse keeps
+ * working), Atsu second (chapter-carrying titles with clean posters, no
+ * filter support). Covers are already proxied at normalize time, so the old
+ * watermark-poisoning problem is gone — but results are still deliberately
+ * NOT written to the Data Cache, so a transient AniList 429 never sticks a
+ * degraded `mangadex:` page next to `al:` pages for 300s.
+ *
+ * Best-effort mapping: MangaDex has no origin (JP/KR/CN), score floor, or
+ * year-range filter, so those are ignored on the fallback path rather than
+ * failing the whole page.
+ */
+async function fetchBrowseFallback(options: BrowseOptions): Promise<MangaListResult> {
+  const page = Math.max(1, options.page ?? 1);
+  const offset = (page - 1) * CATALOG_PAGE_SIZE;
+  try {
+    const includedTags = (options.genres ?? [])
+      .map((name) => tagIdFor(name))
+      .filter((id): id is string => Boolean(id));
+    return await fetchMangaList({
+      limit: CATALOG_PAGE_SIZE,
+      offset,
+      order: SORT_ORDER[options.sort] ?? SORT_ORDER.popular,
+      includedTags: includedTags.length ? includedTags : undefined,
+      status: options.status ? [options.status] : undefined,
+      contentRating: options.rating
+        ? (RATING_VALUES[options.rating] ?? undefined)
+        : undefined,
+      year:
+        options.yearFrom && options.yearFrom === options.yearTo
+          ? options.yearFrom
+          : undefined,
+      withStats: true,
+    });
+  } catch {
+    // MangaDex down too — Atsu has no pagination/filter support, so it only
+    // serves page 1; deeper pages end the infinite scroll gracefully.
+    if (page > 1) return { data: [], total: 0, offset, limit: CATALOG_PAGE_SIZE };
+    const candidates = await listAtsuManga({ limit: CATALOG_PAGE_SIZE });
+    const data = candidates.map(atsuToManga);
+    return { data, total: data.length, offset: 0, limit: CATALOG_PAGE_SIZE };
+  }
+}
+
 async function fetchBrowseUncached(options: BrowseOptions): Promise<MangaListResult> {
   const page = Math.max(1, options.page ?? 1);
   const offset = (page - 1) * CATALOG_PAGE_SIZE;
-  return fetchAniListList({
-    limit: CATALOG_PAGE_SIZE,
-    offset,
-    sort: options.sort,
-    genres: options.genres,
-    status: options.status,
-    rating: options.rating,
-    origin: options.origin,
-    yearFrom: options.yearFrom,
-    yearTo: options.yearTo,
-    minScore: options.minScore,
-  });
+  try {
+    return await fetchAniListList({
+      limit: CATALOG_PAGE_SIZE,
+      offset,
+      sort: options.sort,
+      genres: options.genres,
+      status: options.status,
+      rating: options.rating,
+      origin: options.origin,
+      yearFrom: options.yearFrom,
+      yearTo: options.yearTo,
+      minScore: options.minScore,
+    });
+  } catch (error) {
+    if (isNotFoundError(error)) throw error;
+    return fetchBrowseFallback({ ...options, page });
+  }
 }
 
 // Deep browse pages are crawler territory (page=1..N enumerations) and
@@ -186,7 +239,7 @@ async function fetchBrowseUncached(options: BrowseOptions): Promise<MangaListRes
 // ISR-write quota for zero benefit, so pages past this cut fetch fresh.
 const BROWSE_CACHED_PAGES = 25;
 
-export function fetchBrowseCatalog(options: BrowseOptions): Promise<MangaListResult> {
+export async function fetchBrowseCatalog(options: BrowseOptions): Promise<MangaListResult> {
   // Sort genres so equivalent filter sets share one cache key regardless
   // of the order query params arrived in.
   const normalized: BrowseOptions = {
@@ -194,10 +247,15 @@ export function fetchBrowseCatalog(options: BrowseOptions): Promise<MangaListRes
     genres: [...options.genres].sort(),
     page: Math.max(1, options.page ?? 1),
   };
-  if ((normalized.page ?? 1) > BROWSE_CACHED_PAGES) {
-    return fetchBrowseUncached(normalized);
+  try {
+    if ((normalized.page ?? 1) > BROWSE_CACHED_PAGES) {
+      return await fetchBrowseUncached(normalized);
+    }
+    return await cachedBrowseCatalog(normalized);
+  } catch (error) {
+    if (isNotFoundError(error)) throw error;
+    return fetchBrowseFallback(normalized);
   }
-  return cachedBrowseCatalog(normalized);
 }
 
 const cachedSearchCatalog = unstable_cache(
@@ -420,26 +478,40 @@ function rememberManga(id: string, manga: Manga): void {
   staleMangaStore.set(id, { value: manga, storedAt: Date.now() });
 }
 
+/**
+ * Heal legacy upstream MangaDex covers to the same-origin proxy (idempotent).
+ * Fresh MangaDex rows are already proxied at normalize time; stored library
+ * snapshots and older Data Cache entries still carry raw
+ * uploads.mangadex.org URLs, which hotlink-protect in the browser.
+ */
+function withHealedCover(manga: Manga): Manga {
+  const healed = coverDisplayUrl(manga.coverUrl);
+  if (healed === manga.coverUrl || healed === null) return manga;
+  return { ...manga, coverUrl: healed };
+}
+
 async function catalogMangaResilient(
   id: string,
   withStats: boolean,
 ): Promise<Manga> {
   try {
-    const manga = await cachedCatalogManga(id, withStats);
+    const manga = withHealedCover(await cachedCatalogManga(id, withStats));
     rememberManga(id, manga);
     return manga;
   } catch (error) {
     if (isNotFoundError(error)) throw error;
     const stale = staleMangaStore.get(id)?.value;
-    if (stale) return stale;
+    if (stale) return withHealedCover(stale);
     throw error;
   }
 }
 
 /**
- * MangaDex now serves watermarked cover art from uploads.mangadex.org. When an
- * Atsumaru record matches the same title we swap in its (clean) poster so the
- * detail page, library and reader header don't show the watermarked image.
+ * Direct uploads.mangadex.org hotlinks render MangaDex's anti-hotlink
+ * placeholder, so covers are served via the same-origin `/api/cover` proxy
+ * (see `lib/cover-proxy.ts`). When an Atsumaru record matches the same title
+ * we additionally swap in its poster, which is higher-resolution than the
+ * 256px MangaDex thumbnail.
  */
 async function resolveCleanCover(manga: Manga): Promise<string | null> {
   try {
@@ -476,7 +548,9 @@ export async function fetchStoredManga(id: string): Promise<Manga | null> {
     )?.[0];
     const manga = row?.manga;
     if (!manga || typeof manga !== "object" || !manga.title) return null;
-    return manga.id === row.manga_id ? manga : { ...manga, id: row.manga_id };
+    const normalized =
+      manga.id === row.manga_id ? manga : { ...manga, id: row.manga_id };
+    return withHealedCover(normalized);
   } catch {
     return null;
   }
@@ -492,8 +566,9 @@ export async function fetchCatalogMangaWithFallback(
     if (isNotFoundError(error)) throw error;
     const stored = await fetchStoredManga(id);
     if (stored) {
-      rememberManga(id, stored);
-      return stored;
+      const healed = withHealedCover(stored);
+      rememberManga(id, healed);
+      return healed;
     }
     // No library copy: resolve `al:<id>` via Atsumaru's link index so
     // guests aren't stranded when AniList is down.

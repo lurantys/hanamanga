@@ -4,6 +4,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { statusLabel, type Manga } from "@/lib/mangadex";
+import { coverDisplayUrl } from "@/lib/cover-proxy";
 
 type SearchLiveResultsProps = {
   query: string;
@@ -177,6 +178,7 @@ export function SearchLiveResults({ query, onPick }: SearchLiveResultsProps) {
       <div className="max-h-[55vh] space-y-0.5 overflow-y-auto pr-1">
         {data.map((manga) => {
           const rating = manga.rating ?? 0;
+          const coverSrc = coverDisplayUrl(manga.coverUrl);
           return (
             <Link
               key={manga.id}
@@ -187,9 +189,9 @@ export function SearchLiveResults({ query, onPick }: SearchLiveResultsProps) {
               className="group flex items-center gap-3 rounded-xl px-2 py-1.5 transition-colors hover:bg-zinc-800/70"
             >
               <div className="relative aspect-[2/3] h-14 w-auto shrink-0 overflow-hidden rounded-md bg-zinc-800">
-                {manga.coverUrl ? (
+                {coverSrc ? (
                   <Image
-                    src={manga.coverUrl}
+                    src={coverSrc}
                     alt=""
                     fill
                     sizes="40px"

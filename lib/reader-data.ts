@@ -1,9 +1,8 @@
 import { notFound, redirect } from "next/navigation";
 import { unstable_cache } from "next/cache";
 import {
-  chapterPageUrl,
   fetchChapterReader,
-  UPLOADS,
+  mdPageProxyUrl,
   type Chapter,
 } from "@/lib/mangadex";
 import { buildAtsuReader } from "@/lib/atsu";
@@ -77,7 +76,9 @@ const cachedReaderProps = unstable_cache(
   async (mangaId: string, chapterId: string): Promise<ReaderProps> => {
     return buildReaderPropsUncached(mangaId, chapterId);
   },
-  ["reader-props"],
+  // v2: page URLs moved behind stable proxy routes (atsu-image, md-image).
+  // Entries cached under the old key embed expiring upstream URLs.
+  ["reader-props-v2"],
   { revalidate: 3600 },
 );
 
@@ -315,10 +316,11 @@ return {
        id: item.id,
        label: mdChapterLabel(item),
      })),
-     pages: reader.pages.map((file) => ({
-       id: file,
-       image: chapterPageUrl(reader.baseUrl || UPLOADS, reader.hash, file),
-     })),
+      pages: reader.pages.map((file) => ({
+        id: file,
+        // Proxied: at-home base URLs expire, proxy URLs don't (see route).
+        image: mdPageProxyUrl(chapterId, reader.hash, file),
+      })),
      prevHref: prev ? `/read/${manga.id}/${prev.id}` : null,
      nextHref: next ? `/read/${manga.id}/${next.id}` : null,
    };

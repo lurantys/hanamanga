@@ -324,6 +324,7 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
               priority
               fill
               sizes="100vw"
+              referrerPolicy="no-referrer"
               className={`object-cover object-top scale-105 ${
                 bannerSrc ? "" : "scale-110 blur-[30px]"
               }`}
@@ -338,6 +339,7 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
                 alt=""
                 fill
                 sizes="100vw"
+                referrerPolicy="no-referrer"
                 className="object-cover scale-[1.4] blur-[50px]"
               />
             </div>
@@ -374,6 +376,7 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
                 width={360}
                 height={540}
                 sizes="62vw"
+                referrerPolicy="no-referrer"
                 className="aspect-[2/3] w-[62vw] max-w-[300px] object-cover"
               />
             ) : (
@@ -456,6 +459,7 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
             priority
             fill
             sizes="100vw"
+            referrerPolicy="no-referrer"
             className={`object-cover object-[center_20%] object-top ${
               bannerSrc ? "hero-artwork-motion" : "scale-125 blur-2xl"
             }`}
@@ -488,6 +492,7 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
                   width={224}
                   height={336}
                   sizes="224px"
+                  referrerPolicy="no-referrer"
                   className="aspect-[2/3] w-44 rounded-lg object-cover shadow-2xl shadow-zinc-950/70 ring-1 ring-white/10 transition duration-200 hover:ring-white/30 xl:w-56"
                 />
               </Link>

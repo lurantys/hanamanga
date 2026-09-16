@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
 import { fetchAniListList } from "@/lib/anilist";
-import { fetchMangaList, getTagId, type Manga } from "@/lib/mangadex";
+import { fetchMangaList, getTagId, toCardManga, type Manga } from "@/lib/mangadex";
 
 export const dynamic = "force-dynamic";
 
@@ -182,7 +182,8 @@ export async function GET(request: Request) {
     .map(({ manga }) => manga);
 
   return NextResponse.json(
-    { data: scored },
+    // Card projection: recommendation rows never render descriptions.
+    { data: scored.map(toCardManga) },
     {
       headers: {
         "Cache-Control": "public, max-age=60, s-maxage=300, stale-while-revalidate=600",

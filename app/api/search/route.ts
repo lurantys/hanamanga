@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { unstable_cache } from "next/cache";
+import { toCardManga } from "@/lib/mangadex";
 import {
   fetchCachedAuthorCatalog,
   fetchCachedSearchCatalog,
@@ -47,7 +48,8 @@ export async function GET(request: Request) {
       const start = (page - 1) * PAGE_LIMIT;
       const data = pool.data.slice(start, start + PAGE_LIMIT);
       return NextResponse.json(
-        { data, total: pool.data.length, page, authorName: pool.authorName, authorImageUrl: pool.authorImageUrl },
+        // Card projection: drops descriptions so misses transfer less.
+        { data: data.map(toCardManga), total: pool.data.length, page, authorName: pool.authorName, authorImageUrl: pool.authorImageUrl },
         {
           headers: {
             "Cache-Control": "public, max-age=300, s-maxage=300, stale-while-revalidate=600",
@@ -62,7 +64,8 @@ export async function GET(request: Request) {
     const start = (page - 1) * PAGE_LIMIT;
     const data = pool.data.slice(start, start + PAGE_LIMIT);
     return NextResponse.json(
-      { data, total: pool.data.length, page, authors: staff },
+      // Card projection: drops descriptions so misses transfer less.
+      { data: data.map(toCardManga), total: pool.data.length, page, authors: staff },
       {
         headers: {
           "Cache-Control": "public, max-age=300, s-maxage=300, stale-while-revalidate=600",

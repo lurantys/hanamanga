@@ -3,34 +3,48 @@ const UPLOADS_HOST = "uploads.mangadex.org";
 const UPLOADS = "https://uploads.mangadex.org";
 
 /**
- * MangaDex serves a "You can read this at..." placeholder for any cover
- * hotlinked from a non-MangaDex domain (see api.mangadex.org/docs/2-limitations).
- * Browsers send our origin as Referer, so direct `uploads.mangadex.org` URLs
- * always render the watermark. Proxying server-side (no browser Referer,
- * `Referer: https://mangadex.org/`) returns the real cover.
+ * MangaDex serves a "You can read this at..." placeholder for cover requests
+ * whose Referer is a non-MangaDex origin. Browsers loading
+ * `uploads.mangadex.org` directly with our origin as Referer used to get the
+ * watermark, which is why covers were proxied through `/api/cover`.
  *
- * This helper rewrites upstream cover URLs to the same-origin proxy. It is
- * idempotent: already-proxied or non-MangaDex URLs pass through untouched,
- * so stored library snapshots with legacy upstream URLs are healed at render.
+ * That proxy streams every cover byte through a Vercel Function, and each
+ * cache MISS bills the full image as Fast Origin Transfer (CDN <-> Function,
+ * ~100-500KB per unique cover). With dozens of covers per page this was the
+ * dominant origin-transfer driver.
+ *
+ * Fix: load covers directly from `uploads.mangadex.org` with
+ * `referrerPolicy="no-referrer"` on the <img> (MangaDex serves the real cover
+ * when the request carries no Referer). Cover bytes then flow
+ * MangaDex -> visitor directly: zero Vercel Function involvement, zero Fast
+ * Origin Transfer. `/api/cover` is kept as a tiny 302-redirect shim so older
+ * cached HTML / stored library snapshots that still point at it keep working
+ * at ~0.5KB per miss instead of ~500KB.
+ *
+ * This helper now resolves everything to the direct upstream URL. It stays
+ * idempotent: already-direct, already-proxied, and non-MangaDex URLs all
+ * resolve to a renderable direct URL.
  */
 export function coverDisplayUrl(url: string | null | undefined): string | null {
   if (!url) return null;
-  if (url.startsWith(COVER_PROXY_PATH)) return url;
+  // Heal legacy proxied URLs back to the direct upstream URL.
+  const upstream = upstreamCoverUrl(url);
+  if (!upstream) return null;
   let parsed: URL;
   try {
-    parsed = new URL(url);
+    parsed = new URL(upstream);
   } catch {
     return url;
   }
-  if (parsed.hostname !== UPLOADS_HOST) return url;
-  if (!parsed.pathname.startsWith("/covers/")) return url;
-  return `${COVER_PROXY_PATH}?url=${encodeURIComponent(url)}`;
+  // Only MangaDex uploads need healing; everything else passes through.
+  if (parsed.hostname !== UPLOADS_HOST) return upstream;
+  if (!parsed.pathname.startsWith("/covers/")) return upstream;
+  return upstream;
 }
 
-/** Build a proxied cover URL from MangaDex parts (used at normalize time). */
+/** Build a direct MangaDex cover URL from parts (no proxy hop). */
 export function proxiedMangadexCover(mangaId: string, fileName: string): string {
-  const upstream = `${UPLOADS}/covers/${mangaId}/${fileName}.256.jpg`;
-  return `${COVER_PROXY_PATH}?url=${encodeURIComponent(upstream)}`;
+  return `${UPLOADS}/covers/${mangaId}/${fileName}.256.jpg`;
 }
 
 /**

@@ -407,6 +407,7 @@ export default async function MangaPage({ params }: MangaPageProps) {
             priority
             fill
             sizes="100vw"
+            referrerPolicy="no-referrer"
             className="object-cover object-top opacity-40"
           />
         ) : (
@@ -427,6 +428,7 @@ export default async function MangaPage({ params }: MangaPageProps) {
                 width={360}
                 height={540}
                 sizes="48vw"
+                referrerPolicy="no-referrer"
                 className="aspect-[2/3] w-[48vw] max-w-[220px] object-cover"
               />
             ) : (
@@ -596,6 +598,7 @@ export default async function MangaPage({ params }: MangaPageProps) {
                   alt={manga.title}
                   fill
                   sizes="224px"
+                  referrerPolicy="no-referrer"
                   className="object-cover"
                 />
               ) : (

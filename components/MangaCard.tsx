@@ -56,8 +56,10 @@ export function MangaCard({
   const progressPercent = progress
     ? Math.round((progress.mangaFraction ?? progress.scrollFraction) * 100)
     : null;
-  // Heal legacy stored covers: pre-proxy library snapshots still carry raw
-  // uploads.mangadex.org URLs, which hotlink-protect in the browser.
+  // Resolve to the direct upstream cover (heals legacy `/api/cover?...`
+  // URLs back to uploads.mangadex.org). Rendered with
+  // referrerPolicy="no-referrer" below so MangaDex hotlink protection
+  // serves the real cover.
   const coverSrc = coverDisplayUrl(manga.coverUrl);
 
   const label =
@@ -88,6 +90,7 @@ export function MangaCard({
                 alt={manga.title}
                 fill
                 sizes="(max-width: 768px) 144px, 176px"
+                referrerPolicy="no-referrer"
                 onLoad={() => setLoaded(true)}
                 className={`object-cover transition-opacity duration-300 ${
                   loaded ? "opacity-100" : "opacity-0"

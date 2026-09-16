@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { fetchBrowseCatalog } from "@/lib/catalog";
+import { toCardManga } from "@/lib/mangadex";
 import {
   isMinScoreKey,
   isOriginKey,
@@ -41,7 +42,9 @@ export async function GET(request: Request) {
       page,
     });
     return NextResponse.json(
-      { data, total, page },
+      // Card projection: list clients never render descriptions/authors/
+      // banners — strip them so CDN misses transfer ~half the bytes.
+      { data: data.map(toCardManga), total, page },
       {
         headers: {
           "Cache-Control": "public, max-age=300, s-maxage=300, stale-while-revalidate=600",

@@ -507,9 +507,10 @@ async function catalogMangaResilient(
 }
 
 /**
- * Direct uploads.mangadex.org hotlinks render MangaDex's anti-hotlink
- * placeholder, so covers are served via the same-origin `/api/cover` proxy
- * (see `lib/cover-proxy.ts`). When an Atsumaru record matches the same title
+ * Direct uploads.mangadex.org hotlinks with our origin as Referer render
+ * MangaDex's anti-hotlink placeholder, so covers are loaded with
+ * `referrerPolicy="no-referrer"` (no Referer bypasses the check — see
+ * `lib/cover-proxy.ts`). When an Atsumaru record matches the same title
  * we additionally swap in its poster, which is higher-resolution than the
  * 256px MangaDex thumbnail.
  */

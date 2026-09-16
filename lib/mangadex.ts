@@ -238,9 +238,11 @@ function normalizeManga(api: ApiManga): Manga {
   );
   const coverFile = cover?.attributes?.fileName;
 
-  // Route covers through the same-origin `/api/cover` proxy: MangaDex
-  // hotlink protection serves the "You can read this at..." placeholder to
-  // direct browser requests. See `lib/cover-proxy.ts`.
+  // Direct uploads.mangadex.org URL; callers render it with
+  // referrerPolicy="no-referrer" so MangaDex's hotlink protection (which
+  // keys off the Referer header) serves the real cover. See
+  // `lib/cover-proxy.ts` — never route covers through a Vercel Function,
+  // each proxied byte bills as Fast Origin Transfer.
   const coverUrl = coverFile ? proxiedMangadexCover(api.id, coverFile) : null;
 
   return {
@@ -585,4 +587,28 @@ export function formatFollows(follows?: number): string {
   if (follows >= 1_000_000) return `${(follows / 1_000_000).toFixed(1)}M`;
   if (follows >= 1_000) return `${(follows / 1_000).toFixed(1)}K`;
   return String(follows);
+}
+
+/**
+ * Card-sized projection of a Manga for list APIs (browse / search /
+ * recommend). List clients only render cover, title, rating, status and
+ * meta — but a full Manga carries description (1-3KB), altTitles, links,
+ * authors and bannerUrl. At 24 items per page that dead weight more than
+ * doubles response bytes, and every CDN-miss byte bills as Fast Origin
+ * Transfer. This keeps the fields card grids actually read.
+ */
+export function toCardManga(manga: Manga): Manga {
+  return {
+    id: manga.id,
+    title: manga.title,
+    coverUrl: manga.coverUrl,
+    genres: manga.genres,
+    rating: manga.rating,
+    follows: manga.follows,
+    year: manga.year,
+    status: manga.status,
+    availableLanguages: manga.availableLanguages,
+    latestChapter: manga.latestChapter,
+    updatedAt: manga.updatedAt,
+  };
 }

@@ -3,22 +3,18 @@ import { NextResponse } from "next/server";
 export const dynamic = "force-dynamic";
 
 const UPLOADS_HOST = "uploads.mangadex.org";
-const ALLOWED_CONTENT_TYPES = new Set([
-  "image/jpeg",
-  "image/png",
-  "image/webp",
-  "image/gif",
-  "image/avif",
-]);
 
 /**
- * Same-origin proxy for MangaDex covers.
+ * Backwards-compatibility shim for legacy `/api/cover?url=…` URLs still
+ * present in CDN-cached HTML and stored library snapshots.
  *
- * MangaDex anti-hotlink protection serves the "You can read this at..."
- * placeholder to any image request whose Referer isn't MangaDex-owned.
- * Fetching server-side with `Referer: https://mangadex.org/` returns the
- * real cover; the response is cached at the edge (s-maxage) and in the
- * browser, so per-cover upstream cost is paid once.
+ * Previously this route proxied full image bytes through the Function
+ * (each MISS billed the whole file as Fast Origin Transfer). It now issues
+ * a cacheable 302 to the upstream file instead: ~0.5KB per miss, and the
+ * image bytes flow MangaDex -> visitor directly. New code never generates
+ * these URLs (see `lib/cover-proxy.ts`); this route exists only so old
+ * references keep rendering while caches turn over, and can be deleted
+ * once no `/api/cover` URLs remain in the wild.
  */
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -41,15 +37,17 @@ export async function GET(request: Request) {
   }
 
   try {
+    // Validate the upstream responds before redirecting, so broken covers
+    // 404 fast instead of bouncing the browser to a dead file. HEAD keeps
+    // the Function's own transfer to headers-only (~0.5KB); image bytes
+    // never pass through Vercel.
     const upstream = await fetch(target.toString(), {
+      method: "HEAD",
       headers: {
-        // Browser-like UA + MangaDex Referer bypasses hotlink protection.
         "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) Hana/1.0",
         Referer: "https://mangadex.org/",
-        Accept: "image/avif,image/webp,image/apng,image/*,*/*;q=0.8",
       },
-      signal: AbortSignal.timeout(12_000),
-      // Cache upstream bytes at the edge for a day; covers rarely change.
+      signal: AbortSignal.timeout(8_000),
       next: { revalidate: 86_400 },
     });
     if (!upstream.ok) {
@@ -58,20 +56,11 @@ export async function GET(request: Request) {
         { status: upstream.status === 404 ? 404 : 502 },
       );
     }
-    const mime = (upstream.headers.get("content-type") ?? "image/jpeg").split(";")[0].trim();
-    if (mime && !ALLOWED_CONTENT_TYPES.has(mime) && !mime.startsWith("image/")) {
-      return NextResponse.json({ error: "unexpected content" }, { status: 502 });
-    }
-    const buffer = await upstream.arrayBuffer();
-    if (!buffer.byteLength) {
-      return NextResponse.json({ error: "empty image" }, { status: 502 });
-    }
-    return new NextResponse(buffer, {
+    return NextResponse.redirect(target.toString(), {
+      status: 302,
       headers: {
-        "Content-Type": mime || "image/jpeg",
         "Cache-Control":
           "public, max-age=86400, s-maxage=86400, stale-while-revalidate=604800",
-        "Content-Length": String(buffer.byteLength),
       },
     });
   } catch {

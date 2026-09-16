@@ -195,6 +195,7 @@ export function SearchLiveResults({ query, onPick }: SearchLiveResultsProps) {
                     alt=""
                     fill
                     sizes="40px"
+                    referrerPolicy="no-referrer"
                     className="object-cover"
                   />
                 ) : null}

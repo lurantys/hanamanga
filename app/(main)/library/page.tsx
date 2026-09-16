@@ -56,8 +56,7 @@ function getContinueServerSnapshot(): ProgressEntry[] {
 function thumbUrl(coverUrl?: string | null): string | null {
   const healed = coverDisplayUrl(coverUrl);
   if (!healed) return null;
-  // Legacy upstream 512px thumbnails -> 256px for the grid; proxy URLs
-  // already point at the 256px variant, so this is a no-op for them.
+  // Legacy stored 512px upstream thumbnails -> 256px for the grid.
   return healed.replace(/\.512\.jpg$/, ".256.jpg");
 }
 
@@ -272,6 +271,7 @@ function GridCard({
               alt=""
               fill
               sizes="(max-width: 640px) 25vw, (max-width: 1024px) 16vw, 12vw"
+              referrerPolicy="no-referrer"
               className="object-cover"
             />
           ) : (
@@ -384,7 +384,7 @@ function ListCard({
       >
         <div className="relative h-[74px] w-[50px] overflow-hidden rounded-md bg-zinc-800">
           {coverUrl ? (
-            <Image src={coverUrl} alt="" fill sizes="50px" className="object-cover" />
+            <Image src={coverUrl} alt="" fill sizes="50px" referrerPolicy="no-referrer" className="object-cover" />
           ) : (
             <span className="flex h-full w-full items-center justify-center p-1 text-center text-[10px] text-zinc-500">
               {title}

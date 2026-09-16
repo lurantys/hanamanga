@@ -72,13 +72,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let disposed = false;
 
-    void supabase.auth.getSession().then(
-      ({ data }: { data: { session: Session | null } }) => {
+    void supabase.auth
+      .getSession()
+      .then(({ data }: { data: { session: Session | null } }) => {
         if (disposed) return;
         setSession(data.session);
         setLoading(false);
-      },
-    );
+      })
+      // Backend unreachable/misconfigured: stay signed-out instead of an
+      // unhandled rejection.
+      .catch(() => {
+        if (disposed) return;
+        setLoading(false);
+      });
 
     const {
       data: { subscription },

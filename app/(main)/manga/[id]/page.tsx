@@ -112,11 +112,25 @@ export default async function MangaPage({ params }: MangaPageProps) {
     atsuChapters = atsuMatchData.chapters;
   }
 
+  // Atsu novels (medium: Novel) carry text chapters with pageCount 0 and an
+  // empty pages array — there is nothing the image reader can display.
+  // Treat those as unusable for reading so we don't link into a 404 and so
+  // other providers still get a chance.
+  const isAtsuNovel = (atsuMatch?.manga.medium ?? "")
+    .toLowerCase()
+    .includes("novel");
+  const atsuHasReadablePages = atsuChapters.some(
+    (chapter) => (chapter.pageCount ?? 0) > 0,
+  );
+  const usableAtsu = Boolean(
+    atsuMatch && !(isAtsuNovel && !atsuHasReadablePages),
+  );
+
   let weebChapters: Chapter[] = [];
   let katanaChapters: Chapter[] = [];
   let feed: Awaited<ReturnType<typeof getMdFeed>> | null = null;
   let aggregate: Awaited<ReturnType<typeof getMdAggregate>> | null = null;
-  if (!atsuMatch) {
+  if (!usableAtsu) {
     const [weebResult, katanaResult] = await Promise.all([
       getWeebLookup(manga).catch(() => null),
       getKatanaLookup(manga.title).catch(() => null),
@@ -163,9 +177,9 @@ export default async function MangaPage({ params }: MangaPageProps) {
     (chapter) => chapter.externalUrl,
   );
   const fallbackFirstChapter = readableChapter ?? externalChapter ?? null;
-  const readTarget = atsuMatch ? firstChapter : fallbackFirstChapter;
+  const readTarget = usableAtsu ? firstChapter : fallbackFirstChapter;
   const readTargetExternalUrl =
-    !atsuMatch && fallbackFirstChapter?.externalUrl
+    !usableAtsu && fallbackFirstChapter?.externalUrl
       ? fallbackFirstChapter.externalUrl
       : null;
 
@@ -205,10 +219,10 @@ export default async function MangaPage({ params }: MangaPageProps) {
 
   // Whole-manga ETA inputs: chapter ids in reading order + average page
   // count (ignoring unknown/zero counts, falling back to 20).
-  const seriesChapterIds = atsuMatch
+  const seriesChapterIds = usableAtsu
     ? atsuReadingOrder.map((chapter) => chapter.id)
     : fallbackChapters.map((chapter) => chapter.id);
-  const seriesPageCounts = atsuMatch
+  const seriesPageCounts = usableAtsu
     ? atsuReadingOrder.map((chapter) => chapter.pageCount ?? 0)
     : fallbackChapters.map((chapter) =>
         typeof chapter.pages === "number" ? chapter.pages : 0,
@@ -240,7 +254,7 @@ export default async function MangaPage({ params }: MangaPageProps) {
         </svg>
         Read on External
       </a>
-    ) : atsuMatch ? (
+    ) : usableAtsu && atsuMatch ? (
       <ReadNowButton
         mangaId={manga.id}
         alternateIds={alternateIds}
@@ -661,7 +675,7 @@ export default async function MangaPage({ params }: MangaPageProps) {
         <section className="mt-12" aria-label="Chapters">
           <div className="mb-5 flex flex-wrap items-baseline gap-x-3 gap-y-1">
             <h2 className="text-xl font-bold tracking-tight text-white">
-              {atsuMatch ? "Read on Hana" : "Chapters"}
+              {usableAtsu ? "Read on Hana" : "Chapters"}
             </h2>
             {seriesChapterIds.length > 0 && (
               <SeriesEta
@@ -671,10 +685,14 @@ export default async function MangaPage({ params }: MangaPageProps) {
                 alternateIds={alternateIds}
               />
             )}
-            {atsuMatch ? (
+            {usableAtsu && atsuMatch ? (
               <span className="text-sm text-zinc-500">
                 {atsuReadingOrder.length.toLocaleString()} chapters in English
                 {atsuMatch.matchedByLink ? " · matched to your title" : ""}
+              </span>
+            ) : isAtsuNovel && atsuMatch ? (
+              <span className="text-sm text-zinc-500">
+                Text novel — image reading not supported yet
               </span>
             ) : weebChapters.length ? (
               <span className="text-sm text-zinc-500">
@@ -693,7 +711,7 @@ export default async function MangaPage({ params }: MangaPageProps) {
             ) : null}
           </div>
 
-          {atsuMatch ? (
+          {usableAtsu && atsuMatch ? (
             <AtsuChapterList
               mangaId={manga.id}
               mangaTitle={manga.title}
@@ -703,6 +721,36 @@ export default async function MangaPage({ params }: MangaPageProps) {
               chapters={atsuChapters}
               defaultScanlatorId={primaryScanlatorId}
             />
+          ) : isAtsuNovel && atsuMatch ? (
+            <>
+              <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 px-6 py-8 text-center">
+                <p className="text-sm text-zinc-300">
+                  This is a text novel on Atsumaru — Hana only supports image
+                  chapters right now, so there&apos;s nothing to read here yet.
+                </p>
+              </div>
+              {fallbackChapters.length > 0 && (
+                <div className="mt-6">
+                  <MangaChapterList
+                    mangaId={manga.id}
+                    mangaTitle={manga.title}
+                    coverUrl={manga.coverUrl}
+                    alternateIds={alternateIds}
+                    volumes={volumes.map(([volume, chapters]) => ({
+                      volume,
+                      chapters,
+                    }))}
+                  />
+                </div>
+              )}
+              {fallbackChapters.length === 0 && (
+                <div className="mt-4 rounded-2xl border border-zinc-800 bg-zinc-900/60 px-6 py-8 text-center">
+                  <p className="text-sm text-zinc-400">
+                    No English image chapters available yet.
+                  </p>
+                </div>
+              )}
+            </>
           ) : fallbackChapters.length === 0 ? (
             <div className="rounded-2xl border border-zinc-800 bg-zinc-900/60 px-6 py-12 text-center">
               <p className="text-sm text-zinc-400">

@@ -39,6 +39,13 @@ function NavigationLoaderInner() {
     );
   }, []);
 
+  // Defer setVisible out of history.pushState/replaceState: Next's router
+  // calls those inside useInsertionEffect, where scheduling a state update
+  // triggers "useInsertionEffect must not schedule updates".
+  const scheduleShow = useCallback(() => {
+    window.setTimeout(show, 0);
+  }, [show]);
+
   const hide = useCallback(() => {
     const elapsed = Date.now() - shownAtRef.current;
     const remaining = Math.max(0, MIN_VISIBLE_MS - elapsed);
@@ -68,7 +75,7 @@ function NavigationLoaderInner() {
         const next = new URL(String(url), window.location.href);
         if (next.origin !== window.location.origin) return;
         if (sameRoute(next.pathname + next.search, currentRoute())) return;
-        show();
+        scheduleShow();
       } catch {
         // Unparseable URL — ignore.
       }
@@ -88,7 +95,7 @@ function NavigationLoaderInner() {
     };
 
     // Back/forward buttons.
-    const onPopState = () => show();
+    const onPopState = () => scheduleShow();
 
     // Instant feedback for link taps (covers the RSC-fetch window before
     // the URL swaps, and navigations where pushState fires late).
@@ -108,7 +115,7 @@ function NavigationLoaderInner() {
         const next = new URL(href, window.location.href);
         if (next.origin !== window.location.origin) return;
         if (sameRoute(next.pathname + next.search, currentRoute())) return;
-        show();
+        scheduleShow();
       } catch {
         // Unparseable href — ignore.
       }
@@ -124,7 +131,7 @@ function NavigationLoaderInner() {
       window.clearTimeout(hideTimerRef.current);
       window.clearTimeout(maxTimerRef.current);
     };
-  }, [show]);
+  }, [scheduleShow]);
 
   if (!visible) return null;
   return <NezukoLoading label="Loading…" />;

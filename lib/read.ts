@@ -120,8 +120,40 @@ export const getByGenre = cache(async (genre: string, limit = 18) => {
     });
   }
 });
-export const getWebtoons = cache((limit = 18) => getAtsuRow("Manwha", limit));
-export const getManhua = cache((limit = 18) => getAtsuRow("Manhua", limit));
+const cachedWebtoonsAl = unstable_cache(
+  async (limit = 18): Promise<MangaListResult> =>
+    fetchAniListList({ limit, sort: "popular", origin: "KR" }),
+  ["home-webtoons-al"],
+  { revalidate: HOME_ROWS_REVALIDATE, tags: ["home-webtoons"] },
+);
+
+const cachedManhuaAl = unstable_cache(
+  async (limit = 18): Promise<MangaListResult> =>
+    fetchAniListList({ limit, sort: "popular", origin: "CN" }),
+  ["home-manhua-al"],
+  { revalidate: HOME_ROWS_REVALIDATE, tags: ["home-manhua"] },
+);
+
+/**
+ * Home KR/CN rows are AniList-first while AniList is up (AniList excludes
+ * NOVEL/ONE_SHOT from list queries, so no text novels). When AniList is
+ * down they fall back to the Atsumaru rows (novel-free since the
+ * `medium:!=Novel` catalog filter).
+ */
+export const getWebtoons = cache(async (limit = 18) => {
+  try {
+    return (await cachedWebtoonsAl(limit)).data;
+  } catch {
+    return getAtsuRow("Manwha", limit);
+  }
+});
+export const getManhua = cache(async (limit = 18) => {
+  try {
+    return (await cachedManhuaAl(limit)).data;
+  } catch {
+    return getAtsuRow("Manhua", limit);
+  }
+});
 
 // Deterministic rotation (not Math.random): every server render in the
 // same window picks the same hero, so navigations, revalidations and

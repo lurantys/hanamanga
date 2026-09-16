@@ -54,6 +54,17 @@ export function proxiedMangadexCover(mangaId: string, fileName: string): string 
  */
 export function upstreamCoverUrl(url: string | null | undefined): string | null {
   if (!url) return null;
+  if (url.startsWith("/api/atsu-image")) {
+    try {
+      const parsed = new URL(url, "https://hana.local");
+      const inner = parsed.searchParams.get("u");
+      return inner && inner.startsWith("/static/")
+        ? `https://cdn.atsu.moe${inner}`
+        : url;
+    } catch {
+      return url;
+    }
+  }
   if (!url.startsWith(COVER_PROXY_PATH)) return url;
   try {
     // Relative URL: supply a dummy base for parsing.

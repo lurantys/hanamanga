@@ -150,7 +150,8 @@ export async function searchAtsu(
       num_typos: 1,
       per_page: limit,
       page: 1,
-      filter_by: "hidden:!=true",
+      // Hana has no text-novel reader: never surface novels anywhere.
+      filter_by: "hidden:!=true && medium:!=Novel",
     },
   );
 
@@ -172,7 +173,7 @@ export async function findAtsuCandidateByAniListId(
     {
       q: "*",
       query_by: "title",
-      filter_by: `hidden:!=true && anilistId:=${anilistId}`,
+      filter_by: `hidden:!=true && anilistId:=${anilistId} && medium:!=Novel`,
       per_page: 1,
       page: 1,
     },
@@ -186,7 +187,11 @@ export async function listAtsuManga(opts: {
   limit?: number;
   sort?: string;
 } = {}): Promise<AtsuCandidate[]> {
-  const filters = ["hidden:!=true", ...(opts.type ? [`type:${opts.type}`] : [])];
+  const filters = [
+    "hidden:!=true",
+    "medium:!=Novel",
+    ...(opts.type ? [`type:${opts.type}`] : []),
+  ];
   const json = await atsuFetch<{ hits?: { document: Record<string, unknown> }[] }>(
     "/collections/manga/documents/search",
     {
@@ -266,8 +271,27 @@ function normalizeAtsuManga(m: MangaPageJson["mangaPage"]): AtsuManga {
 
 export function atsuPosterUrl(poster: string | null): string | null {
   if (!poster) return null;
-  if (poster.startsWith("http")) return poster;
-  return `${ATSU_CDN}${poster.startsWith("/") ? poster : `/static/${poster}`}`;
+  if (poster.startsWith("http")) {
+    // Absolute upstream URL — proxy only cdn.atsu.moe paths (browsers get
+    // 403'd loading those directly); anything else passes through.
+    try {
+      const parsed = new URL(poster);
+      if (
+        parsed.hostname === "cdn.atsu.moe" &&
+        /^\/(static\/)?(pages|posters)\//.test(parsed.pathname)
+      ) {
+        const cdnPath = parsed.pathname.startsWith("/static/")
+          ? parsed.pathname
+          : `/static/${parsed.pathname.replace(/^\//, "")}`;
+        return atsuProxiedUrl(cdnPath);
+      }
+    } catch {
+      return poster;
+    }
+    return poster;
+  }
+  const cdnPath = poster.startsWith("/") ? poster : `/static/${poster}`;
+  return atsuProxiedUrl(cdnPath);
 }
 
 export async function fetchAtsuManga(id: string): Promise<AtsuManga> {
@@ -321,8 +345,15 @@ export async function fetchAtsuChapter(
   };
 }
 
+const ATSU_IMAGE_PROXY = "/api/atsu-image";
+
+/** Same-origin proxy path for an immutable cdn.atsu.moe file. */
+function atsuProxiedUrl(cdnPath: string): string {
+  return `${ATSU_IMAGE_PROXY}?u=${encodeURIComponent(cdnPath)}`;
+}
+
 export function atsuPageUrl(page: { image: string }): string {
-  return `${ATSU_CDN}${page.image}`;
+  return atsuProxiedUrl(page.image);
 }
 
 export function atsuChapterLabel(chapter: Pick<AtsuChapter, "title" | "number">): string {
@@ -376,6 +407,8 @@ export async function findAtsuManga(opts: {
   for (const entry of resolved) {
     if (!entry) continue;
     const { candidate, manga } = entry;
+    // Text novels have no image chapters — never match them.
+    if ((manga.medium ?? "").toLowerCase() === "novel") continue;
     if (hasLinks) {
       const matched = Object.entries(expected).some(([field, value]) => {
         const actual = (manga as unknown as Record<string, unknown>)[field];
@@ -393,7 +426,9 @@ export async function findAtsuManga(opts: {
 
   if (!hasLinks || !titleHits(opts.title, [candidates[0].title, candidates[0].englishTitle])) return null;
   try {
-    return { manga: await fetchAtsuManga(candidates[0].id), matchedByLink: false };
+    const manga = await fetchAtsuManga(candidates[0].id);
+    if ((manga.medium ?? "").toLowerCase() === "novel") return null;
+    return { manga, matchedByLink: false };
   } catch {
     return null;
   }

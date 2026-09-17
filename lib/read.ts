@@ -60,6 +60,29 @@ const cachedTopRated = unstable_cache(
   { revalidate: HOME_ROWS_REVALIDATE, tags: ["home-top-rated"] },
 );
 
+const cachedNewReleases = unstable_cache(
+  async (limit = 18): Promise<MangaListResult> => {
+    const result = await fetchAniListList({
+      // AniList has no chapter-release timestamp. Restricting this to active
+      // series avoids resurfacing completed titles after metadata edits.
+      limit: Math.max(limit * 3, 50),
+      sort: "updated",
+      status: "ongoing",
+      minScore: 7,
+    });
+    const cutoff = Date.now() - 180 * 86_400_000;
+    const data = result.data
+      .filter((manga) => {
+        const updatedAt = Date.parse(manga.updatedAt ?? "");
+        return Number.isFinite(updatedAt) && updatedAt >= cutoff;
+      })
+      .slice(0, limit);
+    return { ...result, data, total: data.length, limit };
+  },
+  ["home-new-releases-v2"],
+  { revalidate: HOME_ROWS_REVALIDATE, tags: ["home-new-releases"] },
+);
+
 const cachedByGenre = unstable_cache(
   async (genre: string, limit = 18): Promise<MangaListResult> =>
     fetchAniListList({ limit, genre, sort: "popular" }),
@@ -105,6 +128,13 @@ export const getTopRated = cache(async (limit = 18) => {
     return await cachedTopRated(limit);
   } catch {
     return fetchMangaList({ limit, order: { rating: "desc" }, withStats: true });
+  }
+});
+export const getNewReleases = cache(async (limit = 18) => {
+  try {
+    return await cachedNewReleases(limit);
+  } catch {
+    return { data: [], total: 0, offset: 0, limit };
   }
 });
 export const getByGenre = cache(async (genre: string, limit = 18) => {

@@ -3,7 +3,7 @@ import type { Manga, MangaListResult } from "./mangadex";
 
 const API = "https://graphql.anilist.co";
 
-export type AniListSort = "popular" | "trending" | "top";
+export type AniListSort = "popular" | "trending" | "top" | "updated";
 
 export type AniListMedia = {
   id: number;
@@ -209,6 +209,7 @@ const SORT_TO_ANILIST: Record<AniListSort, string> = {
   popular: "POPULARITY_DESC",
   trending: "TRENDING_DESC",
   top: "SCORE_DESC",
+  updated: "UPDATED_AT_DESC",
 };
 
 const STATUS_TO_ANILIST: Record<string, string> = {

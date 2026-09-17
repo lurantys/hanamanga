@@ -18,11 +18,11 @@ export async function generateMetadata({
   try {
     const manga = await fetchCatalogManga(mangaId, { withStats: false });
     return {
-      title: `${manga.title} — Hana`,
+      title: `${manga.title} | Hana`,
       description: manga.description ? truncate(manga.description, 160) : undefined,
     };
   } catch {
-    return { title: "Reader — Hana" };
+    return { title: "Reader | Hana" };
   }
 }
 

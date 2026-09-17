@@ -38,11 +38,11 @@ export async function generateMetadata({
   let title = "Characters";
   try {
     const manga = await fetchCatalogMangaWithFallback(id);
-    title = `${manga.title} — Characters`;
+    title = `${manga.title} | Characters`;
   } catch {
     // fall back to generic title below
   }
-  return { title: `${title} — Hana` };
+  return { title: `${title} | Hana` };
 }
 
 async function resolveAniListId(id: string): Promise<string | null> {

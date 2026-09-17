@@ -57,7 +57,7 @@ export async function generateMetadata({
   } catch (error) {
     if (isAniListDownError(error)) {
       return {
-        title: "AniList unavailable — Hana",
+        title: "AniList unavailable | Hana",
         description: ANILIST_DOWN_MESSAGE,
       };
     }
@@ -67,7 +67,7 @@ export async function generateMetadata({
   const status = statusLabel(manga.status);
   const metaBits = [status, ...(manga.genres ?? []).slice(0, 3)].filter(Boolean);
   return {
-    title: `${manga.title} — Hana`,
+    title: `${manga.title} | Hana`,
     description: manga.description
       ? truncate(manga.description, 160)
       : `Read ${manga.title} on Hana.${metaBits.length ? ` ${metaBits.join(", ")}.` : ""} Track your library and pick up right where you left off.`,

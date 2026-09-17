@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import AccountContent from "./account-content";
 
 export const metadata: Metadata = {
-  title: "Account — Hana",
+  title: "Account | Hana",
 };
 
 export default function AccountPage() {

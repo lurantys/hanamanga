@@ -23,7 +23,7 @@ const zenKaku = Zen_Kaku_Gothic_New({
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: "Hana — A modern web manga reader | Hanamanga",
+  title: "Hana | A modern web manga reader | Hanamanga",
   description:
     "Hana by Hanamanga is a modern manga, manhwa, manhua, and webtoon reader. Read manga online at hanamanga.online, beautifully on any device.",
   applicationName: "Hana",

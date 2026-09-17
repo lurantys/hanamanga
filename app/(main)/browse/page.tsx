@@ -13,7 +13,7 @@ import type { Manga } from "@/lib/mangadex";
 import { fetchBrowseCatalog } from "@/lib/catalog";
 
 export const metadata: Metadata = {
-  title: "Browse — Hana",
+  title: "Browse | Hana",
   description:
     "Browse the manga catalog — sort by popularity, trending, or rating and filter by genre, status, and content rating.",
 };

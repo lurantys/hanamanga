@@ -3,7 +3,7 @@ import Link from "next/link";
 import { SITE_URL } from "@/lib/site";
 
 export const metadata: Metadata = {
-  title: "About — Hana",
+  title: "About | Hana",
   description:
     "About Hana — a modern manga, manhwa, manhua, and webtoon reader.",
   openGraph: {

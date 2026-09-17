@@ -5,7 +5,7 @@ import { resolveFirstChapter } from "@/lib/read";
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-export const metadata: Metadata = { title: "Read — Hana" };
+export const metadata: Metadata = { title: "Read | Hana" };
 
 type ReadResolverProps = {
   params: Promise<{ mangaId: string }>;

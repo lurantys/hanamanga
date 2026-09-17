@@ -12,7 +12,7 @@ import {
 import type { Manga } from "@/lib/mangadex";
 
 export const metadata: Metadata = {
-  title: "Search — Hana",
+  title: "Search | Hana",
 };
 
 const FIRST_PAGE = 24;

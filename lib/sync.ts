@@ -37,6 +37,7 @@ import {
 } from "./scanlator-preference";
 import { setStorageUserId } from "./storage";
 import type { SyncSummary } from "./provider-sync";
+import { clearFetchJsonCache } from "./api-fetch";
 
 type LibraryRow = {
   user_id: string;
@@ -103,6 +104,7 @@ function debounce(fn: () => void, ms: number) {
 let currentUserId: string | null = null;
 let localDisposers: Array<() => void> = [];
 let realtimeChannel: { unsubscribe: () => Promise<void> } | null = null;
+const pendingPushes = new Set<Promise<void>>();
 
 const lastPushedLibrary = new Set<string>();
 const lastPushedProgress = new Set<string>();
@@ -128,7 +130,11 @@ async function pushLibrary(userId: string): Promise<void> {
   }
   const removed = [...lastPushedLibrary].filter((id) => !(id in map));
   if (removed.length) {
-    await supabase.from("hana_library").delete().in("manga_id", removed);
+    await supabase
+      .from("hana_library")
+      .delete()
+      .eq("user_id", userId)
+      .in("manga_id", removed);
   }
   lastPushedLibrary.clear();
   for (const id of Object.keys(map)) lastPushedLibrary.add(id);
@@ -155,7 +161,11 @@ async function pushProgress(userId: string): Promise<void> {
   }
   const removed = [...lastPushedProgress].filter((id) => !(id in map));
   if (removed.length) {
-    await supabase.from("hana_progress").delete().in("manga_id", removed);
+    await supabase
+      .from("hana_progress")
+      .delete()
+      .eq("user_id", userId)
+      .in("manga_id", removed);
   }
   lastPushedProgress.clear();
   for (const id of Object.keys(map)) lastPushedProgress.add(id);
@@ -188,6 +198,7 @@ async function pushReadState(userId: string): Promise<void> {
     await supabase
       .from("hana_read_state")
       .delete()
+      .eq("user_id", userId)
       .eq("manga_id", row.manga_id)
       .eq("chapter_id", row.chapter_id);
   }
@@ -228,7 +239,7 @@ async function pushScanlatorPrefs(userId: string): Promise<void> {
   }
 }
 
-export async function pushAll(userId: string): Promise<void> {
+async function pushAllInternal(userId: string): Promise<void> {
   await Promise.allSettled([
     pushLibrary(userId),
     pushProgress(userId),
@@ -236,6 +247,16 @@ export async function pushAll(userId: string): Promise<void> {
     pushSettings(userId),
     pushScanlatorPrefs(userId),
   ]);
+}
+
+export async function pushAll(userId: string): Promise<void> {
+  const task = pushAllInternal(userId);
+  pendingPushes.add(task);
+  try {
+    await task;
+  } finally {
+    pendingPushes.delete(task);
+  }
 }
 
 async function pullLibrary(userId: string): Promise<void> {
@@ -578,6 +599,7 @@ function switchAccountStores(userId: string | null): void {
   // cache so the next read hits the correct key (or an empty map on
   // a fresh device that will be populated from Supabase).
   setStorageUserId(userId);
+  clearFetchJsonCache();
   setProgressUserId(userId);
   setReaderSettingsUserId(userId);
   lastPushedLibrary.clear();
@@ -589,6 +611,11 @@ export async function handleAuthStateChange(
   userId: string | null,
 ): Promise<void> {
   if (userId === currentUserId) return;
+  // Stop the debounce timer and wait for every old-account write before
+  // changing the storage namespace. Otherwise an in-flight write can read the
+  // newly selected account's local state and upload it to the old account.
+  localPush.flush();
+  await Promise.allSettled([...pendingPushes]);
   await stopRealtime();
   for (const dispose of localDisposers) dispose();
   localDisposers = [];

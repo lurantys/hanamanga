@@ -45,6 +45,7 @@ export async function GET(request: NextRequest) {
       code,
       code_verifier: verifier,
     }),
+    signal: AbortSignal.timeout(15_000),
   });
   const tokenJson = (await tokenRes.json()) as {
     access_token?: string;
@@ -119,6 +120,7 @@ async function fetchMALList(
     guard++;
     const res = await fetch(next, {
       headers: { Authorization: `Bearer ${accessToken}` },
+      signal: AbortSignal.timeout(15_000),
     });
     if (!res.ok) {
       return { ok: false, items: [], error: `api_error_${res.status}` };
@@ -141,6 +143,9 @@ async function fetchMALList(
       });
     }
     next = json.paging?.next ?? null;
+  }
+  if (next) {
+    return { ok: false, items: [], error: "api_error_list_too_large" };
   }
   return { ok: true, items };
 }
@@ -186,9 +191,10 @@ async function importMAL(
   }
 
   if (rows.length) {
-    await supabase.from("hana_library").upsert(rows, {
+    const { error } = await supabase.from("hana_library").upsert(rows, {
       onConflict: "user_id,manga_id",
     });
+    if (error) return { ok: false, imported: 0, error: "database_error" };
   }
   return { ok: true, imported: matched };
 }

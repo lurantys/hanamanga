@@ -7,9 +7,13 @@ const CACHE_MS = 60 * 60 * 1000;
 
 type CachedAvatar = { provider: string | null; url: string | null; ts: number };
 
-function readCache(): CachedAvatar | null {
+function cacheKey(userId: string): string {
+  return `${STORAGE_KEY}:${userId}`;
+}
+
+function readCache(userId: string): CachedAvatar | null {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = localStorage.getItem(cacheKey(userId));
     if (!raw) return null;
     const data = JSON.parse(raw) as CachedAvatar;
     if (Date.now() - data.ts > CACHE_MS) return null;
@@ -19,10 +23,10 @@ function readCache(): CachedAvatar | null {
   }
 }
 
-function writeCache(provider: string | null, url: string | null): void {
+function writeCache(userId: string, provider: string | null, url: string | null): void {
   try {
     localStorage.setItem(
-      STORAGE_KEY,
+      cacheKey(userId),
       JSON.stringify({ provider, url, ts: Date.now() }),
     );
   } catch {}
@@ -36,9 +40,10 @@ export function useProviderAvatar(
     url: string | null;
   } | null>(() => {
     if (!userId) return null;
-    const cached = readCache();
+    const cached = readCache(userId);
     return cached ? { provider: cached.provider, url: cached.url } : null;
   });
+  const [loadedUserId, setLoadedUserId] = useState(userId);
 
   useEffect(() => {
     if (!userId) return;
@@ -48,7 +53,8 @@ export function useProviderAvatar(
         if (cancelled) return;
         if (!res.ok) {
           setAvatar({ provider: null, url: null });
-          writeCache(null, null);
+          setLoadedUserId(userId);
+          writeCache(userId, null, null);
           return;
         }
         const json = (await res.json().catch(() => null)) as {
@@ -58,15 +64,19 @@ export function useProviderAvatar(
         const provider = json?.provider ?? null;
         const url = json?.url ?? null;
         setAvatar({ provider, url });
-        writeCache(provider, url);
+        setLoadedUserId(userId);
+        writeCache(userId, provider, url);
       })
       .catch(() => {
-        if (!cancelled) setAvatar({ provider: null, url: null });
+        if (!cancelled) {
+          setAvatar({ provider: null, url: null });
+          setLoadedUserId(userId);
+        }
       });
     return () => {
       cancelled = true;
     };
   }, [userId]);
 
-  return userId ? avatar : null;
+  return userId && loadedUserId === userId ? avatar : null;
 }

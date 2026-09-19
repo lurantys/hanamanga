@@ -102,7 +102,7 @@ function HeroSkeleton() {
   return (
     <section
       aria-hidden
-      className="min-h-[78dvh] w-full bg-gradient-to-t from-zinc-900 to-zinc-800 md:h-[80dvh] md:min-h-[480px]"
+      className="min-h-[68dvh] w-full bg-gradient-to-t from-zinc-900 to-zinc-800 md:h-[70dvh] md:min-h-[420px]"
     />
   );
 }

@@ -28,6 +28,10 @@ export async function GET(request: Request) {
     .filter(Boolean);
   const limit = Math.min(Number(searchParams.get("limit")) || 3, 5);
 
+  if (mangaIds.length > 30 || mangaIds.some((id) => id.length > 200)) {
+    return NextResponse.json({ data: [], error: "too many ids" }, { status: 400 });
+  }
+
   try {
     if (mangaIds.length) {
       const map: Record<string, unknown[]> = {};

@@ -93,7 +93,7 @@ export function Carousel({ title, ariaLabel, children, headerRight }: CarouselPr
       </div>
       <div
         ref={scrollerRef}
-        className="carousel-scroller scrollbar-hide flex snap-x snap-mandatory gap-3 overflow-x-auto px-5 py-2 scroll-px-5 md:px-10 md:py-10 md:scroll-px-10"
+        className="carousel-scroller scrollbar-hide flex snap-x snap-mandatory gap-4 overflow-x-auto px-5 py-2 scroll-px-5 md:px-10 md:py-9 md:scroll-px-10"
       >
         {children}
       </div>

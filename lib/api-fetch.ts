@@ -6,6 +6,13 @@
 // cross-user layer; this only cuts redundant same-session requests.
 const memory = new Map<string, { expires: number; data: unknown }>();
 const inflight = new Map<string, Promise<unknown>>();
+let cacheGeneration = 0;
+
+export function clearFetchJsonCache(): void {
+  cacheGeneration++;
+  memory.clear();
+  inflight.clear();
+}
 
 export function fetchJsonCached<T>(
   url: string,
@@ -18,10 +25,12 @@ export function fetchJsonCached<T>(
   const ongoing = inflight.get(url);
   if (ongoing) return ongoing as Promise<T | null>;
 
+  const generation = cacheGeneration;
   const task = fetch(url)
     .then((res) => (res.ok ? res.json() : null) as Promise<T | null>)
     .then((json) => {
       if (json !== null && json !== undefined) {
+        if (generation !== cacheGeneration) return json;
         memory.set(url, { expires: Date.now() + ttlMs, data: json });
         if (memory.size > 200) {
           const oldest = memory.keys().next();

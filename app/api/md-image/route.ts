@@ -15,6 +15,20 @@ const CHAPTER_ID =
 const HASH = /^[0-9a-fA-F]{32}$/;
 const FILE =
   /^[A-Za-z0-9][A-Za-z0-9._-]*\.(jpg|jpeg|png|gif|webp|avif)$/i;
+const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
+
+function isAllowedBaseUrl(value: string): boolean {
+  try {
+    const url = new URL(value);
+    return (
+      url.protocol === "https:" &&
+      (url.hostname === "uploads.mangadex.org" ||
+        url.hostname.endsWith(".mangadex.network"))
+    );
+  } catch {
+    return false;
+  }
+}
 
 // Assignments stay valid ~15min; memoize well inside that window so a cold
 // chapter costs ~1 assignment call, not one per page. Bytes themselves are
@@ -54,6 +68,9 @@ export async function GET(request: Request) {
   try {
     const base = await cachedAtHomeBase(chapter);
     // Empty assignment → fall back to the uploads host (non-expiring).
+    if (base && !isAllowedBaseUrl(base)) {
+      return NextResponse.json({ error: "invalid upstream" }, { status: 502 });
+    }
     const upstream = `${base || UPLOADS}/data/${hash}/${file}`;
     const res = await fetch(upstream, {
       headers: { "User-Agent": "Hana/1.0" },
@@ -65,6 +82,10 @@ export async function GET(request: Request) {
         { error: "upstream unavailable" },
         { status: res.status === 404 ? 404 : 502 },
       );
+    }
+    const contentLength = Number(res.headers.get("content-length"));
+    if (Number.isFinite(contentLength) && contentLength > MAX_IMAGE_BYTES) {
+      return NextResponse.json({ error: "image too large" }, { status: 413 });
     }
     const contentType =
       res.headers.get("content-type") ?? "application/octet-stream";

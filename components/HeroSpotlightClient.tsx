@@ -292,8 +292,8 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
   const ratingClass = ratingBadgeClass[ratingTier(rating)];
   const showRating =
     Boolean(displayHero.description) && rating > 0 && match !== "0.0";
-  const descriptionMobile = truncate(displayHero.description, 320);
-  const descriptionDesktop = truncate(displayHero.description, 400);
+  const descriptionMobile = truncate(displayHero.description, 220).replace(/…$/, "");
+  const descriptionDesktop = truncate(displayHero.description, 280).replace(/…$/, "");
   const pct = isContinue
     ? Math.round((hero?.mangaFraction ?? hero?.scrollFraction ?? 0) * 100)
     : null;
@@ -360,7 +360,7 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
           <span className="font-netflix text-[17px] font-black tracking-tight text-white" style={{ fontWeight: 900 }}>Hana</span>
         </Link>
 
-        <div className="relative z-10 mx-auto flex min-h-[78dvh] max-w-6xl flex-col items-center gap-8 px-5 pb-8 pt-[calc(5rem+env(safe-area-inset-top))]">
+        <div className="relative z-10 mx-auto flex min-h-[68dvh] max-w-6xl flex-col items-center gap-8 px-5 pb-8 pt-[calc(5rem+env(safe-area-inset-top))]">
 
           <Link
             href={`/manga/${displayHero.id}`}
@@ -411,7 +411,7 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
                 prefetch={false}
                 className="mx-auto block max-w-2xl rounded-2xl border border-white/[0.06] bg-white/[0.04] p-4 backdrop-blur-xl transition-colors hover:bg-white/[0.06] hover:border-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20"
               >
-                <p className="line-clamp-3 text-sm leading-relaxed text-zinc-200">
+                <p className="line-clamp-2 text-sm leading-relaxed text-zinc-200">
                   {descriptionMobile}
                 </p>
               </Link>
@@ -450,7 +450,7 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
 
       {/* ===== DESKTOP ONLY — original conventional hero ===== */}
       <section
-        className="relative hidden w-full overflow-hidden bg-zinc-950 animate-hero-swap md:block md:h-[80dvh] md:min-h-[480px]"
+        className="relative hidden w-full overflow-hidden bg-zinc-950 animate-hero-swap md:block md:h-[70dvh] md:min-h-[420px]"
       >
         {imageSrc ? (
           <Image

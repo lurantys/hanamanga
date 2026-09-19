@@ -230,6 +230,9 @@ async function fetchMalEntries(
     }
     next = json.paging?.next ?? null;
   }
+  if (next) {
+    throw new ProviderError("MAL list pagination limit reached", 413, true);
+  }
 
   const byMalId = new Map<number, Manga>();
   for (const manga of await fetchAniListByMalIds(items.map((item) => item.malId))) {
@@ -618,9 +621,10 @@ async function moveProgressData(
     const rest = { ...(fromProg as Record<string, unknown>) };
     delete rest.id;
     delete rest.created_at;
-    await supabase
-      .from("hana_progress")
-      .upsert({ ...rest, manga_id: toId }, { onConflict: "user_id,manga_id" });
+      const { error } = await supabase
+        .from("hana_progress")
+        .upsert({ ...rest, manga_id: toId }, { onConflict: "user_id,manga_id" });
+      if (error) throw error;
   }
 
   const { data: fromRead } = await supabase
@@ -643,7 +647,7 @@ async function moveProgressData(
     for (const row of fromRead as { chapter_id: string; read_at: number }[]) {
       const prev = existingRead.get(row.chapter_id);
       if (prev === undefined || row.read_at > prev) {
-        await supabase
+        const { error } = await supabase
           .from("hana_read_state")
           .upsert(
             {
@@ -654,25 +658,29 @@ async function moveProgressData(
             },
             { onConflict: "user_id,manga_id,chapter_id" },
           );
+        if (error) throw error;
       }
     }
   }
 
-  await supabase
+  const { error: progressDeleteError } = await supabase
     .from("hana_progress")
     .delete()
     .eq("user_id", userId)
     .eq("manga_id", fromId);
-  await supabase
+  if (progressDeleteError) throw progressDeleteError;
+  const { error: readDeleteError } = await supabase
     .from("hana_read_state")
     .delete()
     .eq("user_id", userId)
     .eq("manga_id", fromId);
-  await supabase
+  if (readDeleteError) throw readDeleteError;
+  const { error: preferenceDeleteError } = await supabase
     .from("hana_scanlator_preference")
     .delete()
     .eq("user_id", userId)
     .eq("manga_id", fromId);
+  if (preferenceDeleteError) throw preferenceDeleteError;
 }
 
 function isLinkedManga(manga: Manga | null | undefined): boolean {
@@ -868,7 +876,7 @@ async function repairLibraryBlobs(
   }
 }
 
-export async function syncProviders(userId: string): Promise<SyncSummary> {
+async function syncProvidersUnserialized(userId: string): Promise<SyncSummary> {
   const supabase = await createClient();
 
   try {
@@ -907,4 +915,18 @@ export async function syncProviders(userId: string): Promise<SyncSummary> {
   }
 
   return { syncedAt, providers: results };
+}
+
+const syncLocks = new Map<string, Promise<SyncSummary>>();
+
+export async function syncProviders(userId: string): Promise<SyncSummary> {
+  const existing = syncLocks.get(userId);
+  if (existing) return existing;
+  const task = syncProvidersUnserialized(userId);
+  syncLocks.set(userId, task);
+  try {
+    return await task;
+  } finally {
+    if (syncLocks.get(userId) === task) syncLocks.delete(userId);
+  }
 }

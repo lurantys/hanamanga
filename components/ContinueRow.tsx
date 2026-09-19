@@ -103,7 +103,7 @@ export function ContinueRow() {
               <>
                 <span
                   aria-hidden
-                  className="absolute right-1.5 top-1.5 rounded-md bg-zinc-950/80 px-1.5 py-0.5 text-[10px] font-semibold text-white"
+                  className="absolute right-1.5 top-1.5 min-w-10 rounded-md bg-zinc-950/80 px-2 py-0.5 text-center text-[11px] font-bold tabular-nums text-white ring-1 ring-white/15 backdrop-blur-md"
                 >
                   {pct}%
                 </span>

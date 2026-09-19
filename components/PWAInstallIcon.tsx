@@ -25,7 +25,6 @@ function isIOS(): boolean {
 
 export function PWAInstallIcon() {
   const [deferred, setDeferred] = useState<BeforeInstallPromptEvent | null>(null);
-  const [isIOSDevice, setIsIOSDevice] = useState(false);
   const [showSheet, setShowSheet] = useState(false);
   const [hidden, setHidden] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -43,18 +42,6 @@ export function PWAInstallIcon() {
   }, []);
 
   useEffect(() => {
-    if (isStandalone()) {
-      setHidden(true);
-      return;
-    }
-    try {
-      if (localStorage.getItem(INSTALLED_KEY)) {
-        setHidden(true);
-        return;
-      }
-    } catch {}
-    setIsIOSDevice(isIOS());
-
     const onBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
       setDeferred(e as BeforeInstallPromptEvent);

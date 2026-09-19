@@ -101,11 +101,14 @@ export async function GET(request: Request) {
         data.push({ ...blob, id: row.manga_id });
       }
     }
+    const cacheControl = missingAl.length
+      ? "private, no-store"
+      : "public, max-age=300, s-maxage=300, stale-while-revalidate=600";
     return NextResponse.json(
       { data },
       {
         headers: {
-          "Cache-Control": "public, max-age=300, s-maxage=300, stale-while-revalidate=600",
+          "Cache-Control": cacheControl,
         },
       },
     );

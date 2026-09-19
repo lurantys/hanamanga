@@ -12,6 +12,7 @@ export const dynamic = "force-dynamic";
 // Page/poster URLs are immutable content addresses, so edge-cache them hard:
 // after the first MISS the bytes serve from the edge, not the Function.
 const ALLOWED_PATH = /^\/static\/(pages|posters)\/[A-Za-z0-9._\-/]+$/;
+const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -32,6 +33,10 @@ export async function GET(request: Request) {
         { error: "upstream unavailable" },
         { status: upstream.status === 404 ? 404 : 502 },
       );
+    }
+    const contentLength = Number(upstream.headers.get("content-length"));
+    if (Number.isFinite(contentLength) && contentLength > MAX_IMAGE_BYTES) {
+      return NextResponse.json({ error: "image too large" }, { status: 413 });
     }
     const contentType =
       upstream.headers.get("content-type") ?? "application/octet-stream";

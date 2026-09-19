@@ -44,6 +44,7 @@ export async function GET(request: NextRequest) {
       redirect_uri: REDIRECT_URI,
       code,
     }),
+    signal: AbortSignal.timeout(15_000),
   });
   const tokenJson = (await tokenRes.json()) as {
     access_token?: string;
@@ -193,9 +194,10 @@ async function importAniList(
   }
 
   if (rows.length) {
-    await supabase.from("hana_library").upsert(rows, {
+    const { error } = await supabase.from("hana_library").upsert(rows, {
       onConflict: "user_id,manga_id",
     });
+    if (error) return { ok: false, imported: 0, error: "database_error" };
   }
   return { ok: true, imported: matched };
 }

@@ -124,7 +124,9 @@ function atsuCandidateFromDocument(
     medium: (doc.medium as string) ?? undefined,
     status: (doc.status as string) ?? undefined,
     year: (doc.year as number) ?? null,
-    poster: (doc.poster as string) ?? null,
+    poster:
+      (typeof doc.posterMedium === "string" ? doc.posterMedium : null) ??
+      (typeof doc.poster === "string" ? doc.poster : null),
     otherNames: Array.isArray(doc.otherNames)
       ? (doc.otherNames as string[])
       : undefined,

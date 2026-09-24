@@ -16,6 +16,8 @@ const HASH = /^[0-9a-fA-F]{32}$/;
 const FILE =
   /^[A-Za-z0-9][A-Za-z0-9._-]*\.(jpg|jpeg|png|gif|webp|avif)$/i;
 const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
+const IMAGE_CACHE_CONTROL =
+  "public, max-age=31536000, s-maxage=31536000, immutable";
 
 function isAllowedBaseUrl(value: string): boolean {
   try {
@@ -95,8 +97,9 @@ export async function GET(request: Request) {
     return new Response(res.body, {
       headers: {
         "Content-Type": contentType,
-        "Cache-Control":
-          "public, max-age=31536000, s-maxage=31536000, immutable",
+        "Cache-Control": IMAGE_CACHE_CONTROL,
+        "CDN-Cache-Control": IMAGE_CACHE_CONTROL,
+        "Vercel-CDN-Cache-Control": IMAGE_CACHE_CONTROL,
       },
     });
   } catch {

@@ -13,6 +13,8 @@ export const dynamic = "force-dynamic";
 // after the first MISS the bytes serve from the edge, not the Function.
 const ALLOWED_PATH = /^\/static\/(pages|posters)\/[A-Za-z0-9._\-/]+$/;
 const MAX_IMAGE_BYTES = 15 * 1024 * 1024;
+const IMAGE_CACHE_CONTROL =
+  "public, max-age=31536000, s-maxage=31536000, immutable";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -46,8 +48,9 @@ export async function GET(request: Request) {
     return new Response(upstream.body, {
       headers: {
         "Content-Type": contentType,
-        "Cache-Control":
-          "public, max-age=31536000, s-maxage=31536000, immutable",
+        "Cache-Control": IMAGE_CACHE_CONTROL,
+        "CDN-Cache-Control": IMAGE_CACHE_CONTROL,
+        "Vercel-CDN-Cache-Control": IMAGE_CACHE_CONTROL,
       },
     });
   } catch {

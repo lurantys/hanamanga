@@ -21,6 +21,7 @@ function NavigationLoaderInner() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [visible, setVisible] = useState(false);
+  const scheduleTimerRef = useRef(0);
   const showTimerRef = useRef(0);
   const maxTimerRef = useRef(0);
 
@@ -44,12 +45,14 @@ function NavigationLoaderInner() {
   // calls those inside useInsertionEffect, where scheduling a state update
   // triggers "useInsertionEffect must not schedule updates".
   const scheduleShow = useCallback(() => {
-    window.setTimeout(show, 0);
+    window.clearTimeout(scheduleTimerRef.current);
+    scheduleTimerRef.current = window.setTimeout(show, 0);
   }, [show]);
 
   // The new route has settled; cancel a pending overlay or dismiss a visible one.
   useEffect(() => {
     routeKeyRef.current = routeKey;
+    window.clearTimeout(scheduleTimerRef.current);
     window.clearTimeout(showTimerRef.current);
     window.clearTimeout(maxTimerRef.current);
     const timer = window.setTimeout(() => setVisible(false), 0);
@@ -125,6 +128,7 @@ function NavigationLoaderInner() {
       window.removeEventListener("popstate", onPopState);
       window.history.pushState = origPushState;
       window.history.replaceState = origReplaceState;
+      window.clearTimeout(scheduleTimerRef.current);
       window.clearTimeout(showTimerRef.current);
       window.clearTimeout(maxTimerRef.current);
     };

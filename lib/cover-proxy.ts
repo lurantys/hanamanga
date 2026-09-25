@@ -1,3 +1,5 @@
+import { atsuPosterUrl } from "./atsu";
+
 const COVER_PROXY_PATH = "/api/cover";
 const UPLOADS_HOST = "uploads.mangadex.org";
 const UPLOADS = "https://uploads.mangadex.org";
@@ -27,6 +29,11 @@ const UPLOADS = "https://uploads.mangadex.org";
  */
 export function coverDisplayUrl(url: string | null | undefined): string | null {
   if (!url) return null;
+  // Atsu image endpoints must stay proxied: cdn.atsu.moe rejects browser
+  // image requests that carry cross-site fetch metadata. Manga detail pages
+  // use the stored URL directly, while cards/search/library pass through
+  // this helper, so unwrapping the legacy route here breaks only those views.
+  if (url.startsWith("/api/atsu-image")) return url;
   // Heal legacy proxied URLs back to the direct upstream URL.
   const upstream = upstreamCoverUrl(url);
   if (!upstream) return null;
@@ -35,6 +42,9 @@ export function coverDisplayUrl(url: string | null | undefined): string | null {
     parsed = new URL(upstream);
   } catch {
     return url;
+  }
+  if (parsed.hostname === "cdn.atsu.moe" && /^\/(static\/)?(pages|posters)\//.test(parsed.pathname)) {
+    return atsuPosterUrl(upstream);
   }
   // Only MangaDex uploads need healing; everything else passes through.
   if (parsed.hostname !== UPLOADS_HOST) return upstream;

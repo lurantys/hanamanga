@@ -13,7 +13,7 @@ Discover, read, and track manga, manhwa, manhua, and webtoons — beautifully, o
 [![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=next.js&logoColor=white)](https://nextjs.org)
 [![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=white)](https://react.dev)
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind-4-38BDF8?logo=tailwindcss&logoColor=white)](https://tailwindcss.com)
-[![Live](https://img.shields.io/badge/Live-hanamanga.online-0877d2?logo=vercel&logoColor=white)](https://hanamanga.online/)
+[![Live](https://img.shields.io/badge/Live-hanamanga.online-0877d2)](https://hanamanga.online/)
 [![Last commit](https://img.shields.io/github/last-commit/lurantys/hanamanga)](https://github.com/lurantys/hanamanga)
 
 </div>

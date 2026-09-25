@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import {
   fetchChapterReader,
-  mdPageProxyUrl,
+  chapterPageUrl,
 } from "@/lib/mangadex";
 import { buildReaderProps } from "@/lib/reader-data";
 import { parseMangaId } from "@/lib/source";
@@ -27,7 +27,7 @@ export async function GET(request: Request) {
         {
           pages: reader.pages
             .slice(0, 3)
-            .map((file) => mdPageProxyUrl(chapterId, reader.hash, file)),
+            .map((file) => chapterPageUrl(reader.baseUrl, reader.hash, file)),
         },
         { headers },
       );

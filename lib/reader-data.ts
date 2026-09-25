@@ -2,7 +2,7 @@ import { notFound, redirect } from "next/navigation";
 import { unstable_cache } from "next/cache";
 import {
   fetchChapterReader,
-  mdPageProxyUrl,
+  chapterPageUrl,
   type Chapter,
 } from "@/lib/mangadex";
 import { buildAtsuReader } from "@/lib/atsu";
@@ -76,10 +76,10 @@ const cachedReaderProps = unstable_cache(
   async (mangaId: string, chapterId: string): Promise<ReaderProps> => {
     return buildReaderPropsUncached(mangaId, chapterId);
   },
-  // v2: page URLs moved behind stable proxy routes (atsu-image, md-image).
-  // Entries cached under the old key embed expiring upstream URLs.
-  ["reader-props-v2"],
-  { revalidate: 3600 },
+  // v3: MangaDex pages are served directly from their assigned image host.
+  // Keep the cached assignment well inside its ~15 minute validity window.
+  ["reader-props-v3"],
+  { revalidate: 300 },
 );
 
 async function buildReaderPropsUncached(
@@ -318,8 +318,9 @@ return {
      })),
       pages: reader.pages.map((file) => ({
         id: file,
-        // Proxied: at-home base URLs expire, proxy URLs don't (see route).
-        image: mdPageProxyUrl(chapterId, reader.hash, file),
+        // MangaDex at-home URLs are temporary (~15 min); cached reader props
+        // are revalidated after 5 minutes to keep this assignment fresh.
+        image: chapterPageUrl(reader.baseUrl, reader.hash, file),
       })),
      prevHref: prev ? `/read/${manga.id}/${prev.id}` : null,
      nextHref: next ? `/read/${manga.id}/${next.id}` : null,

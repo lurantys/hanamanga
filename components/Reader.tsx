@@ -287,9 +287,8 @@ function ReaderImage({
           height={height}
           loading={loading}
           decoding="async"
-          // Page bytes flow through the same-origin /api/atsu-image proxy
-          // (cdn.atsu.moe 403s real-browser image loads); no-referrer is
-          // defense-in-depth, matching the covers.
+          // Atsu pages use a same-origin image proxy because its CDN blocks
+          // browser requests. MangaDex pages load directly from MangaDex.
           referrerPolicy="no-referrer"
           onLoad={() => setLoaded(true)}
           onError={() => setFailed(true)}

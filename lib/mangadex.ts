@@ -552,19 +552,6 @@ export function chapterPageUrl(baseUrl: string, hash: string, file: string): str
   return `${baseUrl}/data/${hash}/${file}`;
 }
 
-const MD_IMAGE_PROXY = "/api/md-image";
-
-/**
- * Same-origin proxy URL for a MangaDex chapter page. At-home base URLs
- * carry a temporary server assignment (~15min), so embedding them in HTML
- * breaks every revisited chapter once reader props go stale — the proxy
- * URL is stable forever and the route resolves a fresh upstream per MISS.
- */
-export function mdPageProxyUrl(chapterId: string, hash: string, file: string): string {
-  const params = new URLSearchParams({ chapter: chapterId, hash, file });
-  return `${MD_IMAGE_PROXY}?${params.toString()}`;
-}
-
 export function chapterLink(chapterId: string): string {
   return `https://mangadex.org/chapter/${chapterId}`;
 }

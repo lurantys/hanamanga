@@ -44,17 +44,6 @@ Discover, read, and track manga, manhwa, manhua, and webtoons — beautifully, o
 
 Hana is deployed and running at **[hanamanga.online](https://hanamanga.online/)** — no setup required.
 
-## Desktop App (Experimental)
-
-Windows (x64) build of Hana with a built-in server. Runs standalone, no setup required.
-
-**BETA - expect bugs.** The web version is the stable experience.
-
-[Download Hana for Windows (x64) - BETA](https://github.com/lurantys/hanamanga/releases/download/v0.1.0-beta/Hana_0.1.0_x64-setup.exe)
-
-- Email/password login works out of the box. Google, AniList, and MAL login require adding `http://127.0.0.1:<port>` as a redirect URL.
-- Build from source with `npm run desktop:build`.
-
 ## Contributing
 
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.

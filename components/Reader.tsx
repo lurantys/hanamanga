@@ -370,7 +370,6 @@ export function Reader({
   const listRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const pagedViewportRef = useRef<HTMLDivElement>(null);
-  const lastZoomRef = useRef(settings.zoom);
   const pageRefs = useRef<(HTMLDivElement | null)[]>([]);
   const advanceTimerRef = useRef(0);
   const navigatingRef = useRef(false);
@@ -438,20 +437,15 @@ export function Reader({
   const isTwoPage = mode === "twopage" && !isMobile;
   const isSinglePage = mode === "paged" || (mode === "twopage" && isMobile);
   const pageStep = isTwoPage ? 2 : 1;
-  // Animated zoom: settings.zoom is the TARGET, displayZoom is what's drawn.
-  // Interpolating between them each frame (Apple-style ease-out) animates
-  // sizer footprint + spread scale + recentering as one smooth motion
-  // instead of jumping between 0.25 steps.
   const [displayZoom, setDisplayZoom] = useState(settings.zoom);
+  const previousDisplayZoomRef = useRef(settings.zoom);
   useLayoutEffect(() => {
     const target = settings.zoom;
     const reduceMotion =
       typeof window !== "undefined" &&
       typeof window.matchMedia === "function" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (mode === "webtoon" || reduceMotion || displayZoom === target) {
-      // Snap without animation. Deferred via rAF: sync setState-in-effect
-      // is a lint error (cascading renders).
+    if (reduceMotion || displayZoom === target) {
       if (displayZoom !== target) {
         const raf = window.requestAnimationFrame(() => setDisplayZoom(target));
         return () => window.cancelAnimationFrame(raf);
@@ -465,8 +459,7 @@ export function Reader({
     const tick = (now: number) => {
       const t = Math.min(1, (now - start) / DURATION);
       const eased = 1 - Math.pow(1 - t, 3);
-      const current =
-        t >= 1 ? target : from + (target - from) * eased;
+      const current = t >= 1 ? target : from + (target - from) * eased;
       setDisplayZoom(current);
       if (t < 1) raf = window.requestAnimationFrame(tick);
     };
@@ -475,21 +468,33 @@ export function Reader({
     // displayZoom intentionally excluded: it updates every frame.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [settings.zoom, mode]);
-  // Paged spreads are zoomed with transform: scale(), which never creates
-  // scrollable overflow — inside an overflow-hidden container anything past
-  // 1x is just cropped with no way to pan to it. When zoomed, let the
-  // viewport scroll instead (child m-auto keeps it centered while it fits
-  // and fully reachable once it overflows).
-  const pagedZoomed = mode !== "webtoon" && displayZoom > 1;
+
+  useLayoutEffect(() => {
+    if (mode !== "webtoon") {
+      previousDisplayZoomRef.current = displayZoom;
+      return;
+    }
+    const previous = previousDisplayZoomRef.current;
+    previousDisplayZoomRef.current = displayZoom;
+    if (previous === displayZoom) return;
+    const el = contentRef.current;
+    if (!el) return;
+    const scrollY = window.scrollY;
+    const contentTop = el.getBoundingClientRect().top + scrollY;
+    const viewportCenter = window.innerHeight / 2;
+    const ratio = displayZoom / previous;
+    const anchoredPosition =
+      contentTop + (scrollY + viewportCenter - contentTop) * ratio;
+    window.scrollTo(0, Math.max(0, anchoredPosition - viewportCenter));
+  }, [displayZoom, mode]);
+
+  const zoomLayoutScale = Math.max(1, settings.zoom, displayZoom);
+  const pagedZoomed = mode !== "webtoon" && zoomLayoutScale > 1;
 
   const spreadRef = useRef<HTMLDivElement>(null);
   const [spreadSize, setSpreadSize] = useState<{ w: number; h: number } | null>(
     null,
   );
-  // Measure the UNSCALED spread (offset* ignores transforms). When zoomed,
-  // the sizer below adopts measured*zoom as real layout, so the zoomed
-  // spread is a true layout box: m-auto centers it exactly and every pixel
-  // is scroll-reachable. ResizeObserver re-measures on image loads/resizes.
   useLayoutEffect(() => {
     const el = spreadRef.current;
     if (!el) {
@@ -507,26 +512,21 @@ export function Reader({
     ro.observe(el);
     return () => ro.disconnect();
   }, [pagedZoomed, pagedIndex, isTwoPage, mode, pages.length]);
-  // Exact layout footprint of the zoomed spread (undefined at 1x / pre-measure).
   const zoomedSize =
     pagedZoomed && spreadSize
       ? {
-          width: Math.max(1, Math.round(spreadSize.w * displayZoom)),
-          height: Math.max(1, Math.round(spreadSize.h * displayZoom)),
+          width: Math.max(1, Math.round(spreadSize.w * zoomLayoutScale)),
+          height: Math.max(1, Math.round(spreadSize.h * zoomLayoutScale)),
         }
       : undefined;
 
-  // Zoom grows from the top-left (the only direction scroll can reach), so
-  // recenter the viewport on every spread/zoom change — otherwise the zoomed
-  // view sits lopsided. Layout effect avoids a visible jump. Re-runs when the
-  // measured sizer lands so centering uses final geometry.
   useLayoutEffect(() => {
     if (!pagedZoomed) return;
     const el = pagedViewportRef.current;
     if (!el) return;
     el.scrollLeft = Math.max(0, (el.scrollWidth - el.clientWidth) / 2);
     el.scrollTop = Math.max(0, (el.scrollHeight - el.clientHeight) / 2);
-  }, [pagedZoomed, displayZoom, pagedIndex, isTwoPage, mode, zoomedSize?.width, zoomedSize?.height]);
+  }, [pagedZoomed, pagedIndex, isTwoPage, mode, zoomedSize?.width, zoomedSize?.height]);
 
   const getPagedIndexFromFraction = useCallback(
     (fraction: number, length: number): number => {
@@ -1195,21 +1195,6 @@ export function Reader({
     controlsTimerRef.current = window.setTimeout(() => setControls(false), 3500);
   }, [isMobile, settingsOpen, open, advanceCount, setControls]);
 
-  useEffect(() => {
-    if (mode !== "webtoon") return;
-    const prev = lastZoomRef.current;
-    if (prev === settings.zoom) return;
-    lastZoomRef.current = settings.zoom;
-    const el = contentRef.current;
-    if (!el) return;
-    const ratio = settings.zoom / prev;
-    const center = window.innerHeight / 2;
-    const elTop = el.getBoundingClientRect().top + window.scrollY;
-    const anchor = window.scrollY + center;
-    const newAnchor = elTop + (anchor - elTop) * ratio;
-    window.scrollTo(0, Math.max(0, newAnchor - center));
-  }, [settings.zoom, mode]);
-
   const nextChapterId = useMemo(() => {
     if (!nextHref) return null;
     const parts = nextHref.split("/");
@@ -1578,7 +1563,7 @@ export function Reader({
               }
             }}
             style={{
-              transform: `scale(${settings.zoom})`,
+              transform: `scale(${displayZoom})`,
               transformOrigin: "top center",
               filter: imageFilterCss,
               gap: settings.webtoonLayout === "continuous" ? 0 : "var(--reader-page-gap)",
@@ -1664,15 +1649,14 @@ export function Reader({
                 ref={spreadRef}
                 className={`flex items-center justify-center gap-2 sm:gap-3 ${
                   settings.direction === "rtl" ? "flex-row-reverse" : ""
-                } ${zoomedSize ? "absolute left-0 top-0" : ""}`}
+                } ${zoomedSize ? "absolute left-1/2 top-1/2" : ""}`}
                 style={{
-                  transform: `scale(${displayZoom})`,
-                  // Top-left only while the measured sizer is active (visual
-                  // must coincide with the sizer box). At/below 1x there is
-                  // no sizer, so keep the default center anchor — otherwise
-                  // zoom-out shrinks lopsided toward the left.
-                  transformOrigin: zoomedSize ? "top left" : "center",
+                  transform: zoomedSize
+                    ? `translate(-50%, -50%) scale(${displayZoom})`
+                    : `scale(${displayZoom})`,
+                  transformOrigin: "center",
                   filter: imageFilterCss,
+                  willChange: "transform",
                 }}
               >
                 {settings.direction === "rtl" && pages[pagedIndex + 1] && (
@@ -1713,8 +1697,15 @@ export function Reader({
             ) : (
               <div
                 ref={spreadRef}
-                className={zoomedSize ? "absolute left-0 top-0" : undefined}
-                style={{ transform: `scale(${displayZoom})`, transformOrigin: zoomedSize ? "top left" : "center", filter: imageFilterCss }}
+                className={zoomedSize ? "absolute left-1/2 top-1/2" : undefined}
+                style={{
+                  transform: zoomedSize
+                    ? `translate(-50%, -50%) scale(${displayZoom})`
+                    : `scale(${displayZoom})`,
+                  transformOrigin: "center",
+                  filter: imageFilterCss,
+                  willChange: "transform",
+                }}
               >
                 <ReaderImage
                   key={pages[pagedIndex]?.id}

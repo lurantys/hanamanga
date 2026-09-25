@@ -4,11 +4,9 @@ import { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { NezukoLoading } from "./NezukoLoading";
 
-// Route loading.tsx only renders when a navigation actually suspends.
-// Cached (ISR) pages resolve instantly, so the overlay would never show.
-// This loader triggers on every SPA navigation instead, with a minimum
-// visible time so it always "kicks off" — even for cached titles.
-const MIN_VISIBLE_MS = 650;
+// Avoid flashing the overlay during fast App Router or browser-history restores.
+// Show it only when navigation has taken long enough for the delay to elapse.
+const SHOW_DELAY_MS = 160;
 const MAX_VISIBLE_MS = 6000;
 
 function sameRoute(a: string, b: string): boolean {
@@ -23,20 +21,23 @@ function NavigationLoaderInner() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [visible, setVisible] = useState(false);
-  const shownAtRef = useRef(0);
-  const hideTimerRef = useRef(0);
+  const showTimerRef = useRef(0);
   const maxTimerRef = useRef(0);
 
+  const routeKey = `${pathname}?${searchParams?.toString() ?? ""}`;
+  const routeKeyRef = useRef(routeKey);
+
   const show = useCallback(() => {
-    shownAtRef.current = Date.now();
-    window.clearTimeout(hideTimerRef.current);
+    window.clearTimeout(showTimerRef.current);
     window.clearTimeout(maxTimerRef.current);
-    setVisible(true);
-    // Safety net: never trap the user behind the overlay.
-    maxTimerRef.current = window.setTimeout(
-      () => setVisible(false),
-      MAX_VISIBLE_MS,
-    );
+    showTimerRef.current = window.setTimeout(() => {
+      setVisible(true);
+      // Safety net: never trap the user behind the overlay.
+      maxTimerRef.current = window.setTimeout(
+        () => setVisible(false),
+        MAX_VISIBLE_MS,
+      );
+    }, SHOW_DELAY_MS);
   }, []);
 
   // Defer setVisible out of history.pushState/replaceState: Next's router
@@ -46,21 +47,13 @@ function NavigationLoaderInner() {
     window.setTimeout(show, 0);
   }, [show]);
 
-  const hide = useCallback(() => {
-    const elapsed = Date.now() - shownAtRef.current;
-    const remaining = Math.max(0, MIN_VISIBLE_MS - elapsed);
-    window.clearTimeout(hideTimerRef.current);
-    hideTimerRef.current = window.setTimeout(() => {
-      window.clearTimeout(maxTimerRef.current);
-      setVisible(false);
-    }, remaining);
-  }, []);
-
-  // The new route has settled — dismiss (honoring the minimum time).
-  const routeKey = `${pathname}?${searchParams?.toString() ?? ""}`;
+  // The new route has settled; cancel a pending overlay or dismiss a visible one.
   useEffect(() => {
-    hide();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    routeKeyRef.current = routeKey;
+    window.clearTimeout(showTimerRef.current);
+    window.clearTimeout(maxTimerRef.current);
+    const timer = window.setTimeout(() => setVisible(false), 0);
+    return () => window.clearTimeout(timer);
   }, [routeKey]);
 
   useEffect(() => {
@@ -94,8 +87,12 @@ function NavigationLoaderInner() {
       return origReplaceState(...args);
     };
 
-    // Back/forward buttons.
-    const onPopState = () => scheduleShow();
+    // Back/forward buttons. Ignore history entries that only change the hash
+    // or restore the same route; they don't need a page-loading overlay.
+    const onPopState = () => {
+      if (routeKeyRef.current === currentRoute()) return;
+      scheduleShow();
+    };
 
     // Instant feedback for link taps (covers the RSC-fetch window before
     // the URL swaps, and navigations where pushState fires late).
@@ -128,7 +125,7 @@ function NavigationLoaderInner() {
       window.removeEventListener("popstate", onPopState);
       window.history.pushState = origPushState;
       window.history.replaceState = origReplaceState;
-      window.clearTimeout(hideTimerRef.current);
+      window.clearTimeout(showTimerRef.current);
       window.clearTimeout(maxTimerRef.current);
     };
   }, [scheduleShow]);

@@ -91,10 +91,15 @@ function NavigationLoaderInner() {
     };
 
     // Back/forward buttons. Ignore history entries that only change the hash
-    // or restore the same route; they don't need a page-loading overlay.
+    // or restore the same route. Browser history already shows its destination
+    // immediately; don't cover it with the app-wide loader while Next restores
+    // the cached route.
     const onPopState = () => {
       if (routeKeyRef.current === currentRoute()) return;
-      scheduleShow();
+      window.clearTimeout(scheduleTimerRef.current);
+      window.clearTimeout(showTimerRef.current);
+      window.clearTimeout(maxTimerRef.current);
+      setVisible(false);
     };
 
     // Instant feedback for link taps (covers the RSC-fetch window before

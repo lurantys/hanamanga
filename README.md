@@ -44,6 +44,19 @@ Discover, read, and track manga, manhwa, manhua, and webtoons — beautifully, o
 
 Hana is deployed and running at **[hanamanga.online](https://hanamanga.online/)** — no setup required.
 
+## Atsu image proxy
+
+The app uses a Cloudflare Worker to serve cached Atsu page and poster images
+outside Vercel. To update the Worker, authenticate Wrangler and run:
+
+```sh
+npx wrangler deploy --config wrangler.atsu.jsonc
+```
+
+The deployed Worker URL is the app default. Set
+`NEXT_PUBLIC_ATSU_IMAGE_PROXY_URL` only when overriding it. The Vercel
+`/api/atsu-image` route remains as a local or desktop fallback option.
+
 ## Contributing
 
 Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.

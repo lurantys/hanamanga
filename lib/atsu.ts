@@ -347,11 +347,16 @@ export async function fetchAtsuChapter(
   };
 }
 
-const ATSU_IMAGE_PROXY = "/api/atsu-image";
+// Serve Atsu bytes through a cached Worker outside Vercel by default. The
+// environment override can select the same-origin route for local/desktop use.
+const ATSU_IMAGE_PROXY =
+  process.env.NEXT_PUBLIC_ATSU_IMAGE_PROXY_URL?.replace(/\/+$/, "") ||
+  "https://hana-atsu-image-proxy.a-nhaila.workers.dev";
 
 /** Same-origin proxy path for an immutable cdn.atsu.moe file. */
 function atsuProxiedUrl(cdnPath: string): string {
-  return `${ATSU_IMAGE_PROXY}?u=${encodeURIComponent(cdnPath)}`;
+  const separator = ATSU_IMAGE_PROXY.startsWith("/") ? "" : "/";
+  return `${ATSU_IMAGE_PROXY}${separator}?u=${encodeURIComponent(cdnPath)}`;
 }
 
 export function atsuPageUrl(page: { image: string }): string {

@@ -8,8 +8,10 @@ type ReadPageProps = {
   params: Promise<{ mangaId: string; chapterId: string }>;
 };
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+// Reader content is public and its provider data is cached for five minutes.
+// ISR also keeps MangaDex's temporary image assignment well inside its
+// ~15-minute validity window while avoiding a Function render per page view.
+export const revalidate = 300;
 
 export async function generateMetadata({
   params,

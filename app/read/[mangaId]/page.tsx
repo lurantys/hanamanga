@@ -2,8 +2,9 @@ import type { Metadata } from "next";
 import { notFound, redirect } from "next/navigation";
 import { resolveFirstChapter } from "@/lib/read";
 
-export const dynamic = "force-dynamic";
-export const revalidate = 0;
+// The first-chapter lookup is public and can be served from ISR between
+// updates instead of invoking a Function for every reader entry.
+export const revalidate = 300;
 
 export const metadata: Metadata = { title: "Read | Hana" };
 

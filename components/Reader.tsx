@@ -1200,15 +1200,6 @@ export function Reader({
     return parts[parts.length - 1] ?? null;
   }, [nextHref]);
 
-  const prefetchedNextRef = useRef<string | null>(null);
-
-  useEffect(() => {
-    if (nextHref && prefetchedNextRef.current !== nextHref) {
-      prefetchedNextRef.current = nextHref;
-      router.prefetch(nextHref);
-    }
-  }, [router, nextHref]);
-
   const preloadedChapterRef = useRef<string | null>(null);
 
   useEffect(() => {

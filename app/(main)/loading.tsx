@@ -1,5 +1,5 @@
-import { NezukoLoading } from "@/components/NezukoLoading";
+import { RouteSkeleton } from "@/components/RouteSkeleton";
 
 export default function MainLoading() {
-  return <NezukoLoading label="Loading…" />;
+  return <RouteSkeleton />;
 }

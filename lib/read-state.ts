@@ -1,5 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { createStorageStore, type StorageStore } from "./storage";
+import { setLibraryStatus } from "./library";
+import { getProgress } from "./progress";
 
 export const READ_STORAGE_KEY = "hana:read-chapters";
 export const READ_EVENT = "hana:read-chapters-updated";
@@ -125,16 +127,18 @@ const finishedStore = createStorageStore<FinishedMap>(
 
 export function markMangaRead(mangaId: string): void {
   const map = finishedStore.getSnapshot();
-  if (map[mangaId]) return;
-  finishedStore.setSnapshot({ ...map, [mangaId]: Date.now() });
+  if (!map[mangaId]) finishedStore.setSnapshot({ ...map, [mangaId]: Date.now() });
+  setLibraryStatus(mangaId, "read");
 }
 
 export function markMangaUnread(mangaId: string): void {
   const map = finishedStore.getSnapshot();
-  if (!map[mangaId]) return;
-  const next = { ...map };
-  delete next[mangaId];
-  finishedStore.setSnapshot(next);
+  if (map[mangaId]) {
+    const next = { ...map };
+    delete next[mangaId];
+    finishedStore.setSnapshot(next);
+  }
+  setLibraryStatus(mangaId, getProgress(mangaId) ? "reading" : "to_read");
 }
 
 export function isMangaRead(mangaId: string): boolean {

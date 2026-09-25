@@ -339,15 +339,24 @@ type LibraryRow = {
   manga_id: string;
   manga: unknown;
   added_at: number;
+  library_status?: "to_read" | "reading" | "read";
   provider_state: ProviderState | null;
 };
 
 async function readLibrary(userId: string): Promise<Map<string, LibraryRow>> {
   const supabase = await createClient();
-  const { data } = await supabase
+  const primaryResult = await supabase
     .from("hana_library")
-    .select("manga_id, manga, added_at, provider_state")
+    .select("manga_id, manga, added_at, library_status, provider_state")
     .eq("user_id", userId);
+  let data = primaryResult.data as LibraryRow[] | null;
+  if (!data) {
+    const fallbackResult = await supabase
+      .from("hana_library")
+      .select("manga_id, manga, added_at, provider_state")
+      .eq("user_id", userId);
+    data = fallbackResult.data as LibraryRow[] | null;
+  }
   const map = new Map<string, LibraryRow>();
   for (const row of (data ?? []) as LibraryRow[]) {
     map.set(row.manga_id, row);
@@ -401,9 +410,9 @@ async function pushToProvider(
         const status =
           provider === "anilist"
             ? (state.mal?.status ? MAL_TO_ANILIST_STATUS[state.mal.status] : undefined) ??
-              "CURRENT"
+              ({ to_read: "PLANNING", reading: "CURRENT", read: "COMPLETED" }[row.library_status ?? "to_read"])
             : (state.anilist?.status ? ANILIST_TO_MAL_STATUS[state.anilist.status] : undefined) ??
-              "reading";
+              ({ to_read: "plan_to_read", reading: "reading", read: "completed" }[row.library_status ?? "to_read"]);
         if (provider === "anilist") {
           await saveAniListEntry(token, mediaId, status, progress);
         } else {
@@ -427,8 +436,11 @@ async function pushToProvider(
           provider === "mal" && state.anilist?.status
             ? ANILIST_TO_MAL_STATUS[state.anilist.status]
             : undefined;
-        const status = authoritativeStatus ?? existing.status ?? (provider === "anilist" ? "CURRENT" : "reading");
-        const statusChanged = authoritativeStatus != null && status !== existing.status;
+        const localStatus = provider === "anilist"
+          ? ({ to_read: "PLANNING", reading: "CURRENT", read: "COMPLETED" }[row.library_status ?? "to_read"])
+          : ({ to_read: "plan_to_read", reading: "reading", read: "completed" }[row.library_status ?? "to_read"]);
+        const status = authoritativeStatus ?? localStatus;
+        const statusChanged = status !== existing.status;
         const progressChanged =
           progress != null &&
           progress !== existing.pushedProgress &&
@@ -521,6 +533,7 @@ async function pullFromProvider(
     manga_id: string;
     manga: unknown;
     added_at: number;
+    library_status: "to_read" | "reading" | "read";
     provider_state: ProviderState;
   }[] = [];
   const seen = new Set<string>();
@@ -533,11 +546,30 @@ async function pullFromProvider(
 
     const state: ProviderState = existing?.provider_state ?? {};
     const prev = state[provider];
+    const statusForLocal = (status?: string): "to_read" | "reading" | "read" | undefined => {
+      if (status === "COMPLETED" || status === "completed") return "read";
+      if (status === "CURRENT" || status === "reading") return "reading";
+      if (status === "PLANNING" || status === "plan_to_read") return "to_read";
+      return undefined;
+    };
+    const previousSyncedStatus = provider === "mal"
+      ? statusForLocal(state.anilist?.status) ?? statusForLocal(prev?.status)
+      : statusForLocal(prev?.status);
+    const locallyChangedStatus = Boolean(
+      existing?.library_status && previousSyncedStatus &&
+      existing.library_status !== previousSyncedStatus,
+    );
+    const importedStatus = locallyChangedStatus
+      ? existing?.library_status
+      : provider === "mal"
+      ? statusForLocal(state.anilist?.status) ?? statusForLocal(entry.status)
+      : statusForLocal(entry.status);
     upserts.push({
       user_id: userId,
       manga_id: targetId,
       manga: existing?.manga ?? entry.manga,
       added_at: existing?.added_at ?? Date.now(),
+      library_status: importedStatus ?? existing?.library_status ?? "to_read",
       provider_state: {
         ...state,
         [provider]: {
@@ -554,7 +586,17 @@ async function pullFromProvider(
     const { error } = await supabase.from("hana_library").upsert(upserts, {
       onConflict: "user_id,manga_id",
     });
-    if (error) throw error;
+    if (error) {
+      const legacyUpserts = upserts.map((row) => {
+        const { library_status, ...legacyRow } = row;
+        void library_status;
+        return legacyRow;
+      });
+      const { error: legacyError } = await supabase.from("hana_library").upsert(legacyUpserts, {
+        onConflict: "user_id,manga_id",
+      });
+      if (legacyError) throw legacyError;
+    }
   }
 
   const toDelete: string[] = [];

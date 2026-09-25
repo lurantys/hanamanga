@@ -164,6 +164,7 @@ async function importMAL(
     manga_id: string;
     manga: unknown;
     added_at: number;
+    library_status: "to_read" | "reading" | "read";
   }[] = [];
   const now = Date.now();
 
@@ -187,6 +188,7 @@ async function importMAL(
       manga_id: manga.id,
       manga,
       added_at: now - matched,
+      library_status: item.status === "completed" ? "read" : item.status === "reading" || item.status === "rereading" ? "reading" : "to_read",
     });
   }
 
@@ -194,7 +196,17 @@ async function importMAL(
     const { error } = await supabase.from("hana_library").upsert(rows, {
       onConflict: "user_id,manga_id",
     });
-    if (error) return { ok: false, imported: 0, error: "database_error" };
+    if (error) {
+      const legacyRows = rows.map((row) => {
+        const { library_status, ...legacyRow } = row;
+        void library_status;
+        return legacyRow;
+      });
+      const { error: legacyError } = await supabase.from("hana_library").upsert(legacyRows, {
+        onConflict: "user_id,manga_id",
+      });
+      if (legacyError) return { ok: false, imported: 0, error: "database_error" };
+    }
   }
   return { ok: true, imported: matched };
 }

@@ -39,9 +39,12 @@ export function AtsuChapterList({
   defaultScanlatorId,
 }: AtsuChapterListProps) {
   const preferred = usePreferredScanlator(mangaId);
-  const selected = scanlators.some((scanlator) => scanlator.id === preferred)
+  const availableScanlators = scanlators.filter((scanlator) =>
+    chapters.some((chapter) => chapter.scanlationMangaId === scanlator.id),
+  );
+  const selected = availableScanlators.some((scanlator) => scanlator.id === preferred)
     ? preferred
-    : (defaultScanlatorId ?? scanlators[0]?.id ?? "");
+    : (availableScanlators.find((scanlator) => scanlator.id === defaultScanlatorId)?.id ?? availableScanlators[0]?.id ?? "");
   const [query, setQuery] = useState("");
   const [order, setOrder] = useState<"newest" | "oldest">("newest");
   const [revealed, setRevealed] = useState(BATCH);
@@ -57,9 +60,6 @@ export function AtsuChapterList({
     const onProgress = () => {
       const p = getProgress(mangaId);
       const s = p ? chapters.find((c) => c.id === p.chapterId)?.scanlationMangaId : null;
-      if (s && s !== getProgress(mangaId)?.chapterId) {
-        // handled above
-      }
       if (s && s !== selected) {
         setPreferredScanlator(mangaId, s);
       }
@@ -137,7 +137,7 @@ export function AtsuChapterList({
     return () => observer.disconnect();
   }, [hasMore, orderedChapters.length, revealed]);
 
-  const hasMultipleScanlators = scanlators.length > 1;
+  const hasMultipleScanlators = availableScanlators.length > 1;
   const readCount = groupChapters.filter((chapter) =>
     readChapters.has(chapter.id),
   ).length;
@@ -146,22 +146,35 @@ export function AtsuChapterList({
     <div className="space-y-4">
       <div className="flex flex-wrap items-center gap-3">
         {hasMultipleScanlators ? (
-          <div className="flex flex-wrap gap-2">
-            {scanlators.map((scanlator) => (
+          <div className="w-full space-y-2">
+            <div>
+              <p className="text-sm font-semibold text-zinc-200">Translation group</p>
+              <p className="text-xs text-zinc-500">Groups are separate chapter translations. Choose one with chapters available; your reading progress is saved per chapter.</p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+            {availableScanlators.map((scanlator) => (
+              (() => {
+                const count = chapters.filter((chapter) => chapter.scanlationMangaId === scanlator.id).length;
+                return (
               <button
                 key={scanlator.id}
                 type="button"
                 onClick={() => setPreferredScanlator(mangaId, scanlator.id)}
+                disabled={count === 0}
                 aria-pressed={selected === scanlator.id}
+                title={`${scanlator.name}: ${count} ${count === 1 ? "chapter" : "chapters"}`}
                 className={`rounded-full border px-3 py-1 text-xs font-semibold transition-colors duration-200 ${focusRing} ${
                   selected === scanlator.id
                     ? "border-red-400/60 bg-red-500/15 text-red-300"
                     : "border-white/10 bg-zinc-800/60 text-zinc-400 hover:text-white"
-                }`}
+                } disabled:cursor-not-allowed disabled:opacity-40`}
               >
-                {scanlator.name}
+                {scanlator.name} <span className="ml-1 opacity-70">{count}</span>
               </button>
+                );
+              })()
             ))}
+            </div>
           </div>
         ) : (
           <span />
@@ -238,6 +251,11 @@ export function AtsuChapterList({
             />
           </label>
       </div>
+      {selected && groupChapters.length === 0 && (
+        <p role="status" className="rounded-lg border border-white/10 bg-zinc-900/60 px-4 py-3 text-sm text-zinc-400">
+          This translation group has no chapters available right now. Choose another group above.
+        </p>
+      )}
 
       {groupChapters.length > 0 && readCount > 0 && (
         <p className="text-xs text-zinc-500">

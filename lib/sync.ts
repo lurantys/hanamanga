@@ -15,6 +15,7 @@ import {
   type ProgressEntry,
 } from "./progress";
 import {
+  getFinishedSnapshot,
   getReadSnapshot,
   replaceReadState,
   removeReadManga,
@@ -44,6 +45,7 @@ type LibraryRow = {
   manga_id: string;
   manga: unknown;
   added_at: number;
+  library_status?: "to_read" | "reading" | "read";
 };
 
 type ProgressRow = {
@@ -117,16 +119,29 @@ function sameJson(a: unknown, b: unknown): boolean {
 async function pushLibrary(userId: string): Promise<void> {
   const supabase = createClient();
   const map = getLibrarySnapshot();
+  const finished = getFinishedSnapshot();
+  const progress = getAllProgress();
   const rows = Object.entries(map).map(([mangaId, entry]) => ({
     user_id: userId,
     manga_id: mangaId,
     manga: entry.manga,
     added_at: entry.addedAt,
+    library_status: entry.status ?? (finished[mangaId] ? "read" : progress[mangaId] ? "reading" : "to_read"),
   }));
   if (rows.length) {
-    await supabase.from("hana_library").upsert(rows, {
+    const { error } = await supabase.from("hana_library").upsert(rows, {
       onConflict: "user_id,manga_id",
     });
+    if (error && /library_status|column/i.test(error.message)) {
+      const legacyRows = rows.map((row) => {
+        const { library_status, ...legacyRow } = row;
+        void library_status;
+        return legacyRow;
+      });
+      await supabase.from("hana_library").upsert(legacyRows, {
+        onConflict: "user_id,manga_id",
+      });
+    }
   }
   const removed = [...lastPushedLibrary].filter((id) => !(id in map));
   if (removed.length) {
@@ -261,10 +276,16 @@ export async function pushAll(userId: string): Promise<void> {
 
 async function pullLibrary(userId: string): Promise<void> {
   const supabase = createClient();
-  const { data } = await supabase
+  let { data } = await supabase
     .from("hana_library")
-    .select("manga_id, manga, added_at")
+    .select("manga_id, manga, added_at, library_status")
     .eq("user_id", userId);
+  if (!data) {
+    ({ data } = await supabase
+      .from("hana_library")
+      .select("manga_id, manga, added_at")
+      .eq("user_id", userId));
+  }
   if (!data) return;
   const local = getLibrarySnapshot();
   const merged: LibraryMap = { ...local };
@@ -276,9 +297,14 @@ async function pullLibrary(userId: string): Promise<void> {
       merged[row.manga_id] = {
         manga: normalized,
         addedAt: row.added_at,
+        status: row.library_status ?? "to_read",
       };
-    } else if (existing.manga.id !== row.manga_id) {
-      merged[row.manga_id] = { ...existing, manga: normalized };
+    } else {
+      merged[row.manga_id] = {
+        ...existing,
+        manga: existing.manga.id !== row.manga_id ? normalized : existing.manga,
+        status: row.library_status ?? existing.status ?? "to_read",
+      };
     }
   }
   for (const id of Object.keys(merged)) lastPushedLibrary.add(id);
@@ -390,16 +416,23 @@ export async function pullAll(userId: string): Promise<void> {
 /** Replace the local library with the current DB contents (prunes merged/deleted rows). */
 async function refreshLibrary(userId: string): Promise<void> {
   const supabase = createClient();
-  const { data } = await supabase
+  let { data } = await supabase
     .from("hana_library")
-    .select("manga_id, manga, added_at")
+    .select("manga_id, manga, added_at, library_status")
     .eq("user_id", userId);
+  if (!data) {
+    ({ data } = await supabase
+      .from("hana_library")
+      .select("manga_id, manga, added_at")
+      .eq("user_id", userId));
+  }
   if (!data) return;
   const next: LibraryMap = {};
   for (const row of data as LibraryRow[]) {
     next[row.manga_id] = {
       manga: row.manga as LibraryMap[string]["manga"],
       addedAt: row.added_at,
+      status: row.library_status ?? "to_read",
     };
   }
   if (!sameJson(getLibrarySnapshot(), next)) replaceLibrary(next);

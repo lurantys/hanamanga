@@ -62,12 +62,13 @@ function thumbUrl(coverUrl?: string | null): string | null {
 
 type SortKey = "added" | "updated" | "title" | "rating" | "released";
 type View = "grid" | "list";
-type FilterKey = "all" | "reading" | "finished";
+type FilterKey = "all" | "to_read" | "reading" | "finished";
 
 const FILTERS: { key: FilterKey; label: string }[] = [
   { key: "all", label: "Library" },
+  { key: "to_read", label: "To Read" },
   { key: "reading", label: "Reading" },
-  { key: "finished", label: "Finished" },
+  { key: "finished", label: "Read" },
 ];
 
 const SORTS: { key: SortKey; label: string }[] = [
@@ -495,8 +496,10 @@ export default function LibraryPage() {
     const list = allEntries.filter(({ manga }) => {
       if (term && !manga.title.toLowerCase().includes(term)) return false;
       const isRead = Boolean(finished[manga.id]);
-      if (filter === "finished") return isRead;
-      if (filter === "reading") return !isRead && Boolean(progress[manga.id]);
+      const status = isRead ? "read" : (library[manga.id]?.status ?? (progress[manga.id] ? "reading" : "to_read"));
+      if (filter === "finished") return status === "read";
+      if (filter === "reading") return status === "reading";
+      if (filter === "to_read") return status === "to_read";
       return true;
     });
     switch (sort) {
@@ -791,7 +794,7 @@ export default function LibraryPage() {
           )
         ) : view === "grid" ? (
           <div className="grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-            {filtered.map(({ manga, addedAt }) => {
+            {filtered.map(({ manga, addedAt, status: libraryStatus }) => {
               const mangaProgress = progress[manga.id];
               const pct = mangaProgress
                 ? Math.round(
@@ -799,7 +802,13 @@ export default function LibraryPage() {
                       mangaProgress.scrollFraction) * 100,
                   )
                 : null;
-              const isRead = Boolean(finished[manga.id]);
+              const isRead = Boolean(finished[manga.id]) || libraryStatus === "read";
+              const currentStatus = isRead ? "read" : libraryStatus ?? (mangaProgress ? "reading" : "to_read");
+              const cardMeta = currentStatus === "read"
+                ? "Read"
+                : currentStatus === "reading"
+                  ? (mangaProgress ? `Continue · ${mangaProgress.chapterLabel}` : "Reading")
+                  : `To Read · Added ${new Date(addedAt).toLocaleDateString()}`;
               return (
                 <GridCard
                   key={manga.id}
@@ -819,13 +828,7 @@ export default function LibraryPage() {
                         : manga.title
                   }
                   progressPct={pct}
-                  meta={
-                    isRead
-                      ? "Finished"
-                      : mangaProgress
-                        ? `Continue · ${mangaProgress.chapterLabel}`
-                        : `Added ${new Date(addedAt).toLocaleDateString()}`
-                  }
+                  meta={manga.rating != null ? `${cardMeta} · ★ ${manga.rating.toFixed(1)}` : cardMeta}
                   isRead={isRead}
                   onToggleRead={() =>
                     isRead
@@ -867,7 +870,7 @@ export default function LibraryPage() {
           </div>
         ) : (
           <div className="flex flex-col gap-2">
-            {filtered.map(({ manga, addedAt }) => {
+            {filtered.map(({ manga, addedAt, status: libraryStatus }) => {
               const mangaProgress = progress[manga.id];
               const pct = mangaProgress
                 ? Math.round(
@@ -875,14 +878,16 @@ export default function LibraryPage() {
                       mangaProgress.scrollFraction) * 100,
                   )
                 : null;
-              const isRead = Boolean(finished[manga.id]);
+              const isRead = Boolean(finished[manga.id]) || libraryStatus === "read";
+              const currentStatus = isRead ? "read" : libraryStatus ?? (mangaProgress ? "reading" : "to_read");
               const metaBits = [
-                isRead
-                  ? "Finished"
-                  : mangaProgress
-                    ? `Continue · ${mangaProgress.chapterLabel}`
-                    : `Added ${new Date(addedAt).toLocaleDateString()}`,
+                currentStatus === "read"
+                  ? "Read"
+                  : currentStatus === "reading"
+                    ? (mangaProgress ? `Continue · ${mangaProgress.chapterLabel}` : "Reading")
+                    : `To Read · Added ${new Date(addedAt).toLocaleDateString()}`,
               ];
+              if (manga.rating != null) metaBits.push(`★ ${manga.rating.toFixed(1)}`);
               const status = statusLabel(manga.status);
               if (status) metaBits.push(status);
               if (manga.year) metaBits.push(String(manga.year));

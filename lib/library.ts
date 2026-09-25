@@ -4,7 +4,10 @@ import { createStorageStore, type StorageStore } from "./storage";
 export type LibraryEntry = {
   manga: Manga;
   addedAt: number;
+  status?: LibraryStatus;
 };
+
+export type LibraryStatus = "to_read" | "reading" | "read";
 
 type LibraryMap = Record<string, LibraryEntry>;
 
@@ -46,8 +49,16 @@ export function toggleLibrary(manga: Manga): void {
   if (map[manga.id]) {
     delete map[manga.id];
   } else {
-    map[manga.id] = { manga, addedAt: Date.now() };
+    map[manga.id] = { manga, addedAt: Date.now(), status: "to_read" };
   }
+  store.setSnapshot(map);
+}
+
+export function setLibraryStatus(mangaId: string, status: LibraryStatus): void {
+  const map = { ...store.getSnapshot() };
+  const entry = map[mangaId];
+  if (!entry || entry.status === status) return;
+  map[mangaId] = { ...entry, status };
   store.setSnapshot(map);
 }
 

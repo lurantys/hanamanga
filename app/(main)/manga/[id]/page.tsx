@@ -395,21 +395,6 @@ export default async function MangaPage({ params }: MangaPageProps) {
     </div>
   );
 
-  const ratingDisplay = showRating && (
-    <div className="flex items-center justify-center gap-1.5 md:justify-start">
-      <StarRating
-        sizeClass="h-4 w-4"
-        className={ratingTextClass[ratingTier(rating)]}
-      />
-      <span
-        className={`text-sm font-semibold ${ratingTextClass[ratingTier(rating)]}`}
-      >
-        {rating.toFixed(1)}
-      </span>
-      <span className="text-sm text-zinc-500">/ 10</span>
-    </div>
-  );
-
   return (
     <main className="bg-zinc-950 pb-24">
       {/* ===== Banner ===== */}
@@ -524,7 +509,7 @@ export default async function MangaPage({ params }: MangaPageProps) {
         )}
 
         {/* Details card — grouped metadata, centered items */}
-        {(primaryAuthor || showRating || links.length > 0 || manga.links?.al) && (
+        {(primaryAuthor || links.length > 0 || manga.links?.al) && (
           <div className="mx-auto mt-6 max-w-lg space-y-3 rounded-2xl border border-white/[0.06] bg-white/[0.03] px-4 py-4">
             {primaryAuthor && (
               <div className="flex items-center justify-center gap-2">
@@ -554,7 +539,6 @@ export default async function MangaPage({ params }: MangaPageProps) {
                 ) : null}
               </div>
             )}
-            {showRating && ratingDisplay}
             {manga.links?.al && (
               <div className="flex justify-center">
                 {charactersLink}
@@ -662,7 +646,6 @@ export default async function MangaPage({ params }: MangaPageProps) {
             {/* Grouped metadata */}
             <div className="space-y-3">
               {authorSection}
-              {showRating && ratingDisplay}
               {charactersLink}
               {externalLinksSection}
             </div>

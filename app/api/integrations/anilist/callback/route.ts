@@ -127,7 +127,7 @@ const QUERY = /* GraphQL */ `
 
 async function fetchAniListList(
   accessToken: string,
-): Promise<{ ok: boolean; items: Manga[]; error?: string }> {
+): Promise<{ ok: boolean; items: { manga: Manga; status?: string; progress?: number }[]; error?: string }> {
   let userId: number;
   try {
     userId = await fetchAniListViewerId(accessToken);
@@ -155,13 +155,13 @@ async function fetchAniListList(
     json.data.MediaListCollection.lists?.flatMap((list) => list.entries ?? []) ??
     [];
   const items = entries
-    .filter((entry): entry is { media: AniListMedia } => Boolean(entry.media))
+    .filter((entry): entry is { status?: string; progress?: number; media: AniListMedia } => Boolean(entry.media))
     .filter((entry) => !entry.media.isAdult)
     .filter(
       (entry) =>
         entry.media.format !== "NOVEL" && entry.media.format !== "ONE_SHOT",
     )
-    .map((entry) => anilistToManga(entry.media));
+    .map((entry) => ({ manga: anilistToManga(entry.media), status: entry.status, progress: entry.progress }));
   return { ok: true, items };
 }
 
@@ -179,17 +179,20 @@ async function importAniList(
     manga_id: string;
     manga: unknown;
     added_at: number;
+    library_status: "to_read" | "reading" | "read";
   }[] = [];
   const now = Date.now();
 
   let matched = 0;
-  for (const manga of list.items) {
+  for (const entry of list.items) {
     matched++;
+    const manga = entry.manga;
     rows.push({
       user_id: userId,
       manga_id: manga.id,
       manga,
       added_at: now - matched,
+      library_status: entry.status === "COMPLETED" ? "read" : entry.status === "CURRENT" || entry.status === "REPEATING" ? "reading" : "to_read",
     });
   }
 
@@ -197,7 +200,17 @@ async function importAniList(
     const { error } = await supabase.from("hana_library").upsert(rows, {
       onConflict: "user_id,manga_id",
     });
-    if (error) return { ok: false, imported: 0, error: "database_error" };
+    if (error) {
+      const legacyRows = rows.map((row) => {
+        const { library_status, ...legacyRow } = row;
+        void library_status;
+        return legacyRow;
+      });
+      const { error: legacyError } = await supabase.from("hana_library").upsert(legacyRows, {
+        onConflict: "user_id,manga_id",
+      });
+      if (legacyError) return { ok: false, imported: 0, error: "database_error" };
+    }
   }
   return { ok: true, imported: matched };
 }

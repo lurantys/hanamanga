@@ -1,4 +1,5 @@
 import { normalizeTitleKey } from "./title";
+import { getLibrarySnapshot, setLibraryStatus } from "./library";
 
 export type ProgressEntry = {
   mangaId: string;
@@ -105,6 +106,13 @@ export function saveProgress(entry: ProgressEntry): void {
   const map = readAll();
   map[entry.mangaId] = entry;
   writeAll(map);
+  // Reading progress promotes a saved title to Reading; never add unsaved
+  // titles to the library as a side effect of opening the reader.
+  // Reading after completion keeps the user's explicit Read state until
+  // they choose Mark as unread.
+  if (getLibrarySnapshot()[entry.mangaId]?.status !== "read") {
+    setLibraryStatus(entry.mangaId, "reading");
+  }
 }
 
 export function getProgress(

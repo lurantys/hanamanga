@@ -1,5 +1,5 @@
-import { NezukoLoading } from "@/components/NezukoLoading";
+import { RouteSkeleton } from "@/components/RouteSkeleton";
 
 export default function ReadLoading() {
-  return <NezukoLoading label="Loading chapter…" />;
+  return <RouteSkeleton kind="reader" />;
 }

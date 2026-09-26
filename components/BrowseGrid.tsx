@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Image from "next/image";
 import { MangaCard } from "./MangaCard";
 import { MangaGridSkeleton } from "./MangaCardSkeleton";
 import { EmptyState } from "./EmptyState";
@@ -115,9 +116,14 @@ export function BrowseGrid({
     return (
       <EmptyState
         art={
-          <span className="text-5xl" aria-hidden>
-            🔍
-          </span>
+          <Image
+            src="/noresult.gif"
+            alt="A clueless anime girl, searching for something that is not there"
+            width={200}
+            height={216}
+            unoptimized
+            className="h-40 w-auto rounded-2xl object-cover"
+          />
         }
         title="Nothing here yet"
         description="Try a different genre, status, or sort order."

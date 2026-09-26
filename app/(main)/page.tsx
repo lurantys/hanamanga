@@ -10,6 +10,7 @@ import {
   getTrending,
   getWebtoons,
   getManhua,
+  getManga,
 } from "@/lib/read";
 import type { Manga } from "@/lib/mangadex";
 
@@ -78,6 +79,19 @@ async function ManhuaRow() {
   return <MangaRow title="Manhua" manga={manga} />;
 }
 
+async function MangaRowSection() {
+  let manga: Manga[] = [];
+  try {
+    manga = await getManga(18);
+  } catch {
+    // fall back to the unavailable state below
+  }
+  if (manga.length === 0) {
+    return <RowUnavailable title="Manga" />;
+  }
+  return <MangaRow title="Manga" manga={manga} />;
+}
+
 function RowSkeleton({ title }: { title: string }) {
   return (
     <section aria-hidden>
@@ -128,6 +142,10 @@ export default function Home() {
 
         <RecommendedRow />
         <NewChaptersRow />
+
+        <Suspense fallback={<RowSkeleton title="Manga" />}>
+          <MangaRowSection />
+        </Suspense>
 
         <Suspense fallback={<RowSkeleton title="Webtoons & Manhwa" />}>
           <WebtoonsRow />

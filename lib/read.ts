@@ -134,6 +134,13 @@ const cachedManhuaAl = unstable_cache(
   { revalidate: HOME_ROWS_REVALIDATE, tags: ["home-manhua"] },
 );
 
+const cachedMangaAl = unstable_cache(
+  async (limit = 18): Promise<MangaListResult> =>
+    fetchAniListList({ limit, sort: "popular", origin: "JP" }),
+  ["home-manga-al"],
+  { revalidate: HOME_ROWS_REVALIDATE, tags: ["home-manga"] },
+);
+
 /**
  * Home KR/CN rows are AniList-first while AniList is up (AniList excludes
  * NOVEL/ONE_SHOT from list queries, so no text novels). When AniList is
@@ -152,6 +159,13 @@ export const getManhua = cache(async (limit = 18) => {
     return (await cachedManhuaAl(limit)).data;
   } catch {
     return getAtsuRow("Manhua", limit);
+  }
+});
+export const getManga = cache(async (limit = 18) => {
+  try {
+    return (await cachedMangaAl(limit)).data;
+  } catch {
+    return getAtsuRow("Manga", limit);
   }
 });
 

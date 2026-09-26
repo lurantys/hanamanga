@@ -1,4 +1,5 @@
 import { toMangaId } from "./source";
+import { GENRES } from "./genres";
 import type { Manga, MangaListResult } from "./mangadex";
 
 const API = "https://graphql.anilist.co";
@@ -18,6 +19,7 @@ export type AniListMedia = {
   coverImage?: { large?: string | null; extraLarge?: string | null } | null;
   bannerImage?: string | null;
   genres?: string[] | null;
+  tags?: { name?: string | null }[] | null;
   averageScore?: number | null;
   popularity?: number | null;
   status?: string | null;
@@ -83,6 +85,7 @@ const LIST_QUERY = /* GraphQL */ `
     $sort: [MediaSort]
     $search: String
     $genre_in: [String]
+    $tag_in: [String]
     $status: MediaStatus
     $isAdult: Boolean
     $ids: [Int]
@@ -98,6 +101,7 @@ const LIST_QUERY = /* GraphQL */ `
         search: $search
         sort: $sort
         genre_in: $genre_in
+        tag_in: $tag_in
         status: $status
         isAdult: $isAdult
         id_in: $ids
@@ -113,10 +117,24 @@ const LIST_QUERY = /* GraphQL */ `
   }
 `;
 
+// AniList separates genres from tags. Browse's extended filter list includes
+// both, so tag-only selections such as Isekai must use tag_in.
+const ANILIST_GENRE_NAMES = new Set([
+  "Action", "Adventure", "Comedy", "Drama", "Ecchi", "Fantasy", "Hentai",
+  "Horror", "Mahou Shoujo", "Mecha", "Music", "Mystery", "Psychological",
+  "Romance", "Sci-Fi", "Slice of Life", "Sports", "Supernatural", "Thriller",
+]);
+const BROWSE_GENRE_TO_ANILIST = new Map([["Magical Girls", "Mahou Shoujo"]]);
+const ANILIST_GENRE_TO_BROWSE = new Map(
+  [...BROWSE_GENRE_TO_ANILIST].map(([browse, anilist]) => [anilist, browse]),
+);
+const BROWSE_GENRE_NAMES = new Set(GENRES.map(({ name }) => name));
+
 const MEDIA_QUERY = /* GraphQL */ `
   query CatalogMedia($id: Int) {
     Media(id: $id, type: MANGA) {
       ${ANILIST_MEDIA_FIELDS}
+      tags { name }
       staff {
         edges {
           role
@@ -449,13 +467,22 @@ export function anilistToManga(media: AniListMedia): Manga {
         }))
     : undefined;
 
+  const mappedGenres = (media.genres ?? []).map(
+    (genre) => BROWSE_GENRE_TO_ANILIST.get(genre) ?? genre,
+  );
+  for (const tag of media.tags ?? []) {
+    if (!tag.name) continue;
+    const name = ANILIST_GENRE_TO_BROWSE.get(tag.name) ?? tag.name;
+    if (BROWSE_GENRE_NAMES.has(name)) mappedGenres.push(name);
+  }
+
   return {
     id: toMangaId("al", String(media.id)),
     title,
     altTitles: altTitles.length ? [...new Set(altTitles)] : undefined,
     description: media.description ?? undefined,
     coverUrl: media.coverImage?.large ?? media.coverImage?.extraLarge ?? null,
-    genres: media.genres ?? [],
+    genres: [...new Set(mappedGenres)],
     rating: media.averageScore != null ? media.averageScore / 10 : undefined,
     follows: media.popularity ?? undefined,
     year: media.startDate?.year ?? undefined,
@@ -498,7 +525,17 @@ export async function fetchAniListList(opts: {
     : opts.genre
       ? [opts.genre]
       : [];
-  if (genres.length) variables.genre_in = genres;
+  if (genres.length) {
+    const anilistGenres: string[] = [];
+    const anilistTags: string[] = [];
+    for (const selected of genres) {
+      const genre = BROWSE_GENRE_TO_ANILIST.get(selected) ?? selected;
+      if (ANILIST_GENRE_NAMES.has(genre)) anilistGenres.push(genre);
+      else anilistTags.push(selected);
+    }
+    if (anilistGenres.length) variables.genre_in = anilistGenres;
+    if (anilistTags.length) variables.tag_in = anilistTags;
+  }
   if (opts.status && STATUS_TO_ANILIST[opts.status]) {
     variables.status = STATUS_TO_ANILIST[opts.status];
   }

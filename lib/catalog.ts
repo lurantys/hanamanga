@@ -141,8 +141,34 @@ export type BrowseOptions = {
   page?: number;
 };
 
+async function fetchIsekaiBrowse(options: BrowseOptions): Promise<MangaListResult> {
+  const page = Math.max(1, options.page ?? 1);
+  const includedTags = (options.genres ?? [])
+    .map((name) => tagIdFor(name))
+    .filter((id): id is string => Boolean(id));
+  return fetchMangaList({
+    limit: CATALOG_PAGE_SIZE,
+    offset: (page - 1) * CATALOG_PAGE_SIZE,
+    order: SORT_ORDER[options.sort] ?? SORT_ORDER.popular,
+    includedTags,
+    status: options.status ? [options.status] : undefined,
+    contentRating: options.rating
+      ? (RATING_VALUES[options.rating] ?? undefined)
+      : undefined,
+    year:
+      options.yearFrom && options.yearFrom === options.yearTo
+        ? options.yearFrom
+        : undefined,
+    withStats: true,
+  });
+}
+
 const cachedBrowseCatalog = unstable_cache(
   async (options: BrowseOptions): Promise<MangaListResult> => {
+    // AniList's Isekai tags include clear false positives (for example,
+    // The Promised Neverland). MangaDex's dedicated Isekai tag is more
+    // accurate, so keep every page for this filter on that catalog.
+    if (options.genres.includes("Isekai")) return fetchIsekaiBrowse(options);
     const page = Math.max(1, options.page ?? 1);
     const offset = (page - 1) * CATALOG_PAGE_SIZE;
     // Browse is AniList-only. The previous MangaDex fallback poisoned the
@@ -163,7 +189,7 @@ const cachedBrowseCatalog = unstable_cache(
       minScore: options.minScore,
     });
   },
-  ["catalog-browse-v2"],
+  ["catalog-browse-v3"],
   { revalidate: 300, tags: ["catalog-browse"] },
 );
 
@@ -213,6 +239,7 @@ async function fetchBrowseFallback(options: BrowseOptions): Promise<MangaListRes
 }
 
 async function fetchBrowseUncached(options: BrowseOptions): Promise<MangaListResult> {
+  if (options.genres.includes("Isekai")) return fetchIsekaiBrowse(options);
   const page = Math.max(1, options.page ?? 1);
   const offset = (page - 1) * CATALOG_PAGE_SIZE;
   try {
@@ -457,7 +484,7 @@ const cachedCatalogManga = unstable_cache(
     }
     return enhanceWithAniList(manga);
   },
-  ["catalog-manga"],
+  ["catalog-manga-v2"],
   { revalidate: 1800 },
 );
 

@@ -1,5 +1,5 @@
 import { RouteSkeleton } from "@/components/RouteSkeleton";
 
 export default function SearchLoading() {
-  return <RouteSkeleton />;
+  return <RouteSkeleton kind="search" />;
 }

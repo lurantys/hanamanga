@@ -42,7 +42,7 @@ import {
 } from "@/lib/eta";
 import type { ReaderProps } from "@/lib/reader-data";
 import { useDialogFocus } from "@/lib/use-dialog-focus";
-import { focusRing } from "@/lib/ui";
+import { focusRing, popoverSurface } from "@/lib/ui";
 import {
   ChevronLeftIcon,
   ChevronRightIcon,
@@ -1421,7 +1421,7 @@ export function Reader({
                   ref={listRef}
                   id="reader-chapter-list"
                   role="menu"
-                  className="glass-in absolute left-0 right-0 top-full z-40 mt-2 max-h-80 overflow-y-auto rounded-[2rem] border border-white/10 bg-zinc-950/95 p-2 shadow-[0_24px_60px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.08)] ring-1 ring-inset ring-white/10 backdrop-blur-2xl"
+                  className={`${popoverSurface} absolute left-0 right-0 top-full z-40 mt-2 max-h-80 overflow-y-auto p-1.5`}
                 >
                   {chapters.map((chapter) => {
                     const isActive = chapter.id === currentChapterId;
@@ -1439,10 +1439,10 @@ export function Reader({
                             controlsTimerRef.current = window.setTimeout(() => setControls(false), 3500);
                           }
                         }}
-                        className={`block rounded-lg px-3 py-2 text-sm transition-colors duration-200 ${
+                        className={`block rounded-xl px-3 py-2.5 text-sm transition-colors duration-150 ${
                           isActive
-                            ? "bg-red-500/15 font-bold text-red-300"
-                            : "text-zinc-300 hover:bg-zinc-800/70 hover:text-white"
+                            ? "bg-red-500/12 font-semibold text-red-200"
+                            : "text-zinc-300 hover:bg-white/[0.07] hover:text-white"
                         }`}
                       >
                         <span className="flex items-center gap-2">

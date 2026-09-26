@@ -1,7 +1,13 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { popoverSurface, focusRing } from "@/lib/ui";
+import {
+  dropdownItem,
+  dropdownItemDefault,
+  dropdownItemSelected,
+  focusRing,
+  popoverSurface,
+} from "@/lib/ui";
 
 type Option = { key: string; label: string };
 
@@ -65,7 +71,7 @@ export function CustomSelect({ label, value, options, onChange }: CustomSelectPr
         <div
           role="listbox"
           aria-label={label}
-          className={`${popoverSurface} glass-in absolute left-0 top-full z-50 mt-2 min-w-full max-h-72 w-max max-w-[min(20rem,calc(100vw-2rem))] overflow-auto p-1.5`}
+          className={`${popoverSurface} absolute left-0 top-full z-50 mt-2 max-h-72 min-w-full w-max max-w-[min(20rem,calc(100vw-2rem))] overflow-auto p-1.5`}
         >
           {options.map((option) => {
             const isSelected = option.key === value;
@@ -79,10 +85,10 @@ export function CustomSelect({ label, value, options, onChange }: CustomSelectPr
                   setOpen(false);
                   if (option.key !== value) onChange(option.key);
                 }}
-                className={`flex w-full items-center justify-between gap-3 rounded-xl px-3 py-2 text-left text-sm font-medium transition-colors duration-200 ${focusRing} ${
+                className={`${dropdownItem} justify-between gap-3 ${
                   isSelected
-                    ? "bg-red-500/15 text-red-200"
-                    : "text-zinc-300 hover:bg-zinc-800/70 hover:text-white"
+                    ? dropdownItemSelected
+                    : dropdownItemDefault
                 }`}
               >
                 <span className="truncate">{option.label}</span>

@@ -23,9 +23,11 @@ import {
   subscribeProgress,
   type ProgressEntry,
 } from "@/lib/progress";
-import { statusLabel } from "@/lib/mangadex";
 import { coverDisplayUrl } from "@/lib/cover-proxy";
-import { popoverSurface, focusRing } from "@/lib/ui";
+import { dropdownItem, dropdownItemDefault, popoverSurface, focusRing } from "@/lib/ui";
+import { StarRating } from "@/components/StarRating";
+import { ratingTextClass, ratingTier } from "@/lib/rating";
+import { SearchIcon } from "@/components/icons";
 import { EmptyState } from "@/components/EmptyState";
 import { CustomSelect } from "@/components/CustomSelect";
 
@@ -125,6 +127,43 @@ function TrashIcon({ className }: { className: string }) {
   );
 }
 
+type LibraryCardMetadata = {
+  status: string;
+  detail?: string;
+  rating?: number;
+};
+
+function LibraryMetadata({
+  metadata,
+  showDetail = false,
+}: {
+  metadata: LibraryCardMetadata;
+  showDetail?: boolean;
+}) {
+  return (
+    <div className="mt-1">
+      <div className="flex min-w-0 items-center gap-1.5">
+        {metadata.rating != null && metadata.rating > 0 && (
+          <span
+            aria-label={`AniList rating ${metadata.rating.toFixed(1)} out of 10`}
+            title={`AniList rating ${metadata.rating.toFixed(1)}/10`}
+            className={`inline-flex shrink-0 items-center gap-1 text-xs font-semibold ${ratingTextClass[ratingTier(metadata.rating)]}`}
+          >
+            <StarRating className={ratingTextClass[ratingTier(metadata.rating)]} />
+            {metadata.rating.toFixed(1)}
+          </span>
+        )}
+        <span className="truncate text-xs text-zinc-500">{metadata.status}</span>
+      </div>
+      {showDetail && metadata.detail && (
+        <p className="mt-1 line-clamp-1 text-[10px] leading-tight text-zinc-400">
+          {metadata.detail}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function CardMenu({
   title,
   isRead,
@@ -189,7 +228,7 @@ function CardMenu({
         <div
           role="menu"
           aria-label={`${title} actions`}
-          className={`${popoverSurface} absolute right-0 top-full z-50 mt-2 w-44 overflow-hidden rounded-2xl p-1.5`}
+          className={`${popoverSurface} absolute right-0 top-full z-50 mt-2 w-48 overflow-hidden p-1.5`}
         >
           {onToggleRead && (
             <>
@@ -200,7 +239,7 @@ function CardMenu({
                   setOpen(false);
                   onToggleRead();
                 }}
-                className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-zinc-200 transition-colors duration-200 hover:bg-zinc-800/70 hover:text-white ${focusRing}`}
+                className={`${dropdownItem} ${dropdownItemDefault}`}
               >
                 <CheckIcon className="h-4 w-4 shrink-0 text-red-400" />
                 {isRead ? "Mark as unread" : "Mark as read"}
@@ -215,7 +254,7 @@ function CardMenu({
               setOpen(false);
               onRemove();
             }}
-            className={`flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-red-300 transition-colors duration-200 hover:bg-red-500/10 hover:text-red-200 ${focusRing}`}
+            className={`${dropdownItem} text-red-300 hover:bg-red-500/10 hover:text-red-200`}
           >
             <TrashIcon className="h-4 w-4 shrink-0" />
             {removeLabel}
@@ -233,7 +272,8 @@ function GridCard({
   readHref,
   ariaLabel,
   progressPct,
-  meta,
+  metadata,
+  actionLabel,
   isRead,
   onToggleRead,
   onRemove,
@@ -245,7 +285,8 @@ function GridCard({
   readHref: string;
   ariaLabel: string;
   progressPct: number | null;
-  meta: string;
+  metadata: LibraryCardMetadata;
+  actionLabel: string;
   isRead: boolean;
   onToggleRead?: () => void;
   onRemove?: () => void;
@@ -311,7 +352,7 @@ function GridCard({
       <div className="manga-card-hover-layer pointer-events-none absolute inset-0 z-40">
         <div className="manga-card-hover-panel absolute inset-0 hidden flex-col justify-end rounded-md bg-gradient-to-t from-zinc-950 via-zinc-950/80 to-transparent p-3 pt-16 md:flex">
           <p className="line-clamp-2 text-sm font-bold leading-tight text-white">{title}</p>
-          <p className="mt-2 line-clamp-2 text-[10px] font-medium text-zinc-300">{meta}</p>
+          <LibraryMetadata metadata={metadata} showDetail />
           {progressPct !== null && (
             <div className="mt-2 h-1 overflow-hidden rounded-full bg-white/15" aria-label={`${progressPct}% read`}>
               <div className="h-full rounded-full bg-red-500" style={{ width: `${progressPct}%` }} />
@@ -323,7 +364,7 @@ function GridCard({
               prefetch={false}
               className="flex h-9 min-w-0 flex-1 items-center justify-center rounded-md bg-white px-2 text-[10px] font-bold text-zinc-950 transition-colors hover:bg-zinc-200"
             >
-              {meta.startsWith("Continue") ? "Continue" : "Read"}
+              {actionLabel}
             </Link>
             {onRemove && (
               <CardMenu
@@ -346,7 +387,7 @@ function GridCard({
         <p className="line-clamp-1 text-xs font-semibold text-zinc-200">
           {title}
         </p>
-        <p className="mt-0.5 line-clamp-1 text-[11px] text-zinc-500">{meta}</p>
+        <LibraryMetadata metadata={metadata} />
       </div>
     </div>
   );
@@ -358,7 +399,7 @@ function ListCard({
   href,
   ariaLabel,
   progressPct,
-  meta,
+  metadata,
   isRead,
   onToggleRead,
   onRemove,
@@ -369,7 +410,7 @@ function ListCard({
   href: string;
   ariaLabel: string;
   progressPct: number | null;
-  meta: string;
+  metadata: LibraryCardMetadata;
   isRead: boolean;
   onToggleRead?: () => void;
   onRemove?: () => void;
@@ -399,7 +440,7 @@ function ListCard({
           <p className="line-clamp-1 text-sm font-semibold text-zinc-200">
             {title}
           </p>
-          <p className="mt-0.5 line-clamp-1 text-xs text-zinc-500">{meta}</p>
+          <LibraryMetadata metadata={metadata} />
         </Link>
         {progressPct !== null && (
           <div className="mt-2 flex items-center gap-2">
@@ -557,19 +598,7 @@ export default function LibraryPage() {
         <div className="mx-auto max-w-7xl px-5 md:px-10">
           <div className="flex flex-wrap items-center gap-3">
           <div className="relative min-w-0 flex-1 basis-56">
-            <svg
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              className="pointer-events-none absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-zinc-500"
-              aria-hidden
-            >
-              <circle cx="11" cy="11" r="8" />
-              <path d="m21 21-4.3-4.3" />
-            </svg>
+            <SearchIcon className="pointer-events-none absolute left-3.5 top-1/2 z-10 h-4 w-4 -translate-y-1/2 text-zinc-400" />
             <input
               type="search"
               value={query}
@@ -794,7 +823,7 @@ export default function LibraryPage() {
           )
         ) : view === "grid" ? (
           <div className="grid grid-cols-2 gap-x-3 gap-y-5 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6">
-            {filtered.map(({ manga, addedAt, status: libraryStatus }) => {
+            {filtered.map(({ manga, status: libraryStatus }) => {
               const mangaProgress = progress[manga.id];
               const pct = mangaProgress
                 ? Math.round(
@@ -804,11 +833,16 @@ export default function LibraryPage() {
                 : null;
               const isRead = Boolean(finished[manga.id]) || libraryStatus === "read";
               const currentStatus = isRead ? "read" : libraryStatus ?? (mangaProgress ? "reading" : "to_read");
-              const cardMeta = currentStatus === "read"
+              const readingStatus = currentStatus === "read"
                 ? "Read"
                 : currentStatus === "reading"
-                  ? (mangaProgress ? `Continue · ${mangaProgress.chapterLabel}` : "Reading")
-                  : `To Read · Added ${new Date(addedAt).toLocaleDateString()}`;
+                  ? "Reading"
+                  : "To Read";
+              const cardMetadata: LibraryCardMetadata = {
+                status: readingStatus,
+                detail: mangaProgress?.chapterLabel,
+                rating: manga.rating,
+              };
               return (
                 <GridCard
                   key={manga.id}
@@ -828,7 +862,8 @@ export default function LibraryPage() {
                         : manga.title
                   }
                   progressPct={pct}
-                  meta={manga.rating != null ? `${cardMeta} · ★ ${manga.rating.toFixed(1)}` : cardMeta}
+                  metadata={cardMetadata}
+                  actionLabel={mangaProgress ? "Continue" : "Read"}
                   isRead={isRead}
                   onToggleRead={() =>
                     isRead
@@ -860,7 +895,8 @@ export default function LibraryPage() {
                     readHref={`/read/${entry.mangaId}/${entry.chapterId}`}
                     ariaLabel={`${entry.mangaTitle} — continue from ${entry.chapterLabel}, ${pct}% read`}
                     progressPct={pct}
-                    meta={`Continue · ${entry.chapterLabel}`}
+                    metadata={{ status: "Continue", detail: entry.chapterLabel }}
+                    actionLabel="Continue"
                     isRead={false}
                     onRemove={() => clearProgress(entry.mangaId)}
                     removeLabel="Remove from Continue Reading"
@@ -870,7 +906,7 @@ export default function LibraryPage() {
           </div>
         ) : (
           <div className="flex flex-col gap-2">
-            {filtered.map(({ manga, addedAt, status: libraryStatus }) => {
+            {filtered.map(({ manga, status: libraryStatus }) => {
               const mangaProgress = progress[manga.id];
               const pct = mangaProgress
                 ? Math.round(
@@ -880,17 +916,16 @@ export default function LibraryPage() {
                 : null;
               const isRead = Boolean(finished[manga.id]) || libraryStatus === "read";
               const currentStatus = isRead ? "read" : libraryStatus ?? (mangaProgress ? "reading" : "to_read");
-              const metaBits = [
-                currentStatus === "read"
-                  ? "Read"
-                  : currentStatus === "reading"
-                    ? (mangaProgress ? `Continue · ${mangaProgress.chapterLabel}` : "Reading")
-                    : `To Read · Added ${new Date(addedAt).toLocaleDateString()}`,
-              ];
-              if (manga.rating != null) metaBits.push(`★ ${manga.rating.toFixed(1)}`);
-              const status = statusLabel(manga.status);
-              if (status) metaBits.push(status);
-              if (manga.year) metaBits.push(String(manga.year));
+              const readingStatus = currentStatus === "read"
+                ? "Read"
+                : currentStatus === "reading"
+                  ? "Reading"
+                  : "To Read";
+              const metadata: LibraryCardMetadata = {
+                status: readingStatus,
+                detail: mangaProgress?.chapterLabel,
+                rating: manga.rating,
+              };
               return (
                 <ListCard
                   key={manga.id}
@@ -909,7 +944,7 @@ export default function LibraryPage() {
                         : manga.title
                   }
                   progressPct={pct}
-                  meta={metaBits.join(" · ")}
+                  metadata={metadata}
                   isRead={isRead}
                   onToggleRead={() =>
                     isRead
@@ -940,7 +975,7 @@ export default function LibraryPage() {
                     href={`/read/${entry.mangaId}/${entry.chapterId}`}
                     ariaLabel={`${entry.mangaTitle} — continue from ${entry.chapterLabel}, ${pct}% read`}
                     progressPct={pct}
-                    meta={`Continue · ${entry.chapterLabel}`}
+                    metadata={{ status: "Continue", detail: entry.chapterLabel }}
                     isRead={false}
                     onRemove={() => clearProgress(entry.mangaId)}
                     removeLabel="Remove from Continue Reading"

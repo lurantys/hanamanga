@@ -66,25 +66,23 @@ export function GenreMenu() {
       {open && (
         <div
           role="menu"
-          className={`${popoverSurface} absolute left-1/2 top-full z-50 mt-3 w-72 overflow-hidden p-4`}
+          className={`${popoverSurface} absolute left-1/2 top-full z-50 mt-3 w-[min(22rem,calc(100vw-2rem))] -translate-x-1/2 p-4`}
         >
-          <div className="-translate-x-1/2 relative left-1/2 w-72">
-            <p className="mb-2.5 px-1 text-[11px] font-semibold uppercase tracking-widest text-zinc-500">
-              Browse genres
-            </p>
-            <div className="flex flex-wrap gap-2">
-              {GENRES.map((genre) => (
-                <button
-                  key={genre.name}
-                  type="button"
-                  role="menuitem"
-                  onClick={() => selectGenre(genre.name)}
-                  className={`rounded-full border border-white/10 bg-zinc-800/50 px-3 py-1.5 text-xs font-medium text-zinc-200 transition-colors duration-200 hover:border-red-400/40 hover:bg-zinc-700/60 hover:text-white ${focusRing}`}
-                >
-                  {genre.name}
-                </button>
-              ))}
-            </div>
+          <p className="mb-3 px-1 text-xs font-semibold text-zinc-400">
+            Browse genres
+          </p>
+          <div className="flex flex-wrap gap-2">
+            {GENRES.map((genre) => (
+              <button
+                key={genre.name}
+                type="button"
+                role="menuitem"
+                onClick={() => selectGenre(genre.name)}
+                className={`rounded-full border border-white/10 bg-white/[0.04] px-3 py-1.5 text-xs font-medium text-zinc-300 transition-colors duration-150 hover:border-red-400/40 hover:bg-red-500/10 hover:text-white ${focusRing}`}
+              >
+                {genre.name}
+              </button>
+            ))}
           </div>
         </div>
       )}

@@ -47,4 +47,14 @@ export const glassChromeShadow =
 
 /** Raised popover/dropdown surface recipe. */
 export const popoverSurface =
-  "glass-in rounded-[2rem] border border-white/10 bg-zinc-950/95 shadow-[0_24px_60px_rgba(0,0,0,0.6),inset_0_1px_0_rgba(255,255,255,0.08)] ring-1 ring-inset ring-white/10 backdrop-blur-2xl";
+  "glass-in rounded-2xl border border-white/10 bg-zinc-950/95 shadow-[0_20px_56px_rgba(0,0,0,0.55),inset_0_1px_0_rgba(255,255,255,0.07)] ring-1 ring-inset ring-white/[0.06] backdrop-blur-2xl";
+
+/** Shared row treatment for action and choice menus. */
+export const dropdownItem =
+  `flex w-full items-center gap-2.5 rounded-xl px-3 py-2.5 text-left text-sm font-medium transition-colors duration-150 ${focusRing}`;
+
+export const dropdownItemDefault =
+  "text-zinc-300 hover:bg-white/[0.07] hover:text-white";
+
+export const dropdownItemSelected =
+  "bg-red-500/12 text-red-200 hover:bg-red-500/15";

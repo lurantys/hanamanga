@@ -23,9 +23,9 @@ const zenKaku = Zen_Kaku_Gothic_New({
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
-  title: "Hana | A modern web manga reader | Hanamanga",
+  title: "Hana — Manga & Webtoon Reader",
   description:
-    "Hana by Hanamanga is a modern manga, manhwa, manhua, and webtoon reader. Read manga online at hanamanga.online, beautifully on any device.",
+    "Read manga, manhwa, manhua, and webtoons online with Hana. Discover new series and keep your reading in one place.",
   applicationName: "Hana",
   appleWebApp: {
     capable: true,
@@ -42,25 +42,16 @@ export const metadata: Metadata = {
   openGraph: {
     type: "website",
     url: siteUrl,
-    siteName: "Hana — Hanamanga",
-    title: "Hana — A modern web manga reader | Hanamanga",
+    siteName: "Hana",
+    title: "Hana — Manga & Webtoon Reader",
     description:
-      "Hana by Hanamanga is a modern manga, manhwa, manhua, and webtoon reader. Read manga online at hanamanga.online.",
-    images: [
-      {
-        url: "/logo-v2.png",
-        width: 500,
-        height: 500,
-        alt: "Hana — Hanamanga manga reader",
-      },
-    ],
+      "Read manga, manhwa, manhua, and webtoons online with Hana. Discover new series and keep your reading in one place.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Hana — A modern web manga reader | Hanamanga",
+    title: "Hana — Manga & Webtoon Reader",
     description:
-      "Hana by Hanamanga is a modern manga, manhwa, manhua, and webtoon reader. Read manga online at hanamanga.online.",
-    images: ["/logo-v2.png"],
+      "Read manga, manhwa, manhua, and webtoons online with Hana. Discover new series and keep your reading in one place.",
   },
   alternates: {
     canonical: siteUrl,
@@ -84,7 +75,7 @@ const structuredData = {
       name: "Hana",
       alternateName: "Hanamanga",
       description:
-        "A modern web manga reader for manga, manhwa, manhua, and webtoons.",
+        "Read manga, manhwa, manhua, and webtoons online with Hana.",
       publisher: { "@id": `${siteUrl}/#organization` },
       potentialAction: {
         "@type": "SearchAction",

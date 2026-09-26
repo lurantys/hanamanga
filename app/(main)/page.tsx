@@ -1,5 +1,7 @@
 import { Suspense } from "react";
 import { HeroSpotlight } from "@/components/HeroSpotlight";
+import { HeroLoading } from "@/components/HeroLoading";
+import { MangaRowLoading } from "@/components/MangaRowLoading";
 import { ContinueRow } from "@/components/ContinueRow";
 import { LibraryRow } from "@/components/LibraryRow";
 import { RecommendedRow } from "@/components/RecommendedRow";
@@ -92,35 +94,6 @@ async function MangaRowSection() {
   return <MangaRow title="Manga" manga={manga} />;
 }
 
-function RowSkeleton({ title }: { title: string }) {
-  return (
-    <section aria-hidden>
-      <h2 className="mb-3 px-5 text-lg font-bold tracking-tight text-zinc-100 md:px-10">
-        {title}
-      </h2>
-      <div className="flex gap-3 overflow-hidden px-5 py-2 md:px-10">
-        {Array.from({ length: 8 }).map((_, index) => (
-          <div
-            key={index}
-            className="aspect-[2/3] w-36 shrink-0 animate-pulse rounded-lg bg-zinc-800 md:w-44"
-          />
-        ))}
-      </div>
-    </section>
-  );
-}
-
-function HeroSkeleton() {
-  // Same footprint as the real hero so Suspense streaming swaps content
-  // without shifting the page.
-  return (
-    <section
-      aria-hidden
-      className="min-h-[68dvh] w-full bg-gradient-to-t from-zinc-900 to-zinc-800 md:h-[70dvh] md:min-h-[420px]"
-    />
-  );
-}
-
 export default function Home() {
   return (
     <main className="relative bg-zinc-950">
@@ -128,7 +101,7 @@ export default function Home() {
         Hana — read manga, manhwa, manhua, and webtoons online
       </h1>
       <PWAInstallIcon />
-      <Suspense fallback={<HeroSkeleton />}>
+      <Suspense fallback={<HeroLoading />}>
         <HeroSpotlight />
       </Suspense>
 
@@ -136,22 +109,22 @@ export default function Home() {
         <ContinueRow />
         <LibraryRow />
 
-        <Suspense fallback={<RowSkeleton title="Trending Now" />}>
+        <Suspense fallback={<MangaRowLoading title="Trending Now" />}>
           <TrendingRow />
         </Suspense>
 
         <RecommendedRow />
         <NewChaptersRow />
 
-        <Suspense fallback={<RowSkeleton title="Manga" />}>
+        <Suspense fallback={<MangaRowLoading title="Manga" />}>
           <MangaRowSection />
         </Suspense>
 
-        <Suspense fallback={<RowSkeleton title="Webtoons & Manhwa" />}>
+        <Suspense fallback={<MangaRowLoading title="Webtoons & Manhwa" />}>
           <WebtoonsRow />
         </Suspense>
 
-        <Suspense fallback={<RowSkeleton title="Manhua" />}>
+        <Suspense fallback={<MangaRowLoading title="Manhua" />}>
           <ManhuaRow />
         </Suspense>
       </div>

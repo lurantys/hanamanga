@@ -314,7 +314,7 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
     <Fragment key={displayHero.id}>
       {/* ===== MOBILE ONLY — premium streaming presentation ===== */}
       <section
-        className="relative w-full overflow-hidden bg-zinc-950 pt-[env(safe-area-inset-top)] animate-hero-swap md:hidden"
+        className="relative min-h-[calc(93vw+27.5rem+env(safe-area-inset-top))] w-full overflow-hidden bg-zinc-950 pt-[env(safe-area-inset-top)] animate-hero-swap md:hidden"
       >
         <div className="absolute inset-0">
           {imageSrc ? (

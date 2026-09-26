@@ -1,3 +1,6 @@
+import { HeroLoading } from "./HeroLoading";
+import { MangaRowLoading } from "./MangaRowLoading";
+
 type SkeletonKind =
   | "page"
   | "home"
@@ -32,17 +35,15 @@ function CardGrid({ count = 12, portrait = false }: { count?: number; portrait?:
 function HomeSkeleton() {
   return (
     <main aria-label="Loading home page" className="min-h-screen bg-zinc-950 pb-24">
-      <Block className="h-[58dvh] min-h-[390px] rounded-none bg-gradient-to-t from-zinc-900 to-zinc-800 md:h-[70dvh]" />
-      <div className="relative z-10 -mt-6 space-y-9 md:-mt-16">
-        {["Continue Reading", "Trending Now", "Recommended for You", "New Chapters"].map((title) => (
-          <section key={title} aria-hidden>
-            <Block className="mb-3 ml-5 h-5 w-40 rounded-md md:ml-10" />
-            <div className="flex gap-3 overflow-hidden px-5 md:px-10">
-              {Array.from({ length: 7 }, (_, index) => (
-                <Block key={index} className="aspect-[2/3] w-36 shrink-0 rounded-lg md:w-44" />
-              ))}
-            </div>
-          </section>
+      <HeroLoading />
+      <div className="relative z-10 -mt-6 space-y-10 md:-mt-16">
+        {[
+          "Trending Now",
+          "Manga",
+          "Webtoons & Manhwa",
+          "Manhua",
+        ].map((title) => (
+          <MangaRowLoading key={title} title={title} />
         ))}
       </div>
     </main>

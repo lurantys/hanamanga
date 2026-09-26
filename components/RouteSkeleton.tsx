@@ -80,22 +80,60 @@ function MangaSkeleton() {
   return (
     <main aria-label="Loading manga page" className="min-h-screen bg-zinc-950 pb-24">
       <Block className="h-[34dvh] min-h-[260px] rounded-none bg-gradient-to-t from-zinc-950 to-zinc-800 md:h-[46dvh] md:min-h-[320px]" />
-      <div className="relative mx-auto -mt-36 max-w-7xl px-5 md:-mt-44 md:px-10">
-        <div className="flex flex-col items-center gap-5 md:flex-row md:items-end md:gap-8">
-          <Block className="aspect-[2/3] w-40 shrink-0 rounded-2xl md:w-56" />
-          <div className="w-full space-y-4 pb-2 text-center md:text-left">
-            <Block className="mx-auto h-8 w-2/3 md:mx-0 md:w-96" />
-            <div className="flex justify-center gap-2 md:justify-start">
-              <Block className="h-7 w-20 rounded-full" /><Block className="h-7 w-24 rounded-full" />
+      <div className="relative z-10 mx-auto -mt-44 max-w-lg px-5 md:hidden">
+        <div className="flex flex-col items-center text-center">
+          <Block className="aspect-[2/3] w-[48vw] max-w-[220px] rounded-[14px]" />
+          <Block className="mx-auto mt-5 h-7 w-2/3 max-w-sm rounded-md" />
+          <div className="mt-3 flex flex-wrap justify-center gap-2">
+            <Block className="h-7 w-20 rounded-full" />
+            <Block className="h-7 w-24 rounded-full" />
+            <Block className="h-7 w-20 rounded-full" />
+          </div>
+          <div className="mt-5 flex flex-wrap justify-center gap-3">
+            <Block className="h-11 w-32 rounded-xl" />
+            <Block className="h-11 w-36 rounded-xl" />
+          </div>
+        </div>
+        <Block className="mx-auto mt-6 h-24 max-w-lg rounded-2xl" />
+        <div className="mt-5 flex flex-wrap justify-center gap-1.5">
+          {Array.from({ length: 4 }, (_, index) => <Block key={index} className="h-7 w-20 rounded-full" />)}
+        </div>
+      </div>
+
+      <div className="relative z-10 mx-auto -mt-52 hidden max-w-5xl px-10 md:block">
+        <div className="flex items-start gap-10">
+          <Block className="aspect-[2/3] w-56 shrink-0 rounded-xl" />
+          <div className="flex-1 space-y-5 pb-2">
+            <Block className="h-11 w-3/4 max-w-xl rounded-md" />
+            <div className="flex flex-wrap gap-2">
+              <Block className="h-7 w-20 rounded-md" />
+              <Block className="h-7 w-24 rounded-md" />
+              <Block className="h-7 w-20 rounded-md" />
+              <Block className="h-7 w-24 rounded-md" />
             </div>
-            <div className="flex justify-center gap-3 pt-2 md:justify-start">
-              <Block className="h-11 w-32 rounded-xl" /><Block className="h-11 w-36 rounded-xl" />
+            <div className="flex flex-wrap gap-3">
+              <Block className="h-11 w-32 rounded-xl" />
+              <Block className="h-11 w-36 rounded-xl" />
+            </div>
+            <Block className="h-px w-full rounded-none" />
+            <Block className="h-20 max-w-2xl rounded-xl" />
+            <div className="flex flex-wrap gap-1.5">
+              {Array.from({ length: 5 }, (_, index) => <Block key={index} className="h-7 w-20 rounded-full" />)}
+            </div>
+            <div className="space-y-3 pt-1">
+              <Block className="h-5 w-48 rounded-md" />
+              <Block className="h-5 w-32 rounded-md" />
             </div>
           </div>
         </div>
-        <Block className="mx-auto mt-8 h-24 max-w-3xl rounded-2xl md:mx-0" />
-        <Block className="mt-10 h-6 w-40 rounded-md" />
-        <div className="mt-4 space-y-3">
+      </div>
+
+      <div className="relative z-10 mx-auto mt-12 max-w-5xl px-5 md:px-10">
+        <div className="mb-5 flex items-baseline gap-3">
+          <Block className="h-6 w-36 rounded-md" />
+          <Block className="h-4 w-32 rounded-md bg-zinc-900" />
+        </div>
+        <div className="space-y-3">
           {Array.from({ length: 5 }, (_, index) => <Block key={index} className="h-14 rounded-xl" />)}
         </div>
       </div>

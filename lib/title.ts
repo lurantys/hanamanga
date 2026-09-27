@@ -1,6 +1,7 @@
 export function normalizeTitleKey(value: string): string {
   return value
     .toLowerCase()
+    .replace(/×/g, " x ")
     .replace(/[^\p{L}\p{N}\s]/gu, "")
     .replace(/\s+/g, " ")
     .replace(/^the\s+/, "")

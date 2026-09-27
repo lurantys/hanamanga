@@ -287,13 +287,13 @@ export async function fetchBrowseCatalog(options: BrowseOptions): Promise<MangaL
 
 const cachedSearchCatalog = unstable_cache(
   (query: string) => searchCatalog(query, SEARCH_POOL_SIZE),
-  ["catalog-search"],
+  ["catalog-search-v3"],
   { revalidate: 300 },
 );
 
 const cachedAuthorCatalog = unstable_cache(
   (author: string) => searchCatalogByAuthor(author, SEARCH_POOL_SIZE),
-  ["catalog-author-search"],
+  ["catalog-author-search-v3"],
   { revalidate: 300 },
 );
 
@@ -334,42 +334,94 @@ export async function searchCatalog(
     searchAtsu(query, 12).catch(() => [] as AtsuCandidate[]),
   ]);
 
-  const seen = new Set<string>();
-  const data: Manga[] = [];
-
-  for (const manga of al.data) {
-    const idKey = manga.links?.al ? `al:${manga.links.al}` : null;
-    const titleKey = normalizeTitleKey(manga.title);
-    if (idKey && seen.has(idKey)) continue;
-    if (titleKey && seen.has(titleKey)) continue;
-    if (idKey) seen.add(idKey);
-    if (titleKey) seen.add(titleKey);
-    data.push(manga);
-  }
-
-  for (const candidate of atsu) {
-    if (
-      !titleHits(query, [
-        candidate.title,
-        candidate.englishTitle,
-        ...(candidate.otherNames ?? []),
-      ])
-    ) {
-      continue;
-    }
-    const manga = atsuToManga(candidate);
-    const idKey = manga.links?.al ? `al:${manga.links.al}` : null;
-    const titleKey = normalizeTitleKey(manga.title);
-    if (idKey && seen.has(idKey)) continue;
-    if (titleKey && seen.has(titleKey)) continue;
-    if (idKey) seen.add(idKey);
-    if (titleKey) seen.add(titleKey);
-    data.push(manga);
-  }
+  const data = mergeSearchResults(al.data, atsu, query);
 
   await enrichAtsuBatch(data);
 
   return { data, total: data.length, offset: 0, limit };
+}
+
+/** Keep one card per work, preferring the source with the most chapters. */
+export function mergeSearchResults(
+  anilist: Manga[],
+  candidates: AtsuCandidate[],
+  query?: string,
+  matchedOnly = false,
+): Manga[] {
+  const rows: { manga: Manga; chapterCount: number; keys: Set<string>; fromAniList: boolean }[] = [];
+  const keyFor = (title: string | null | undefined) =>
+    title ? normalizeTitleKey(title) : "";
+  const queryKey = keyFor(query);
+  const matchScore = (manga: Manga) => {
+    if (!queryKey) return 0;
+    const title = keyFor(manga.title);
+    if (title === queryKey) return 4;
+    if (title.startsWith(`${queryKey} `)) return 3;
+    if ((manga.altTitles ?? []).some((alt) => keyFor(alt) === queryKey)) return 2;
+    return title.includes(queryKey) ? 1 : 0;
+  };
+
+  for (const manga of anilist) {
+    const key = keyFor(manga.title);
+    if (rows.some((row) =>
+      (manga.links?.al && row.manga.links?.al === manga.links.al) ||
+      (key && row.keys.has(key))
+    )) continue;
+    rows.push({ manga, chapterCount: 0, keys: new Set(key ? [key] : []), fromAniList: true });
+  }
+
+  for (const candidate of candidates) {
+    if (query && !titleHits(query, [
+      candidate.title,
+      candidate.englishTitle,
+      ...(candidate.otherNames ?? []),
+    ])) continue;
+
+    // A primary/English title or a provider ID can establish identity.
+    // Other names are useful for search, but can name a different edition
+    // (the colored HxH record lists the base work among its aliases).
+    const keys = new Set([keyFor(candidate.title), keyFor(candidate.englishTitle)].filter(Boolean));
+    const aliases = new Set((candidate.otherNames ?? []).map(keyFor).filter(Boolean));
+    const candidateTitle = keyFor(candidate.title);
+    const index = rows.findIndex((row) =>
+      (candidate.anilistId && row.manga.links?.al === String(candidate.anilistId)) ||
+      (candidate.malId && row.manga.links?.mal === String(candidate.malId)) ||
+      [...keys].some((key) => row.keys.has(key) ||
+        (row.fromAniList && (row.manga.altTitles ?? []).some((alt) => keyFor(alt) === key))) ||
+      (row.fromAniList &&
+        !candidateTitle.startsWith(`${keyFor(row.manga.title)} `) &&
+        [row.manga.title, ...(row.manga.altTitles ?? [])].some((title) => aliases.has(keyFor(title))))
+    );
+    if (matchedOnly && index < 0) continue;
+
+    const count = Math.max(0, candidate.chapterCount ?? 0);
+    const manga = atsuToManga(candidate);
+    if (index < 0) {
+      rows.push({ manga, chapterCount: count, keys, fromAniList: false });
+    } else {
+      const row = rows[index];
+      if (count > row.chapterCount) {
+        // Keep AniList's display metadata while routing to the richer reader.
+        row.manga = {
+          ...manga,
+          ...row.manga,
+          id: manga.id,
+          links: { ...manga.links, ...row.manga.links },
+          altTitles: [...new Set([...(row.manga.altTitles ?? []), ...(manga.altTitles ?? [])])],
+        };
+        row.chapterCount = count;
+      }
+      for (const key of keys) row.keys.add(key);
+    }
+  }
+
+  if (queryKey) {
+    rows.sort((a, b) =>
+      matchScore(b.manga) - matchScore(a.manga) ||
+      b.chapterCount - a.chapterCount
+    );
+  }
+  return rows.map((row) => row.manga);
 }
 
 /**
@@ -421,23 +473,7 @@ export async function searchCatalogByAuthor(
   const al = await searchAniListByAuthor(author, limit);
   const atsu = await searchAtsu(author, 24).catch(() => [] as AtsuCandidate[]);
 
-  const data: Manga[] = [];
-  const alIds = new Set<string>();
-  const titleKeys = new Set<string>();
-  for (const manga of al.data) {
-    if (manga.links?.al) alIds.add(manga.links.al);
-    titleKeys.add(normalizeTitleKey(manga.title));
-    data.push(manga);
-  }
-
-  for (const candidate of atsu) {
-    const manga = atsuToManga(candidate);
-    const matchesAl =
-      (manga.links?.al ? alIds.has(manga.links.al) : false) ||
-      titleKeys.has(normalizeTitleKey(manga.title));
-    if (!matchesAl) continue;
-    data.push(manga);
-  }
+  const data = mergeSearchResults(al.data, atsu, undefined, true);
 
   await enrichAtsuBatch(data);
 

@@ -8,6 +8,8 @@ export type AtsuCandidate = {
   title: string | null;
   englishTitle: string | null;
   chapterCount: number | null;
+  anilistId?: number | null;
+  malId?: number | null;
   type?: string;
   medium?: string;
   status?: string;
@@ -120,6 +122,8 @@ function atsuCandidateFromDocument(
     title: (doc.title as string) ?? null,
     englishTitle: (doc.englishTitle as string) ?? null,
     chapterCount: (doc.chapterCount as number) ?? null,
+    anilistId: typeof doc.anilistId === "number" ? doc.anilistId : null,
+    malId: typeof doc.malId === "number" ? doc.malId : null,
     type: (doc.type as string) ?? undefined,
     medium: (doc.medium as string) ?? undefined,
     status: (doc.status as string) ?? undefined,

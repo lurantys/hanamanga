@@ -331,10 +331,10 @@ export default function AccountContent() {
 
   return (
     <main className="min-h-screen bg-[#09090b] pb-24">
-      <div className="mx-auto max-w-4xl px-4 pt-header sm:px-6 lg:px-8">
-        <header className="border-b border-white/10 pb-6">
-          <div className="flex items-center gap-4 sm:gap-5">
-            <span className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-zinc-900 text-base font-bold text-zinc-200 sm:h-20 sm:w-20">
+      <div className="mx-auto max-w-5xl px-4 pt-header sm:px-6 lg:px-8">
+        <header className="border-b border-white/10 pb-7 sm:pb-8">
+          <div className="flex items-center gap-5 sm:gap-6">
+            <span className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-zinc-900 text-base font-bold text-zinc-200 sm:h-24 sm:w-24">
               {avatar?.url ? (
                 <Image
                   src={avatar.url}
@@ -351,7 +351,7 @@ export default function AccountContent() {
             </span>
             <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <h1 className="truncate text-2xl font-bold tracking-tight text-white sm:text-3xl">
+                <h1 className="truncate text-3xl font-bold tracking-tight text-white sm:text-4xl">
                   {displayName ?? "Account"}
                 </h1>
                 <button
@@ -424,7 +424,7 @@ export default function AccountContent() {
                   )}
                 </form>
               ) : (
-                <p className="mt-1 text-sm text-zinc-500">
+                <p className="mt-1.5 text-sm text-zinc-400">
                   {user.email}
                 </p>
               )}
@@ -432,18 +432,19 @@ export default function AccountContent() {
           </div>
         </header>
 
-        <section className="mt-6">
+        <section className="mt-7 sm:mt-8">
           <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-zinc-300">Reading stats</h2>
+            <h2 className="text-base font-semibold tracking-tight text-white">Reading stats</h2>
             <Link href="/library" className="text-sm text-zinc-500 transition-colors hover:text-white">Open library <span aria-hidden>↗</span></Link>
           </div>
-          <div className="grid grid-cols-2 border-y border-white/10 sm:grid-cols-4">
+          <div className="grid grid-cols-2 border-y border-white/[0.08] sm:grid-cols-4">
             {[[libraryStats.total, "Titles saved"], [libraryStats.reading, "Currently reading"], [libraryStats.finished, "Completed"], [libraryStats.chapters, "Chapters read"]].map(([value, label], index) => (
               <div
                 key={label}
-                className={`py-4 ${index % 2 === 1 ? "border-l border-white/10 pl-5" : "pr-5"} ${index > 1 ? "border-t border-white/10 sm:border-t-0" : ""} ${index > 1 ? "sm:border-l sm:pl-5" : ""}`}
+                className={`py-5 sm:py-6 ${index % 2 === 1 ? "border-l border-white/[0.07] pl-5 sm:pl-6" : "pr-5 sm:pr-6"} ${index > 1 ? "border-t border-white/[0.07] sm:border-t-0" : ""} ${index > 1 ? "sm:border-l sm:pl-6" : ""}`}
               >
-                <p className="text-xl font-semibold tracking-tight text-white sm:text-2xl">{value}</p><p className="mt-1 text-xs text-zinc-500 sm:text-sm">{label}</p>
+                <p className="text-3xl font-semibold leading-none tracking-tight tabular-nums text-white sm:text-4xl">{value}</p>
+                <p className="mt-2 text-xs text-zinc-500 sm:text-sm">{label}</p>
               </div>
             ))}
           </div>
@@ -483,8 +484,8 @@ export default function AccountContent() {
           </p>
         )}
 
-        <div className="mt-7 grid items-stretch gap-4 lg:grid-cols-2">
-          <section className="rounded-xl border border-white/10 bg-white/[0.02] p-5 animate-page-in" style={{ animationDelay: '0ms' }}>
+        <div className="mt-8 grid items-start gap-4 sm:mt-9 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-5">
+          <section className="rounded-2xl border border-zinc-700/40 bg-zinc-950/55 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.035)] backdrop-blur-xl transition-colors hover:border-zinc-600/50 sm:p-6 animate-page-in" style={{ animationDelay: '0ms' }}>
             <div className="flex items-center justify-between gap-4">
               <div className="flex items-start gap-3">
                 <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center text-zinc-400">
@@ -538,10 +539,10 @@ export default function AccountContent() {
                             : "border-white/15 bg-zinc-900/60 text-zinc-200"
                         }`}
                       >
-                        {provider.error ? (
-                          <CheckIcon className="h-3 w-3 rotate-45 text-red-400" />
-                        ) : (
-                          <CheckIcon className="h-3 w-3 text-red-400" />
+                          {provider.error ? (
+                            <CheckIcon className="h-3 w-3 rotate-45 text-red-400" />
+                          ) : (
+                            <CheckIcon className="h-3 w-3 text-emerald-400" />
                         )}
                         {provider.provider === "anilist"
                           ? "AniList"
@@ -564,7 +565,7 @@ export default function AccountContent() {
             )}
           </section>
 
-          <section className="rounded-xl border border-white/10 bg-white/[0.02] p-5 animate-page-in" style={{ animationDelay: '60ms' }}>
+          <section className="rounded-2xl border border-zinc-700/40 bg-zinc-950/55 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.035)] backdrop-blur-xl transition-colors hover:border-zinc-600/50 sm:p-6 animate-page-in" style={{ animationDelay: '60ms' }}>
             <div className="flex items-center gap-3">
               <span className="flex h-8 w-8 shrink-0 items-center justify-center text-zinc-400">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.85" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>
@@ -652,8 +653,8 @@ function IntegrationRow({
         <LoadingIcon className="h-10 w-10 shrink-0" />
       ) : state.status === "connected" ? (
         <div className="flex shrink-0 flex-col items-end gap-1">
-          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-red-300">
-            <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-400">
+            <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
             Connected
           </span>
           {state.syncedAt && (

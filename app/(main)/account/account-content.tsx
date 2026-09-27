@@ -454,140 +454,132 @@ export default function AccountContent() {
           </p>
         )}
 
-        <div className="mt-7 grid items-start gap-8 lg:grid-cols-[minmax(0,1.45fr)_minmax(16rem,0.75fr)] lg:gap-12">
-          <div className="min-w-0 space-y-7">
-            <section className="border-b border-white/10 pb-6 animate-page-in" style={{ animationDelay: '0ms' }}>
-              <div className="flex items-center justify-between gap-4">
-                <div className="flex items-start gap-3">
-                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center text-zinc-400">
-                    <SyncIcon className="h-4 w-4" />
-                  </span>
-                  <div>
-                    <h2 className="text-lg font-bold text-white">Sync</h2>
-                    <p className="mt-0.5 text-sm text-zinc-400">
-                      Library, progress, and read chapters across devices.
-                    </p>
-                  </div>
-                </div>
-                <button
-                  onClick={handleSync}
-                  disabled={syncing}
-                  className="inline-flex shrink-0 items-center justify-center gap-2 rounded-md border border-white/15 px-3 py-2 text-sm font-medium text-zinc-300 transition-colors hover:border-red-500/50 hover:text-white disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-                >
-                  {syncing ? (
-                    <>
-    <LoadingIcon className="h-4 w-4" />
-                      Syncing…
-                    </>
-                  ) : (
-                    <>
-                      <SyncIcon className="h-3.5 w-3.5" />
-                      Sync now
-                    </>
-                  )}
-                </button>
-              </div>
-
-              {lastSynced && (
-                <p className="mt-3 text-xs text-zinc-500">
-                  Last synced {timeAgo(lastSynced, now)}
-                </p>
-              )}
-
-              {syncResult && (
-                <div
-                  aria-live="polite"
-                  className="mt-4 border-t border-white/10 pt-4"
-                >
-                  {lastSummary && (
-                    <div className="mb-3 flex flex-wrap gap-2">
-                      {lastSummary.providers.map((provider) => (
-                        <span
-                          key={provider.provider}
-                          className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${
-                            provider.error
-                              ? "border-red-500/30 bg-red-500/10 text-red-300"
-                              : "border-white/15 bg-zinc-900/60 text-zinc-200"
-                          }`}
-                        >
-                          {provider.error ? (
-                            <CheckIcon className="h-3 w-3 rotate-45 text-red-400" />
-                          ) : (
-                            <CheckIcon className="h-3 w-3 text-red-400" />
-                          )}
-                          {provider.provider === "anilist"
-                            ? "AniList"
-                            : "MyAnimeList"}{" "}
-                          {provider.error ? "failed" : "synced"}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                  <p
-                    className={`text-sm ${
-                      syncResult.startsWith("Synced,")
-                        ? "text-red-300"
-                        : "text-zinc-300"
-                    }`}
-                  >
-                    {syncResult}
-                  </p>
-                </div>
-              )}
-            </section>
-
-            <section className="animate-page-in" style={{ animationDelay: '60ms' }}>
-              <div className="flex items-center gap-3">
-                <span className="flex h-8 w-8 shrink-0 items-center justify-center text-zinc-400">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.85" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>
-                    <path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z" />
-                    <path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12" />
-                    <path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17" />
-                  </svg>
+        <div className="mt-7 grid items-stretch gap-4 lg:grid-cols-2">
+          <section className="rounded-xl border border-white/10 bg-white/[0.02] p-5 animate-page-in" style={{ animationDelay: '0ms' }}>
+            <div className="flex items-center justify-between gap-4">
+              <div className="flex items-start gap-3">
+                <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center text-zinc-400">
+                  <SyncIcon className="h-4 w-4" />
                 </span>
                 <div>
-                  <h2 className="text-lg font-bold text-white">External Lists</h2>
-                  <p className="mt-0.5 text-sm text-zinc-400">Two-way sync with AniList and MyAnimeList.</p>
-                </div>
-              </div>
-
-              <div className="mt-4 divide-y divide-white/10 border-y border-white/10">
-                {PROVIDERS.map((config) => (
-                  <IntegrationRow
-                    key={config.provider}
-                    {...config}
-                    state={config.provider === "anilist" ? anilist : mal}
-                  />
-                ))}
-              </div>
-            </section>
-          </div>
-
-          <aside className="border-t border-white/10 pt-6 lg:border-l lg:border-t-0 lg:pl-7 lg:pt-0">
-            <section className="animate-page-in" style={{ animationDelay: '120ms' }}>
-              <div className="flex items-center justify-between gap-4">
-                <div>
-                  <h2 className="text-sm font-semibold text-white">Account</h2>
-                  <p className="mt-1 text-sm text-zinc-500">
-                    Your library stays saved.
+                  <h2 className="text-lg font-bold text-white">Sync</h2>
+                  <p className="mt-0.5 text-sm text-zinc-400">
+                    Library, progress, and read chapters across devices.
                   </p>
                 </div>
-                <button
-                  onClick={() => {
-                    void signOut().then(() => {
-                      router.push("/");
-                      router.refresh();
-                    });
-                  }}
-                  className="shrink-0 inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-zinc-400 transition-colors hover:bg-red-500/10 hover:text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-                >
-                  <SignOutIcon className="h-4 w-4" />
-                  Sign out
-                </button>
               </div>
-            </section>
-          </aside>
+              <button
+                onClick={handleSync}
+                disabled={syncing}
+                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-md border border-white/15 px-3 py-2 text-sm font-medium text-zinc-300 transition-colors hover:border-red-500/50 hover:text-white disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+              >
+                {syncing ? (
+                  <>
+                    <LoadingIcon className="h-4 w-4" />
+                    Syncing…
+                  </>
+                ) : (
+                  <>
+                    <SyncIcon className="h-3.5 w-3.5" />
+                    Sync now
+                  </>
+                )}
+              </button>
+            </div>
+
+            {lastSynced && (
+              <p className="mt-3 text-xs text-zinc-500">
+                Last synced {timeAgo(lastSynced, now)}
+              </p>
+            )}
+
+            {syncResult && (
+              <div
+                aria-live="polite"
+                className="mt-4 border-t border-white/10 pt-4"
+              >
+                {lastSummary && (
+                  <div className="mb-3 flex flex-wrap gap-2">
+                    {lastSummary.providers.map((provider) => (
+                      <span
+                        key={provider.provider}
+                        className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${
+                          provider.error
+                            ? "border-red-500/30 bg-red-500/10 text-red-300"
+                            : "border-white/15 bg-zinc-900/60 text-zinc-200"
+                        }`}
+                      >
+                        {provider.error ? (
+                          <CheckIcon className="h-3 w-3 rotate-45 text-red-400" />
+                        ) : (
+                          <CheckIcon className="h-3 w-3 text-red-400" />
+                        )}
+                        {provider.provider === "anilist"
+                          ? "AniList"
+                          : "MyAnimeList"}{" "}
+                        {provider.error ? "failed" : "synced"}
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <p
+                  className={`text-sm ${
+                    syncResult.startsWith("Synced,")
+                      ? "text-red-300"
+                      : "text-zinc-300"
+                  }`}
+                >
+                  {syncResult}
+                </p>
+              </div>
+            )}
+          </section>
+
+          <section className="rounded-xl border border-white/10 bg-white/[0.02] p-5 animate-page-in" style={{ animationDelay: '60ms' }}>
+            <div className="flex items-center gap-3">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center text-zinc-400">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.85" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>
+                  <path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z" />
+                  <path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12" />
+                  <path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17" />
+                </svg>
+              </span>
+              <div>
+                <h2 className="text-lg font-bold text-white">External Lists</h2>
+                <p className="mt-0.5 text-sm text-zinc-400">Two-way sync with AniList and MyAnimeList.</p>
+              </div>
+            </div>
+
+            <div className="mt-4 divide-y divide-white/10 border-y border-white/10">
+              {PROVIDERS.map((config) => (
+                <IntegrationRow
+                  key={config.provider}
+                  {...config}
+                  state={config.provider === "anilist" ? anilist : mal}
+                />
+              ))}
+            </div>
+          </section>
         </div>
+
+        <section className="mt-7 flex items-center justify-between gap-4 border-t border-white/10 py-4">
+          <div>
+            <h2 className="text-sm font-medium text-zinc-300">Account</h2>
+            <p className="mt-1 text-xs text-zinc-500">Your library stays saved.</p>
+          </div>
+          <button
+            onClick={() => {
+              void signOut().then(() => {
+                router.push("/");
+                router.refresh();
+              });
+            }}
+            className="shrink-0 inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-zinc-400 transition-colors hover:bg-red-500/10 hover:text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+          >
+            <SignOutIcon className="h-4 w-4" />
+            Sign out
+          </button>
+        </section>
       </div>
     </main>
   );

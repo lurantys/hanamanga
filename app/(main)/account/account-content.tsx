@@ -302,10 +302,10 @@ export default function AccountContent() {
 
   return (
     <main className="min-h-screen bg-[#09090b] pb-24">
-      <div className="mx-auto max-w-6xl px-4 pt-header sm:px-6 lg:px-8">
-        <header className="relative -mx-4 overflow-hidden border-y border-white/[0.08] bg-zinc-900 sm:mx-0 sm:mt-6 sm:rounded-3xl sm:border">
-          <div className="flex min-h-60 flex-col justify-end gap-5 px-5 pb-6 pt-16 sm:min-h-72 sm:flex-row sm:items-end sm:justify-start sm:px-8 sm:pb-8">
-            <span className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/20 bg-zinc-950 text-base font-bold text-zinc-200 shadow-2xl shadow-black/60 sm:h-32 sm:w-32 sm:rounded-3xl">
+      <div className="mx-auto max-w-4xl px-4 pt-header sm:px-6 lg:px-8">
+        <header className="border-b border-white/10 pb-6">
+          <div className="flex items-center gap-4 sm:gap-5">
+            <span className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-zinc-900 text-base font-bold text-zinc-200 sm:h-20 sm:w-20">
               {avatar?.url ? (
                 <Image
                   src={avatar.url}
@@ -320,10 +320,9 @@ export default function AccountContent() {
                 </span>
               )}
             </span>
-            <div className="min-w-0 flex-1 sm:pb-1">
-              <p className="mb-1 text-xs font-bold uppercase tracking-[0.22em] text-red-300">Hana reader</p>
+            <div className="min-w-0 flex-1">
               <div className="flex items-center gap-2">
-                <h1 className="truncate text-3xl font-extrabold tracking-tight text-white md:text-4xl">
+                <h1 className="truncate text-2xl font-bold tracking-tight text-white sm:text-3xl">
                   {displayName ?? "Account"}
                 </h1>
                 <button
@@ -334,7 +333,7 @@ export default function AccountContent() {
                     setNameError(null);
                   }}
                   aria-label="Edit display name"
-                  className="rounded-lg p-2 text-zinc-400 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
+                  className="rounded-md p-1.5 text-zinc-500 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
                 >
                   <svg
                     viewBox="0 0 24 24"
@@ -396,7 +395,7 @@ export default function AccountContent() {
                   )}
                 </form>
               ) : (
-                <p className="mt-1 text-sm text-zinc-300">
+                <p className="mt-1 text-sm text-zinc-500">
                   {user.email}
                 </p>
               )}
@@ -404,15 +403,18 @@ export default function AccountContent() {
           </div>
         </header>
 
-        <section id="overview" className="mt-7 scroll-mt-24">
-          <div className="mb-3 flex items-end justify-between">
-            <div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-red-300/80">Your reading</p><h2 className="mt-1 text-xl font-bold tracking-tight text-white">Library overview</h2></div>
-            <Link href="/library" className="text-sm font-semibold text-zinc-400 transition-colors hover:text-white">Open library <span aria-hidden>↗</span></Link>
+        <section className="mt-6">
+          <div className="mb-3 flex items-center justify-between">
+            <h2 className="text-sm font-semibold text-zinc-300">Reading stats</h2>
+            <Link href="/library" className="text-sm text-zinc-500 transition-colors hover:text-white">Open library <span aria-hidden>↗</span></Link>
           </div>
-          <div className="grid grid-cols-2 overflow-hidden rounded-2xl border border-white/[0.08] bg-zinc-900/70 sm:grid-cols-4">
+          <div className="grid grid-cols-2 border-y border-white/10 sm:grid-cols-4">
             {[[libraryStats.total, "Titles saved"], [libraryStats.reading, "Currently reading"], [libraryStats.finished, "Completed"], [libraryStats.chapters, "Chapters read"]].map(([value, label], index) => (
-              <div key={label} className={`px-5 py-5 sm:px-6 ${index > 0 ? "border-l border-white/[0.08]" : ""} ${index > 1 ? "border-t border-white/[0.08] sm:border-t-0" : ""}`}>
-                <p className="text-2xl font-extrabold tracking-tight text-red-300 sm:text-3xl">{value}</p><p className="mt-1 text-xs font-medium text-zinc-500 sm:text-sm">{label}</p>
+              <div
+                key={label}
+                className={`py-4 ${index % 2 === 1 ? "border-l border-white/10 pl-5" : "pr-5"} ${index > 1 ? "border-t border-white/10 sm:border-t-0" : ""} ${index > 1 ? "sm:border-l sm:pl-5" : ""}`}
+              >
+                <p className="text-xl font-semibold tracking-tight text-white sm:text-2xl">{value}</p><p className="mt-1 text-xs text-zinc-500 sm:text-sm">{label}</p>
               </div>
             ))}
           </div>
@@ -452,132 +454,140 @@ export default function AccountContent() {
           </p>
         )}
 
-        <section className="mt-6 rounded-2xl border border-white/10 bg-zinc-900/60 p-5 animate-page-in" style={{ animationDelay: '0ms' }}>
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-start gap-3">
-              <span className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-zinc-950/70 text-zinc-300">
-                <SyncIcon className="h-4 w-4" />
-              </span>
-              <div>
-                <h2 className="text-lg font-bold text-white">Sync</h2>
-                <p className="mt-0.5 text-sm text-zinc-400">
-                  Library, progress, and read chapters across devices.
-                </p>
+        <div className="mt-7 grid items-start gap-8 lg:grid-cols-[minmax(0,1.45fr)_minmax(16rem,0.75fr)] lg:gap-12">
+          <div className="min-w-0 space-y-7">
+            <section className="border-b border-white/10 pb-6 animate-page-in" style={{ animationDelay: '0ms' }}>
+              <div className="flex items-center justify-between gap-4">
+                <div className="flex items-start gap-3">
+                  <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center text-zinc-400">
+                    <SyncIcon className="h-4 w-4" />
+                  </span>
+                  <div>
+                    <h2 className="text-lg font-bold text-white">Sync</h2>
+                    <p className="mt-0.5 text-sm text-zinc-400">
+                      Library, progress, and read chapters across devices.
+                    </p>
+                  </div>
+                </div>
+                <button
+                  onClick={handleSync}
+                  disabled={syncing}
+                  className="inline-flex shrink-0 items-center justify-center gap-2 rounded-md border border-white/15 px-3 py-2 text-sm font-medium text-zinc-300 transition-colors hover:border-red-500/50 hover:text-white disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                >
+                  {syncing ? (
+                    <>
+    <LoadingIcon className="h-4 w-4" />
+                      Syncing…
+                    </>
+                  ) : (
+                    <>
+                      <SyncIcon className="h-3.5 w-3.5" />
+                      Sync now
+                    </>
+                  )}
+                </button>
               </div>
-            </div>
-            <button
-              onClick={handleSync}
-              disabled={syncing}
-              className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-white/15 px-4 py-2 text-sm font-semibold text-zinc-200 transition-colors hover:border-white/40 hover:text-white disabled:cursor-not-allowed disabled:opacity-60 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
-            >
-              {syncing ? (
-                <>
-<LoadingIcon className="h-4 w-4" />
-                  Syncing…
-                </>
-              ) : (
-                <>
-                  <SyncIcon className="h-3.5 w-3.5" />
-                  Sync now
-                </>
+
+              {lastSynced && (
+                <p className="mt-3 text-xs text-zinc-500">
+                  Last synced {timeAgo(lastSynced, now)}
+                </p>
               )}
-            </button>
-          </div>
 
-          {lastSynced && (
-            <p className="mt-3 text-xs text-zinc-500">
-              Last synced {timeAgo(lastSynced, now)}
-            </p>
-          )}
-
-          {syncResult && (
-            <div
-              aria-live="polite"
-              className="mt-4 border-t border-white/10 pt-4"
-            >
-              {lastSummary && (
-                <div className="mb-3 flex flex-wrap gap-2">
-                  {lastSummary.providers.map((provider) => (
-                    <span
-                      key={provider.provider}
-                      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${
-                        provider.error
-                          ? "border-red-500/30 bg-red-500/10 text-red-300"
-                          : "border-white/15 bg-zinc-900/60 text-zinc-200"
-                      }`}
-                    >
-                      {provider.error ? (
-                        <CheckIcon className="h-3 w-3 rotate-45 text-red-400" />
-                      ) : (
-                        <CheckIcon className="h-3 w-3 text-red-400" />
-                      )}
-                      {provider.provider === "anilist"
-                        ? "AniList"
-                        : "MyAnimeList"}{" "}
-                      {provider.error ? "failed" : "synced"}
-                    </span>
-                  ))}
+              {syncResult && (
+                <div
+                  aria-live="polite"
+                  className="mt-4 border-t border-white/10 pt-4"
+                >
+                  {lastSummary && (
+                    <div className="mb-3 flex flex-wrap gap-2">
+                      {lastSummary.providers.map((provider) => (
+                        <span
+                          key={provider.provider}
+                          className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-semibold ${
+                            provider.error
+                              ? "border-red-500/30 bg-red-500/10 text-red-300"
+                              : "border-white/15 bg-zinc-900/60 text-zinc-200"
+                          }`}
+                        >
+                          {provider.error ? (
+                            <CheckIcon className="h-3 w-3 rotate-45 text-red-400" />
+                          ) : (
+                            <CheckIcon className="h-3 w-3 text-red-400" />
+                          )}
+                          {provider.provider === "anilist"
+                            ? "AniList"
+                            : "MyAnimeList"}{" "}
+                          {provider.error ? "failed" : "synced"}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  <p
+                    className={`text-sm ${
+                      syncResult.startsWith("Synced,")
+                        ? "text-red-300"
+                        : "text-zinc-300"
+                    }`}
+                  >
+                    {syncResult}
+                  </p>
                 </div>
               )}
-              <p
-                className={`text-sm ${
-                  syncResult.startsWith("Synced,")
-                    ? "text-red-300"
-                    : "text-zinc-300"
-                }`}
-              >
-                {syncResult}
-              </p>
-            </div>
-          )}
-        </section>
+            </section>
 
-        <section id="connections" className="mt-5 scroll-mt-24 rounded-2xl border border-white/10 bg-zinc-900/60 p-5 animate-page-in" style={{ animationDelay: '60ms' }}>
-          <div className="flex items-center gap-3">
-            <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-zinc-950/70 text-zinc-300">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.85" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>
-                <path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z" />
-                <path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12" />
-                <path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17" />
-              </svg>
-            </span>
-            <div>
-              <h2 className="text-lg font-bold text-white">External Lists</h2>
-              <p className="mt-0.5 text-sm text-zinc-400">Two-way sync with AniList and MyAnimeList.</p>
-            </div>
+            <section className="animate-page-in" style={{ animationDelay: '60ms' }}>
+              <div className="flex items-center gap-3">
+                <span className="flex h-8 w-8 shrink-0 items-center justify-center text-zinc-400">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.85" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>
+                    <path d="m12.83 2.18a2 2 0 0 0-1.66 0L2.6 6.08a1 1 0 0 0 0 1.83l8.58 3.91a2 2 0 0 0 1.66 0l8.58-3.9a1 1 0 0 0 0-1.83z" />
+                    <path d="M2 12a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 12" />
+                    <path d="M2 17a1 1 0 0 0 .58.91l8.6 3.91a2 2 0 0 0 1.65 0l8.58-3.9A1 1 0 0 0 22 17" />
+                  </svg>
+                </span>
+                <div>
+                  <h2 className="text-lg font-bold text-white">External Lists</h2>
+                  <p className="mt-0.5 text-sm text-zinc-400">Two-way sync with AniList and MyAnimeList.</p>
+                </div>
+              </div>
+
+              <div className="mt-4 divide-y divide-white/10 border-y border-white/10">
+                {PROVIDERS.map((config) => (
+                  <IntegrationRow
+                    key={config.provider}
+                    {...config}
+                    state={config.provider === "anilist" ? anilist : mal}
+                  />
+                ))}
+              </div>
+            </section>
           </div>
 
-          <div className="mt-4 flex flex-col gap-3">
-            {PROVIDERS.map((config) => (
-              <IntegrationRow
-                key={config.provider}
-                {...config}
-                state={config.provider === "anilist" ? anilist : mal}
-              />
-            ))}
-          </div>
-        </section>
-
-        <section id="account" className="mt-5 scroll-mt-24 rounded-2xl border border-white/10 bg-zinc-900/60 p-5 animate-page-in" style={{ animationDelay: '120ms' }}>
-          <div className="flex items-center justify-between gap-4">
-            <div>
-              <h2 className="text-lg font-bold text-white">Sign out</h2>
-              <p className="mt-0.5 text-sm text-zinc-400">Your library stays saved.</p>
-            </div>
-            <button
-              onClick={() => {
-                void signOut().then(() => {
-                  router.push("/");
-                  router.refresh();
-                });
-              }}
-              className="shrink-0 inline-flex items-center justify-center gap-2 rounded-full border border-red-500/40 px-4 py-2 text-sm font-semibold text-red-300 transition-colors hover:border-red-500/70 hover:text-red-200 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
-            >
-              <SignOutIcon className="h-4 w-4" />
-              Sign out
-            </button>
-          </div>
-        </section>
+          <aside className="border-t border-white/10 pt-6 lg:border-l lg:border-t-0 lg:pl-7 lg:pt-0">
+            <section className="animate-page-in" style={{ animationDelay: '120ms' }}>
+              <div className="flex items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-sm font-semibold text-white">Account</h2>
+                  <p className="mt-1 text-sm text-zinc-500">
+                    Your library stays saved.
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    void signOut().then(() => {
+                      router.push("/");
+                      router.refresh();
+                    });
+                  }}
+                  className="shrink-0 inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-zinc-400 transition-colors hover:bg-red-500/10 hover:text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                >
+                  <SignOutIcon className="h-4 w-4" />
+                  Sign out
+                </button>
+              </div>
+            </section>
+          </aside>
+        </div>
       </div>
     </main>
   );
@@ -599,12 +609,12 @@ function IntegrationRow({
   state: IntegrationState;
 }) {
   return (
-    <div className="flex items-center justify-between gap-4 rounded-xl border border-white/10 bg-zinc-950/60 px-4 py-3.5 transition-colors hover:border-white/20">
-      <div className="flex min-w-0 items-center gap-3.5">
+    <div className="flex items-center justify-between gap-4 py-3">
+      <div className="flex min-w-0 items-center gap-3">
         <span
-          className={`flex h-11 w-11 shrink-0 items-center justify-center rounded-xl ${tileClass} text-white shadow-lg shadow-black/30`}
+          className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${tileClass} text-white`}
         >
-          <ProviderLogo provider={provider} className="h-6 w-6" />
+          <ProviderLogo provider={provider} className="h-5 w-5" />
         </span>
         <div className="min-w-0">
           <p className="font-semibold text-white">{name}</p>
@@ -621,11 +631,8 @@ function IntegrationRow({
         <LoadingIcon className="h-10 w-10 shrink-0" />
       ) : state.status === "connected" ? (
         <div className="flex shrink-0 flex-col items-end gap-1">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-zinc-900/60 px-2.5 py-1 text-xs font-semibold text-zinc-200">
-            <span className="relative flex h-1.5 w-1.5">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-400 opacity-60" />
-              <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-red-400" />
-            </span>
+          <span className="inline-flex items-center gap-1.5 text-xs font-medium text-red-300">
+            <span className="h-1.5 w-1.5 rounded-full bg-red-500" />
             Connected
           </span>
           {state.syncedAt && (
@@ -638,7 +645,7 @@ function IntegrationRow({
       ) : (
         <a
           href={href}
-          className="shrink-0 inline-flex items-center justify-center rounded-full bg-white px-4 py-2 text-sm font-semibold text-zinc-950 transition-colors duration-200 hover:bg-white/80 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70"
+          className="shrink-0 inline-flex items-center justify-center rounded-md px-3 py-1.5 text-sm font-medium text-zinc-400 transition-colors hover:bg-white/5 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
         >
           Connect
         </a>

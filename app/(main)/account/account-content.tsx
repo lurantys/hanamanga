@@ -11,6 +11,9 @@ import { syncNow } from "@/lib/sync";
 import { useProviderAvatar } from "@/lib/use-provider-avatar";
 import { SignInIcon, SignOutIcon } from "@/components/AuthIcons";
 import type { SyncSummary } from "@/lib/provider-sync";
+import type { User } from "@supabase/supabase-js";
+import { getLibrarySnapshot, subscribeLibrary } from "@/lib/library";
+import { getReadSnapshot, subscribeReadState } from "@/lib/read-state";
 
 type IntegrationStatus = "idle" | "checking" | "connected" | "not_configured";
 
@@ -140,10 +143,22 @@ function SyncIcon({ className = "h-3.5 w-3.5" }: { className?: string }) {
 }
 
 export default function AccountContent() {
-  const { user, loading, signOut, updateDisplayName } = useAuth();
+  const auth = useAuth();
   const router = useRouter();
-  const avatar = useProviderAvatar(user?.id ?? null);
   const searchParams = useSearchParams();
+  const previewMode = searchParams.get("preview") === "1";
+  const previewUser = {
+    id: "hana-local-preview",
+    email: "reader@hana.local",
+    user_metadata: { display_name: "Hana Reader" },
+  } as unknown as User;
+  const user = previewMode ? previewUser : auth.user;
+  const loading = previewMode ? false : auth.loading;
+  const signOut = previewMode ? async () => {} : auth.signOut;
+  const updateDisplayName = previewMode
+    ? async () => ({ error: "Preview mode: profile changes are disabled." })
+    : auth.updateDisplayName;
+  const avatar = useProviderAvatar(previewMode ? null : user?.id ?? null);
   const importOk = searchParams.get("import");
   const error = searchParams.get("error");
   const importCount = searchParams.get("count");
@@ -160,8 +175,32 @@ export default function AccountContent() {
   const [nameValue, setNameValue] = useState("");
   const [nameSaving, setNameSaving] = useState(false);
   const [nameError, setNameError] = useState<string | null>(null);
+  const [libraryStats, setLibraryStats] = useState({ total: 0, reading: 0, finished: 0, chapters: 0 });
 
   const displayName = getDisplayName(user);
+
+  useEffect(() => {
+    const updateStats = () => {
+      const entries = Object.values(getLibrarySnapshot());
+      const chapters = Object.values(getReadSnapshot()).reduce(
+        (total, manga) => total + Object.keys(manga).length,
+        0,
+      );
+      setLibraryStats({
+        total: entries.length,
+        reading: entries.filter(({ status }) => status === "reading").length,
+        finished: entries.filter(({ status }) => status === "read").length,
+        chapters,
+      });
+    };
+    updateStats();
+    const unsubscribeLibrary = subscribeLibrary(updateStats);
+    const unsubscribeRead = subscribeReadState(updateStats);
+    return () => {
+      unsubscribeLibrary();
+      unsubscribeRead();
+    };
+  }, []);
 
   useEffect(() => {
     const timer = window.setInterval(() => setNow(Date.now()), 30_000);
@@ -262,11 +301,11 @@ export default function AccountContent() {
   }
 
   return (
-    <main className="bg-zinc-950 pb-24">
-      <div className="mx-auto max-w-2xl px-5 pt-28 md:px-10">
-        <header>
-          <div className="flex items-center gap-3">
-            <span className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-full border border-white/10 bg-zinc-900/80 text-base font-bold text-zinc-200">
+    <main className="min-h-screen bg-[#09090b] pb-24">
+      <div className="mx-auto max-w-6xl px-4 pt-header sm:px-6 lg:px-8">
+        <header className="relative -mx-4 overflow-hidden border-y border-white/[0.08] bg-zinc-900 sm:mx-0 sm:mt-6 sm:rounded-3xl sm:border">
+          <div className="flex min-h-60 flex-col justify-end gap-5 px-5 pb-6 pt-16 sm:min-h-72 sm:flex-row sm:items-end sm:justify-start sm:px-8 sm:pb-8">
+            <span className="flex h-24 w-24 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/20 bg-zinc-950 text-base font-bold text-zinc-200 shadow-2xl shadow-black/60 sm:h-32 sm:w-32 sm:rounded-3xl">
               {avatar?.url ? (
                 <Image
                   src={avatar.url}
@@ -281,9 +320,10 @@ export default function AccountContent() {
                 </span>
               )}
             </span>
-            <div>
+            <div className="min-w-0 flex-1 sm:pb-1">
+              <p className="mb-1 text-xs font-bold uppercase tracking-[0.22em] text-red-300">Hana reader</p>
               <div className="flex items-center gap-2">
-                <h1 className="text-2xl font-extrabold tracking-tight text-white md:text-3xl">
+                <h1 className="truncate text-3xl font-extrabold tracking-tight text-white md:text-4xl">
                   {displayName ?? "Account"}
                 </h1>
                 <button
@@ -294,7 +334,7 @@ export default function AccountContent() {
                     setNameError(null);
                   }}
                   aria-label="Edit display name"
-                  className="rounded-md p-1 text-zinc-600 transition-colors hover:text-zinc-300"
+                  className="rounded-lg p-2 text-zinc-400 transition-colors hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400"
                 >
                   <svg
                     viewBox="0 0 24 24"
@@ -356,14 +396,27 @@ export default function AccountContent() {
                   )}
                 </form>
               ) : (
-                <p className="mt-0.5 text-sm text-zinc-400">
-                  Account <span className="text-zinc-600">·</span>{" "}
+                <p className="mt-1 text-sm text-zinc-300">
                   {user.email}
                 </p>
               )}
             </div>
           </div>
         </header>
+
+        <section id="overview" className="mt-7 scroll-mt-24">
+          <div className="mb-3 flex items-end justify-between">
+            <div><p className="text-xs font-semibold uppercase tracking-[0.18em] text-red-300/80">Your reading</p><h2 className="mt-1 text-xl font-bold tracking-tight text-white">Library overview</h2></div>
+            <Link href="/library" className="text-sm font-semibold text-zinc-400 transition-colors hover:text-white">Open library <span aria-hidden>↗</span></Link>
+          </div>
+          <div className="grid grid-cols-2 overflow-hidden rounded-2xl border border-white/[0.08] bg-zinc-900/70 sm:grid-cols-4">
+            {[[libraryStats.total, "Titles saved"], [libraryStats.reading, "Currently reading"], [libraryStats.finished, "Completed"], [libraryStats.chapters, "Chapters read"]].map(([value, label], index) => (
+              <div key={label} className={`px-5 py-5 sm:px-6 ${index > 0 ? "border-l border-white/[0.08]" : ""} ${index > 1 ? "border-t border-white/[0.08] sm:border-t-0" : ""}`}>
+                <p className="text-2xl font-extrabold tracking-tight text-red-300 sm:text-3xl">{value}</p><p className="mt-1 text-xs font-medium text-zinc-500 sm:text-sm">{label}</p>
+              </div>
+            ))}
+          </div>
+        </section>
 
         {importOk && error ? (
           <p className="mt-6 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">
@@ -479,7 +532,7 @@ export default function AccountContent() {
           )}
         </section>
 
-        <section className="mt-5 rounded-2xl border border-white/10 bg-zinc-900/60 p-5 animate-page-in" style={{ animationDelay: '60ms' }}>
+        <section id="connections" className="mt-5 scroll-mt-24 rounded-2xl border border-white/10 bg-zinc-900/60 p-5 animate-page-in" style={{ animationDelay: '60ms' }}>
           <div className="flex items-center gap-3">
             <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-zinc-950/70 text-zinc-300">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.85" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>
@@ -505,7 +558,7 @@ export default function AccountContent() {
           </div>
         </section>
 
-        <section className="mt-5 rounded-2xl border border-white/10 bg-zinc-900/60 p-5 animate-page-in" style={{ animationDelay: '120ms' }}>
+        <section id="account" className="mt-5 scroll-mt-24 rounded-2xl border border-white/10 bg-zinc-900/60 p-5 animate-page-in" style={{ animationDelay: '120ms' }}>
           <div className="flex items-center justify-between gap-4">
             <div>
               <h2 className="text-lg font-bold text-white">Sign out</h2>

@@ -42,7 +42,10 @@ export async function proxy(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   const isProtected = request.nextUrl.pathname.startsWith("/account");
-  if (isProtected && !user) {
+  const isLocalAccountPreview =
+    process.env.NODE_ENV !== "production" &&
+    request.nextUrl.searchParams.get("preview") === "1";
+  if (isProtected && !user && !isLocalAccountPreview) {
     const url = request.nextUrl.clone();
     url.pathname = "/login";
     url.searchParams.set("next", request.nextUrl.pathname);

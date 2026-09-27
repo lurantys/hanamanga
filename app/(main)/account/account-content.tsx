@@ -13,7 +13,13 @@ import { SignInIcon, SignOutIcon } from "@/components/AuthIcons";
 import type { SyncSummary } from "@/lib/provider-sync";
 import type { User } from "@supabase/supabase-js";
 import { getLibrarySnapshot, subscribeLibrary } from "@/lib/library";
-import { getReadSnapshot, subscribeReadState } from "@/lib/read-state";
+import { getAllProgress, subscribeProgress } from "@/lib/progress";
+import {
+  getFinishedSnapshot,
+  getReadSnapshot,
+  subscribeFinished,
+  subscribeReadState,
+} from "@/lib/read-state";
 
 type IntegrationStatus = "idle" | "checking" | "connected" | "not_configured";
 
@@ -181,24 +187,47 @@ export default function AccountContent() {
 
   useEffect(() => {
     const updateStats = () => {
-      const entries = Object.values(getLibrarySnapshot());
+      const library = getLibrarySnapshot();
+      const entries = Object.values(library);
+      const finishedIds = new Set([
+        ...Object.keys(getFinishedSnapshot()),
+        ...entries
+          .filter(({ status }) => status === "read")
+          .map(({ manga }) => manga.id),
+      ]);
+      const readingIds = new Set([
+        ...entries
+          .filter(({ status, manga }) =>
+            status === "reading" && !finishedIds.has(manga.id),
+          )
+          .map(({ manga }) => manga.id),
+        ...Object.values(getAllProgress())
+          .filter(({ mangaId }) =>
+            !finishedIds.has(mangaId) && library[mangaId]?.status !== "read",
+          )
+          .map(({ mangaId }) => mangaId),
+      ]);
       const chapters = Object.values(getReadSnapshot()).reduce(
         (total, manga) => total + Object.keys(manga).length,
         0,
       );
       setLibraryStats({
         total: entries.length,
-        reading: entries.filter(({ status }) => status === "reading").length,
-        finished: entries.filter(({ status }) => status === "read").length,
+        reading: readingIds.size,
+        finished: finishedIds.size,
         chapters,
       });
     };
     updateStats();
     const unsubscribeLibrary = subscribeLibrary(updateStats);
     const unsubscribeRead = subscribeReadState(updateStats);
+    const unsubscribeProgress = subscribeProgress(updateStats);
+    const unsubscribeFinished = subscribeFinished(updateStats);
     return () => {
       unsubscribeLibrary();
       unsubscribeRead();
+      unsubscribeProgress();
+      unsubscribeFinished();
     };
   }, []);
 

@@ -43,7 +43,10 @@ export function NewChaptersRow() {
         );
         if (!active) return;
         const read = getReadSnapshot();
-        const feedMap = Object.assign({}, ...feedBatches.map((json) => json?.data ?? {}));
+        const feedMap: Record<string, Chapter[]> = {};
+        for (const json of feedBatches) {
+          Object.assign(feedMap, json?.data ?? {});
+        }
         const results: ChapterUpdate[] = [];
 
         for (const manga of mangaListForRequest) {

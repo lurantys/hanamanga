@@ -1,15 +1,14 @@
 "use client";
 
 import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useAuth } from "@/lib/auth";
 import { Carousel } from "./Carousel";
 import { MangaCard } from "./MangaCard";
 import { focusRing } from "@/lib/ui";
 import {
-  CONTINUE_HERO_EVENT,
-  PROGRESS_EVENT,
+  subscribeProgress,
   getContinueList,
   clearProgress,
-  invalidateProgressCache,
   type ProgressEntry,
 } from "@/lib/progress";
 import type { Manga } from "@/lib/mangadex";
@@ -19,26 +18,11 @@ import { getFinishedSnapshot, subscribeFinished } from "@/lib/read-state";
 const EMPTY_LIST: ProgressEntry[] = [];
 const EMPTY_FINISHED: Record<string, number> = {};
 
-function subscribe(onChange: () => void): () => void {
-  const listener = () => onChange();
-  const onStorage = (event: StorageEvent) => {
-    if (event.key === "hana:progress") invalidateProgressCache();
-    onChange();
-  };
-  window.addEventListener("storage", onStorage);
-  window.addEventListener(CONTINUE_HERO_EVENT, listener);
-  window.addEventListener(PROGRESS_EVENT, listener);
-  return () => {
-    window.removeEventListener("storage", onStorage);
-    window.removeEventListener(CONTINUE_HERO_EVENT, listener);
-    window.removeEventListener(PROGRESS_EVENT, listener);
-  };
-}
-
 export function ContinueRow() {
+  const { dataReady } = useAuth();
   const entries = useSyncExternalStore(
-    subscribe,
-    () => getContinueList(18),
+    subscribeProgress,
+    () => dataReady ? getContinueList(18) : EMPTY_LIST,
     () => EMPTY_LIST,
   );
   const finished = useSyncExternalStore(

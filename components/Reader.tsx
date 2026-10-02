@@ -680,6 +680,13 @@ export function Reader({
   useEffect(() => {
     if (mode !== "webtoon") return;
     let saveTimer = 0;
+    let pendingSave: (() => void) | null = null;
+    const flushProgress = () => {
+      window.clearTimeout(saveTimer);
+      const save = pendingSave;
+      pendingSave = null;
+      save?.();
+    };
     let progressRaf = 0;
     let latestProgress = 0;
     function onScroll() {
@@ -702,7 +709,7 @@ export function Reader({
         });
       }
       window.clearTimeout(saveTimer);
-      saveTimer = window.setTimeout(() => {
+      pendingSave = () => {
         if (!userActiveRef.current) return;
         const index = chapters.findIndex(
           (chapter) => chapter.id === currentChapterId,
@@ -735,7 +742,8 @@ export function Reader({
           mangaFraction,
           updatedAt: entry.updatedAt,
         });
-      }, 600);
+      };
+      saveTimer = window.setTimeout(flushProgress, 600);
       if (userActiveRef.current && value >= 0.98 && settings.autoAdvance) {
         scheduleAdvance();
       } else {
@@ -746,7 +754,7 @@ export function Reader({
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
       window.removeEventListener("scroll", onScroll);
-      window.clearTimeout(saveTimer);
+      flushProgress();
       if (progressRaf) window.cancelAnimationFrame(progressRaf);
       stopAdvance();
     };

@@ -12,6 +12,7 @@ import {
   clearProgress,
   PROGRESS_EVENT,
   setProgressUserId,
+  CONTINUE_HERO_EVENT,
   type ProgressEntry,
 } from "./progress";
 import {
@@ -286,7 +287,7 @@ async function pullLibrary(userId: string): Promise<void> {
       .select("manga_id, manga, added_at")
       .eq("user_id", userId));
   }
-  if (!data) return;
+  if (!data || currentUserId !== userId) return;
   const local = getLibrarySnapshot();
   const merged: LibraryMap = { ...local };
   for (const row of data as LibraryRow[]) {
@@ -317,7 +318,7 @@ async function pullProgress(userId: string): Promise<void> {
     .from("hana_progress")
     .select("*")
     .eq("user_id", userId);
-  if (!data) return;
+  if (!data || currentUserId !== userId) return;
   const local = getAllProgress();
   const merged: Record<string, ProgressEntry> = { ...local };
   for (const row of data as ProgressRow[]) {
@@ -346,7 +347,7 @@ async function pullReadState(userId: string): Promise<void> {
     .from("hana_read_state")
     .select("manga_id, chapter_id, read_at")
     .eq("user_id", userId);
-  if (!data) return;
+  if (!data || currentUserId !== userId) return;
   const local = getReadSnapshot();
   const merged: ReadMap = structuredClone(local);
   for (const row of data as ReadStateRow[]) {
@@ -373,7 +374,7 @@ async function pullSettings(userId: string): Promise<void> {
     .select("settings, updated_at")
     .eq("user_id", userId)
     .single();
-  if (!data) return;
+  if (!data || currentUserId !== userId) return;
   const row = data as SettingsRow;
   const remote = row.settings;
   const remoteUpdatedAt = row.updated_at ?? 0;
@@ -394,7 +395,7 @@ async function pullScanlatorPrefs(userId: string): Promise<void> {
     .from("hana_scanlator_preference")
     .select("manga_id, scanlator_id")
     .eq("user_id", userId);
-  if (!data) return;
+  if (!data || currentUserId !== userId) return;
   const local = getPreferredScanlators();
   const merged: ScanlatorMap = { ...local };
   for (const row of data as ScanlatorRow[]) {
@@ -426,7 +427,7 @@ async function refreshLibrary(userId: string): Promise<void> {
       .select("manga_id, manga, added_at")
       .eq("user_id", userId));
   }
-  if (!data) return;
+  if (!data || currentUserId !== userId) return;
   const next: LibraryMap = {};
   for (const row of data as LibraryRow[]) {
     next[row.manga_id] = {
@@ -445,7 +446,7 @@ async function refreshProgress(userId: string): Promise<void> {
     .from("hana_progress")
     .select("*")
     .eq("user_id", userId);
-  if (!data) return;
+  if (!data || currentUserId !== userId) return;
   const next: Record<string, ProgressEntry> = {};
   for (const row of data as ProgressRow[]) {
     next[row.manga_id] = {
@@ -469,7 +470,7 @@ async function refreshReadState(userId: string): Promise<void> {
     .from("hana_read_state")
     .select("manga_id, chapter_id, read_at")
     .eq("user_id", userId);
-  if (!data) return;
+  if (!data || currentUserId !== userId) return;
   const next: ReadMap = {};
   for (const row of data as ReadStateRow[]) {
     next[row.manga_id] = {
@@ -483,7 +484,7 @@ async function refreshReadState(userId: string): Promise<void> {
 /** Pull remote, merge, then upload the merged state (migrates local data up). */
 export async function syncAll(userId: string): Promise<void> {
   await pullAll(userId);
-  await pushAll(userId);
+  if (currentUserId === userId) await pushAll(userId);
 }
 
 const localPush = debounce(() => {
@@ -640,7 +641,7 @@ function switchAccountStores(userId: string | null): void {
   lastPushedReadState.clear();
 }
 
-export async function handleAuthStateChange(
+async function changeAccount(
   userId: string | null,
 ): Promise<void> {
   if (userId === currentUserId) return;
@@ -657,11 +658,21 @@ export async function handleAuthStateChange(
   // account or leak one account's data into another.
   switchAccountStores(userId);
   currentUserId = userId;
+  for (const event of [LIBRARY_EVENT, PROGRESS_EVENT, CONTINUE_HERO_EVENT, READ_EVENT, READER_SETTINGS_EVENT, SCANLATOR_PREFERENCE_EVENT]) {
+    window.dispatchEvent(new CustomEvent(event));
+  }
   if (userId) {
     await syncAll(userId);
     attachLocalListeners();
     setupRealtime(userId);
   }
+}
+
+// Serialize auth callbacks so a slow restoration cannot select an older account.
+let accountChange: Promise<void> = Promise.resolve();
+export function handleAuthStateChange(userId: string | null): Promise<void> {
+  accountChange = accountChange.catch(() => {}).then(() => changeAccount(userId));
+  return accountChange;
 }
 
 export function getCurrentUserId(): string | null {

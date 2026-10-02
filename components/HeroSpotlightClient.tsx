@@ -2,21 +2,23 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { Fragment, useEffect, useRef, useState } from "react";
+import { Fragment, useLayoutEffect, useRef, useState } from "react";
 import {
-  CONTINUE_HERO_EVENT,
-  CONTINUE_HERO_STORAGE_KEY,
+  subscribeContinueHero,
+  subscribeProgress,
   getContinueList,
   readContinueHero,
   saveContinueHero,
-  PROGRESS_EVENT,
   type ProgressEntry,
 } from "@/lib/progress";
-import { getLibraryList, LIBRARY_EVENT } from "@/lib/library";
+import { getLibraryList, subscribeLibrary } from "@/lib/library";
 import { statusLabel, truncate, type Manga } from "@/lib/mangadex";
 import { coverDisplayUrl } from "@/lib/cover-proxy";
 import { ratingBadgeClass, ratingTier } from "@/lib/rating";
 import { HERO_FALLBACK_GRADIENT, ctaPrimary, ctaSecondary, focusRing } from "@/lib/ui";
+import { useAuth } from "@/lib/auth";
+import { getFinishedSnapshot, subscribeFinished } from "@/lib/read-state";
+import { HeroLoading } from "./HeroLoading";
 import { StarIcon } from "./icons";
 
 type HeroSpotlightClientProps = {
@@ -60,12 +62,9 @@ async function fetchEnrichedManga(
 }
 
 export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
+  const { dataReady } = useAuth();
   const [hero, setHero] = useState<HeroState | null>(null);
-  // Gated reveal: server + first client paint render the server hero hidden
-  // (opacity-0, layout preserved). The effect below swaps in the correct
-  // continue/library hero in the same batched render that flips `ready`,
-  // so the wrong (trending) manga is never visibly painted — fixing the
-  // 1-frame hero flash on load.
+  // Resolve account data before revealing personalized content.
   const [ready, setReady] = useState(false);
   // Sync mirror of the displayed hero so event-driven apply() can compare
   // identities without waiting for a render.
@@ -86,8 +85,12 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
   const coverSrc = coverDisplayUrl(displayHero.coverUrl);
   const imageSrc: string | null = bannerSrc ?? coverSrc;
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    if (!dataReady) return;
     let active = true;
+    const latestContinue = () => getContinueList().find(
+      (entry) => !getFinishedSnapshot()[entry.mangaId],
+    );
 
     function snapshotFor(entry: ProgressEntry): HeroState | null {
       const snapshot = readContinueHero();
@@ -141,7 +144,7 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
       const manga = await fetchEnrichedManga(entry.mangaId, controller.signal);
       if (!active || enrichSeq.current !== seq) return;
       // Re-verify: auth switches / realtime pulls may have moved on.
-      const desired = getContinueList(1)[0];
+      const desired = latestContinue();
       if (!desired || desired.mangaId !== entry.mangaId) return;
       if (manga) {
         commit({
@@ -190,12 +193,13 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
     function apply() {
       if (!active) return;
       const current = heroRef.current;
-      const continueEntry = getContinueList(1)[0];
+      const continueEntry = latestContinue();
       if (continueEntry) {
         // Same manga: progress-only update in place, never swap content.
         if (current?.isContinue && current.manga.id === continueEntry.mangaId) {
           if (
             current.chapterId !== continueEntry.chapterId ||
+            current.chapterLabel !== continueEntry.chapterLabel ||
             current.mangaFraction !== continueEntry.mangaFraction ||
             current.scrollFraction !== continueEntry.scrollFraction
           ) {
@@ -269,23 +273,19 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
 
     apply();
 
-    const onStorage = (event: StorageEvent) => {
-      if (event.key === CONTINUE_HERO_STORAGE_KEY) apply();
-    };
-    window.addEventListener("storage", onStorage);
-    window.addEventListener(CONTINUE_HERO_EVENT, apply);
-    window.addEventListener(PROGRESS_EVENT, apply);
-    window.addEventListener(LIBRARY_EVENT, apply);
+    const unsubscribe = [
+      subscribeContinueHero(apply),
+      subscribeProgress(apply),
+      subscribeLibrary(apply),
+      subscribeFinished(apply),
+    ];
     return () => {
       active = false;
       enrichSeq.current += 1;
       enrichAbort.current?.abort();
-      window.removeEventListener("storage", onStorage);
-      window.removeEventListener(CONTINUE_HERO_EVENT, apply);
-      window.removeEventListener(PROGRESS_EVENT, apply);
-      window.removeEventListener(LIBRARY_EVENT, apply);
+      unsubscribe.forEach((dispose) => dispose());
     };
-  }, []);
+  }, [dataReady]);
 
   const rating = displayHero.rating ?? 0;
   const match = rating.toFixed(1);
@@ -301,20 +301,14 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
     ? `/read/${displayHero.id}/${chapterId}`
     : `/read/${displayHero.id}`;
 
+  if (!dataReady || !ready) return <HeroLoading />;
+
   return (
-    // Opacity-gated until the client has resolved continue/library: the
-    // server hero is in the DOM (layout preserved, no shift) but never
-    // visibly painted, so returning users never see the trending pick flash.
-    // Keyed by manga identity: swaps crossfade via animate-hero-swap
-    // instead of snapping, and same-manga progress updates never remount.
-    <div
-      className={ready ? "opacity-100 transition-opacity duration-300" : "opacity-0"}
-      aria-hidden={!ready}
-    >
+    <div>
     <Fragment key={displayHero.id}>
       {/* ===== MOBILE ONLY — premium streaming presentation ===== */}
       <section
-        className="relative min-h-[calc(93vw+27.5rem+env(safe-area-inset-top))] w-full overflow-hidden bg-zinc-950 pt-[env(safe-area-inset-top)] animate-hero-swap md:hidden"
+        className="relative min-h-[calc(93vw+27.5rem+env(safe-area-inset-top))] w-full overflow-hidden bg-zinc-950 pt-[env(safe-area-inset-top)] md:hidden"
       >
         <div className="absolute inset-0">
           {imageSrc ? (
@@ -450,7 +444,7 @@ export function HeroSpotlightClient({ initial }: HeroSpotlightClientProps) {
 
       {/* ===== DESKTOP ONLY — original conventional hero ===== */}
       <section
-        className="relative hidden w-full overflow-hidden bg-zinc-950 animate-hero-swap md:block md:h-[70dvh] md:min-h-[420px]"
+        className="relative hidden w-full overflow-hidden bg-zinc-950 md:block md:h-[70dvh] md:min-h-[420px]"
       >
         {imageSrc ? (
           <Image

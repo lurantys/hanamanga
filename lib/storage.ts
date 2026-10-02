@@ -63,11 +63,11 @@ export function createStorageStore<T>(
   const subscribe = (onChange: () => void): (() => void) => {
     if (typeof window === "undefined") return () => {};
     const onStorage = (storageEvent: StorageEvent) => {
-      // storage events are per-effective key; also invalidate on base
-      // key so a device that wrote before namespacing still propagates.
+      // Only this account’s key can change its snapshot. A null key means
+      // another tab cleared storage and every cached snapshot is stale.
       if (
         storageEvent.key === effectiveKey(key) ||
-        storageEvent.key === key
+        storageEvent.key === null
       )
         cached = undefined;
       onChange();

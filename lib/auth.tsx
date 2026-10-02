@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, useRef } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import type { Session, User, AuthChangeEvent } from "@supabase/supabase-js";
 import {
@@ -50,6 +50,7 @@ type AuthContextValue = {
   session: Session | null;
   user: User | null;
   loading: boolean;
+  dataReady: boolean;
   signIn: (email: string, password: string) => Promise<{ error: string | null }>;
   signUp: (
     email: string,
@@ -67,7 +68,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const supabase = createClient();
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const syncedForRef = useRef<string | null>(null);
+  const [readyFor, setReadyFor] = useState<string | null | undefined>(undefined);
 
   useEffect(() => {
     let disposed = false;
@@ -103,16 +104,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [supabase]);
 
   useEffect(() => {
+    if (loading) return;
+    let active = true;
     const userId = session?.user?.id ?? null;
-    if (userId === syncedForRef.current) return;
-    syncedForRef.current = userId;
-    void handleAuthStateChange(userId).catch(() => {});
-  }, [session]);
+    void handleAuthStateChange(userId).catch(() => {}).finally(() => {
+      if (active) setReadyFor(userId);
+    });
+    return () => { active = false; };
+  }, [loading, session?.user?.id]);
 
   const value: AuthContextValue = {
     session,
     user: session?.user ?? null,
     loading,
+    dataReady: !loading && readyFor === (session?.user?.id ?? null),
     signIn: async (email, password) => {
       const { error } = await supabase.auth.signInWithPassword({
         email,

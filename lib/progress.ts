@@ -198,7 +198,7 @@ export function getAllProgress(): Record<string, ProgressEntry> {
 
 export function subscribeProgress(onChange: () => void): () => void {
   const onStorage = (event: StorageEvent) => {
-    if (event.key === effectiveProgressKey() || event.key === STORAGE_KEY) invalidateProgressCache();
+    if (event.key === null || event.key === effectiveProgressKey()) invalidateProgressCache();
     onChange();
   };
   window.addEventListener("storage", onStorage);
@@ -230,6 +230,21 @@ export function getContinueList(limit = 18): ProgressEntry[] {
 
 export function saveContinueHero(snapshot: ContinueHeroSnapshot): void {
   if (typeof window === "undefined") return;
+  // Reader updates contain progress and a cover, but must not erase artwork
+  // and metadata already fetched for this title.
+  const previous = readContinueHero();
+  if (previous?.manga.id === snapshot.manga.id) {
+    snapshot = {
+      ...snapshot,
+      manga: {
+        ...previous.manga,
+        ...snapshot.manga,
+        bannerUrl: snapshot.manga.bannerUrl || previous.manga.bannerUrl,
+        description: snapshot.manga.description || previous.manga.description,
+        rating: snapshot.manga.rating || previous.manga.rating,
+      },
+    };
+  }
   try {
     window.localStorage.setItem(effectiveHeroKey(), JSON.stringify(snapshot));
     cachedHeroSnapshot = snapshot;
@@ -263,4 +278,19 @@ export function clearProgress(mangaId: string): void {
     delete map[mangaId];
     writeAll(map);
   }
+}
+
+export function subscribeContinueHero(onChange: () => void): () => void {
+  const onStorage = (event: StorageEvent) => {
+    if (event.key === null || event.key === effectiveHeroKey()) {
+      invalidateContinueHero();
+      onChange();
+    }
+  };
+  window.addEventListener("storage", onStorage);
+  window.addEventListener(CONTINUE_HERO_EVENT, onChange);
+  return () => {
+    window.removeEventListener("storage", onStorage);
+    window.removeEventListener(CONTINUE_HERO_EVENT, onChange);
+  };
 }

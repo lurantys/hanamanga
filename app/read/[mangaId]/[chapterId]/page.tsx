@@ -33,6 +33,7 @@ export default async function ReadPage({ params }: ReadPageProps) {
   const props = await buildReaderProps(mangaId, chapterId);
   return (
     <Reader
+      key={`${props.mangaId}/${props.currentChapterId}`}
       mangaId={props.mangaId}
       mangaTitle={props.mangaTitle}
       mangaCoverUrl={props.mangaCoverUrl}

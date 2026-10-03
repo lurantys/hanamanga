@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useMemo, useState, useSyncExternalStore } from "react";
+import { useMemo, useState, useSyncExternalStore } from "react";
 import { Carousel } from "./Carousel";
 import { MangaCard } from "./MangaCard";
 import { focusRing } from "@/lib/ui";
@@ -20,6 +20,12 @@ function getServerSnapshot(): ReturnType<typeof getLibrarySnapshot> {
   return EMPTY_LIBRARY_SNAPSHOT;
 }
 
+function shuffleOrder(id: string, seed: number): number {
+  let hash = Math.floor(seed * 0x7fffffff);
+  for (const char of id) hash = Math.imul(hash ^ char.charCodeAt(0), 16777619);
+  return hash >>> 0;
+}
+
 export function LibraryRow() {
   const library = useSyncExternalStore(
     subscribeLibrary,
@@ -32,14 +38,13 @@ export function LibraryRow() {
     () => Object.values(library).sort((a, b) => b.addedAt - a.addedAt),
     [library],
   );
-  const [shuffleKey, setShuffleKey] = useState(0);
-  useEffect(() => setShuffleKey(Date.now()), []);
+  const [shuffleKey] = useState(() => Math.random());
   const toRead = useMemo(() => {
     return entries
       .filter((entry) => entry.status
         ? entry.status === "to_read"
         : !finished[entry.manga.id] && !progress[entry.manga.id])
-      .map((entry) => ({ entry, order: Math.random() }))
+      .map((entry) => ({ entry, order: shuffleOrder(entry.manga.id, shuffleKey) }))
       .sort((a, b) => a.order - b.order)
       .map(({ entry }) => entry);
   // Shuffle once per page visit; library changes still refresh the row.

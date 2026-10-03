@@ -59,7 +59,7 @@ export async function GET(request: Request) {
     }
     const [pool, staff] = await Promise.all([
       fetchCachedSearchCatalog(q),
-      staffSearch(q).catch(() => []),
+      page === 1 ? staffSearch(q).catch(() => []) : Promise.resolve([]),
     ]);
     const start = (page - 1) * PAGE_LIMIT;
     const data = pool.data.slice(start, start + PAGE_LIMIT);

@@ -42,9 +42,13 @@ export function AtsuChapterList({
   const availableScanlators = scanlators.filter((scanlator) =>
     chapters.some((chapter) => chapter.scanlationMangaId === scanlator.id),
   );
-  const selected = availableScanlators.some((scanlator) => scanlator.id === preferred)
-    ? preferred
-    : (availableScanlators.find((scanlator) => scanlator.id === defaultScanlatorId)?.id ?? availableScanlators[0]?.id ?? "");
+  const selected = useMemo(() => {
+    const ids = scanlators
+      .filter((scanlator) => chapters.some((chapter) => chapter.scanlationMangaId === scanlator.id))
+      .map((scanlator) => scanlator.id);
+    if (preferred && ids.includes(preferred)) return preferred;
+    return defaultScanlatorId && ids.includes(defaultScanlatorId) ? defaultScanlatorId : ids[0] ?? "";
+  }, [scanlators, chapters, preferred, defaultScanlatorId]);
   const [query, setQuery] = useState("");
   const [order, setOrder] = useState<"newest" | "oldest">("newest");
   const [revealed, setRevealed] = useState(BATCH);

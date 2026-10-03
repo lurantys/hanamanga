@@ -38,7 +38,9 @@ export function SearchResults({
   const sentinelRef = useRef<HTMLDivElement>(null);
   const loadingRef = useRef(false);
 
-  const hasMore = items.length < total;
+  const [resultTotal, setResultTotal] = useState(total);
+  const [exhausted, setExhausted] = useState(false);
+  const hasMore = !exhausted && items.length < resultTotal;
 
   const loadMore = useCallback(
     async (targetPage: number, replace: boolean) => {
@@ -53,7 +55,14 @@ export function SearchResults({
         const json = await res.json();
         if (!res.ok || json.error) throw new Error("request failed");
         const next = (json.data as Manga[]) ?? [];
-        setItems((prev) => (replace ? next : [...prev, ...next]));
+        setItems((prev) => {
+          if (replace) return next;
+          const ids = new Set(prev.map((item) => item.id));
+          return [...prev, ...next.filter((item) => !ids.has(item.id))];
+        });
+        if (typeof json.total === "number") setResultTotal(json.total);
+        // Providers can overestimate totals. Stop observing an empty final page.
+        setExhausted(next.length === 0);
         setPage(targetPage);
         setError(false);
       } catch {
@@ -81,6 +90,8 @@ export function SearchResults({
     observer.observe(el);
     return () => observer.disconnect();
   }, [hasMore, loading, error, page, loadMore]);
+
+  if (loading && items.length === 0) return <MangaGridSkeleton />;
 
   if (error && items.length === 0) {
     return (
@@ -164,13 +175,13 @@ export function SearchResults({
                 {authorName ?? author}
               </span>
               <span>
-                {total.toLocaleString()} {total === 1 ? "work" : "works"}
+                {resultTotal.toLocaleString()} {resultTotal === 1 ? "work" : "works"}
               </span>
             </span>
           </span>
         ) : (
           <>
-            {total.toLocaleString()} {total === 1 ? "result" : "results"} for{" "}
+            {resultTotal.toLocaleString()} {resultTotal === 1 ? "result" : "results"} for{" "}
             <span className="font-semibold text-zinc-200">“{query}”</span>
           </>
         )}

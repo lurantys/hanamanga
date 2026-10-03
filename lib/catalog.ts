@@ -586,10 +586,17 @@ async function resolveCleanCover(manga: Manga): Promise<string | null> {
   }
 }
 
-export const fetchCatalogManga = cache(
-  (id: string, options: { withStats?: boolean } = {}): Promise<Manga> =>
-    catalogMangaResilient(id, options.withStats ?? false),
+// React compares cache arguments by identity. Normalize options to primitives
+// so metadata, chapter lookup and page rendering share the same request.
+const getCatalogManga = cache((id: string, withStats: boolean) =>
+  catalogMangaResilient(id, withStats),
 );
+export function fetchCatalogManga(
+  id: string,
+  options: { withStats?: boolean } = {},
+): Promise<Manga> {
+  return getCatalogManga(id, options.withStats ?? false);
+}
 
 /**
  * Stored copy of a manga from the user's library. Serves as the fallback

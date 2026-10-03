@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { RouteSkeleton } from "@/components/RouteSkeleton";
 import type { Metadata } from "next";
 import Link from "next/link";
 import Image from "next/image";
@@ -17,12 +19,20 @@ export const metadata: Metadata = {
 
 const FIRST_PAGE = 24;
 
+type QueryParams = Record<string, string | string[] | undefined>;
+
 export default async function SearchPage({
   searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
+}: { searchParams: Promise<QueryParams> }) {
   const params = await searchParams;
+  return (
+    <Suspense key={JSON.stringify(params)} fallback={<RouteSkeleton kind="search" />}>
+      <SearchContent params={params} />
+    </Suspense>
+  );
+}
+
+async function SearchContent({ params }: { params: QueryParams }) {
   const rawQuery = Array.isArray(params.q) ? params.q[0] : params.q;
   const rawAuthor = Array.isArray(params.author)
     ? params.author[0]

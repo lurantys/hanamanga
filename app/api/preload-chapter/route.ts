@@ -1,10 +1,5 @@
 import { NextResponse } from "next/server";
-import {
-  fetchChapterReader,
-  chapterPageUrl,
-} from "@/lib/mangadex";
 import { buildReaderProps } from "@/lib/reader-data";
-import { parseMangaId } from "@/lib/source";
 
 export const dynamic = "force-dynamic";
 
@@ -19,19 +14,8 @@ export async function GET(request: Request) {
     "Cache-Control": "public, max-age=300, s-maxage=300, stale-while-revalidate=600",
   };
   try {
-    // Fast path: MangaDex chapters resolve with a single at-home call,
-    // skipping the full multi-source reader waterfall below.
-    if (parseMangaId(mangaId).source === "mangadex") {
-      const reader = await fetchChapterReader(chapterId);
-      return NextResponse.json(
-        {
-          pages: reader.pages
-            .slice(0, 3)
-            .map((file) => chapterPageUrl(reader.baseUrl, reader.hash, file)),
-        },
-        { headers },
-      );
-    }
+    // Catalog IDs do not identify the chapter provider. Resolve the same
+    // source as the reader and warm its props cache for the next navigation.
     const data = await buildReaderProps(mangaId, chapterId);
     return NextResponse.json(
       { pages: data.pages.slice(0, 3).map((page) => page.image) },

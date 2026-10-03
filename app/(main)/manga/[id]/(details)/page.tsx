@@ -79,8 +79,12 @@ export default async function MangaPage({ params }: MangaPageProps) {
   const { source, ref } = parseMangaId(id);
 
   let manga;
+  let atsuMatchData;
   try {
-    manga = await fetchCatalogMangaWithFallback(id);
+    [manga, atsuMatchData] = await Promise.all([
+      fetchCatalogMangaWithFallback(id),
+      getAtsuMatch(id).catch(() => null),
+    ]);
   } catch (error) {
     if (isNotFoundError(error)) notFound();
     else if (isAniListDownError(error)) {
@@ -106,7 +110,6 @@ export default async function MangaPage({ params }: MangaPageProps) {
 
   let atsuMatch: AtsuMatch | null = null;
   let atsuChapters: AtsuChapter[] = [];
-  const atsuMatchData = await getAtsuMatch(id);
   if (atsuMatchData) {
     atsuMatch = atsuMatchData.match;
     atsuChapters = atsuMatchData.chapters;

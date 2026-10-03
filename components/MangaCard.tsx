@@ -39,7 +39,8 @@ export function MangaCard({
   const genres = (manga.genres ?? []).slice(0, 2);
   const rating = manga.rating ?? 0;
   const ratingClass = ratingTextClass[ratingTier(rating)];
-  const [loaded, setLoaded] = useState(false);
+  const [loadedSrc, setLoadedSrc] = useState<string | null>(null);
+  const [failedSrc, setFailedSrc] = useState<string | null>(null);
   const saved = useSyncExternalStore(
     subscribeLibrary,
     () => isInLibrary(manga.id),
@@ -61,6 +62,7 @@ export function MangaCard({
   // referrerPolicy="no-referrer" below so MangaDex hotlink protection
   // serves the real cover.
   const coverSrc = coverDisplayUrl(manga.coverUrl);
+  const loaded = loadedSrc === coverSrc;
 
   const label =
     ariaLabel ??
@@ -77,7 +79,7 @@ export function MangaCard({
         className={`block rounded-lg text-left ${focusRing}`}
       >
         <div className="manga-card-surface relative aspect-[2/3] overflow-hidden rounded-lg bg-zinc-800 shadow-lg">
-          {coverSrc ? (
+          {coverSrc && failedSrc !== coverSrc ? (
             <>
               {!loaded && (
                 <div
@@ -91,7 +93,8 @@ export function MangaCard({
                 fill
                 sizes="(max-width: 768px) 144px, 176px"
                 referrerPolicy="no-referrer"
-                onLoad={() => setLoaded(true)}
+                onLoad={() => setLoadedSrc(coverSrc)}
+                onError={() => setFailedSrc(coverSrc)}
                 className={`object-cover transition-opacity duration-300 ${
                   loaded ? "opacity-100" : "opacity-0"
                 }`}

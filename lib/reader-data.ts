@@ -132,10 +132,12 @@ if (atsuReader && atsuReader.pages.length > 0) {
 
   if (source === "atsu") notFound();
 
-  const mdRefPromise =
-    source === "mangadex"
-      ? Promise.resolve(ref)
-      : mdRefForManga(manga).catch(() => null);
+  // Native provider chapters need no MangaDex title match. Resolve that only
+  // for legacy IDs or the final MangaDex fallback, not before image fetching.
+  let mdRefPromise: Promise<string | null> | undefined;
+  const resolveMdRef = () => mdRefPromise ??= source === "mangadex"
+    ? Promise.resolve(ref)
+    : mdRefForManga(manga).catch(() => null);
 
   let weebReader: {
     currentId: string;
@@ -146,22 +148,16 @@ if (atsuReader && atsuReader.pages.length > 0) {
     prevHref: string | null;
     nextHref: string | null;
   } | null = null;
-  let mdRef: string | null = null;
 
   try {
-    const [lookup, resolvedMdRef] = await Promise.all([
-      getWeebLookup(manga),
-      mdRefPromise,
-    ]);
-    mdRef = resolvedMdRef;
+    const lookup = await getWeebLookup(manga);
     if (lookup.manga && lookup.chapters.length > 0) {
       let current =
         lookup.chapters.find((chapter) => chapter.id === chapterId) ?? null;
       if (!current) {
-        current = await resolveWeebLegacyChapter(
-          lookup.chapters,
-          mdRef ?? ref,
-          chapterId,
+        const mdRef = await resolveMdRef();
+        if (mdRef) current = await resolveWeebLegacyChapter(
+          lookup.chapters, mdRef, chapterId,
         );
       }
       if (current) {
@@ -193,7 +189,6 @@ prevHref: prev ? `/read/${manga.id}/${prev.id}` : null,
   } catch {
     // WeebCentral unavailable — fall through to MangaKatana.
   }
-  if (mdRef === null) mdRef = await mdRefPromise;
 
 if (weebReader) {
      return {
@@ -227,10 +222,9 @@ if (weebReader) {
       let current =
         lookup.chapters.find((chapter) => chapter.id === chapterId) ?? null;
       if (!current) {
-        current = await resolveLegacyChapter(
-          lookup.chapters,
-          mangaId,
-          chapterId,
+        const mdRef = await resolveMdRef();
+        if (mdRef) current = await resolveLegacyChapter(
+          lookup.chapters, mdRef, chapterId,
         );
       }
       if (current) {
@@ -279,6 +273,7 @@ if (katanaReader) {
      };
    }
 
+  const mdRef = await resolveMdRef();
   if (!mdRef) notFound();
   let feed;
   let reader;

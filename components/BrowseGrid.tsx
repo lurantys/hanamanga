@@ -45,7 +45,9 @@ export function BrowseGrid({
   const sentinelRef = useRef<HTMLDivElement>(null);
   const loadingRef = useRef(false);
 
-  const hasMore = items.length < total;
+  const [resultTotal, setResultTotal] = useState(total);
+  const [exhausted, setExhausted] = useState(false);
+  const hasMore = !exhausted && items.length < resultTotal;
 
   const loadMore = useCallback(
     async (targetPage: number, replace: boolean) => {
@@ -65,7 +67,14 @@ export function BrowseGrid({
         const json = await res.json();
         if (!res.ok || json.error) throw new Error("request failed");
         const next = (json.data as Manga[]) ?? [];
-        setItems((prev) => (replace ? next : [...prev, ...next]));
+        setItems((prev) => {
+          if (replace) return next;
+          const ids = new Set(prev.map((item) => item.id));
+          return [...prev, ...next.filter((item) => !ids.has(item.id))];
+        });
+        if (typeof json.total === "number") setResultTotal(json.total);
+        // Providers can overestimate totals. Stop observing an empty final page.
+        setExhausted(next.length === 0);
         setPage(targetPage);
         setError(false);
       } catch {
@@ -93,6 +102,8 @@ export function BrowseGrid({
     observer.observe(el);
     return () => observer.disconnect();
   }, [hasMore, loading, error, page, loadMore]);
+
+  if (loading && items.length === 0) return <MangaGridSkeleton />;
 
   if (error && items.length === 0) {
     return (
@@ -134,7 +145,7 @@ export function BrowseGrid({
   return (
     <>
       <p className="mb-5 text-sm text-zinc-400">
-        {total.toLocaleString()} {total === 1 ? "title" : "titles"}
+        {resultTotal.toLocaleString()} {resultTotal === 1 ? "title" : "titles"}
         {genres.length ? (
           <>
             {" "}

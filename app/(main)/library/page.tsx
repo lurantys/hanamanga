@@ -19,7 +19,6 @@ import {
   clearProgress,
   getContinueList,
   getAllProgress,
-  getProgress,
   subscribeProgress,
   type ProgressEntry,
 } from "@/lib/progress";
@@ -292,12 +291,6 @@ function GridCard({
   onRemove?: () => void;
   removeLabel?: string;
 }) {
-  const mangaIdFromHref = href.split("/")[2] ?? "";
-  const progress = useSyncExternalStore(
-    subscribeProgress,
-    () => getProgress(mangaIdFromHref, undefined, title),
-    () => null,
-  );
   return (
     <div className="group relative">
       <Link
@@ -567,7 +560,7 @@ export default function LibraryPage() {
           return bTime - aTime;
         });
     }
-  }, [allEntries, query, sort, progress, finished, filter]);
+  }, [allEntries, query, sort, progress, finished, filter, library]);
 
   const extraReading = useMemo(
     () =>

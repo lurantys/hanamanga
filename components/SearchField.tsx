@@ -8,6 +8,11 @@ import { focusRing } from "@/lib/ui";
 export function SearchField({ initialQuery = "" }: { initialQuery?: string }) {
   const router = useRouter();
   const [query, setQuery] = useState(initialQuery);
+  const [previousQuery, setPreviousQuery] = useState(initialQuery);
+  if (previousQuery !== initialQuery) {
+    setPreviousQuery(initialQuery);
+    setQuery(initialQuery);
+  }
 
   const onSubmit = (event: FormEvent) => {
     event.preventDefault();

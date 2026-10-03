@@ -30,6 +30,7 @@ function ListSkeleton() {
 }
 
 export function SearchLiveResults({ query, onPick }: SearchLiveResultsProps) {
+  const [resolvedQuery, setResolvedQuery] = useState<string | null>(null);
   const [data, setData] = useState<Manga[] | null>(null);
   const [authors, setAuthors] = useState<AuthorHit[]>([]);
   const [failed, setFailed] = useState(false);
@@ -44,6 +45,7 @@ export function SearchLiveResults({ query, onPick }: SearchLiveResultsProps) {
       .then((res) => (res.ok ? res.json() : null))
       .then((json) => {
         if (controller.signal.aborted) return;
+        setResolvedQuery(q);
         if (!json?.data) {
           setFailed(true);
           setData([]);
@@ -64,6 +66,7 @@ export function SearchLiveResults({ query, onPick }: SearchLiveResultsProps) {
       })
       .catch((error) => {
         if (error?.name === "AbortError" || controller.signal.aborted) return;
+        setResolvedQuery(q);
         setFailed(true);
         setData([]);
       });
@@ -80,7 +83,7 @@ export function SearchLiveResults({ query, onPick }: SearchLiveResultsProps) {
     );
   }
 
-  if (data === null) {
+  if (resolvedQuery !== query.trim() || data === null) {
     return <ListSkeleton />;
   }
 

@@ -1,3 +1,5 @@
+import { Suspense } from "react";
+import { RouteSkeleton } from "@/components/RouteSkeleton";
 import type { Metadata } from "next";
 import { BrowseFilters } from "@/components/BrowseFilters";
 import { BrowseGrid } from "@/components/BrowseGrid";
@@ -18,12 +20,20 @@ export const metadata: Metadata = {
     "Browse the manga catalog — sort by popularity, trending, or rating and filter by genre, status, and content rating.",
 };
 
+type QueryParams = Record<string, string | string[] | undefined>;
+
 export default async function BrowsePage({
   searchParams,
-}: {
-  searchParams: Promise<Record<string, string | string[] | undefined>>;
-}) {
+}: { searchParams: Promise<QueryParams> }) {
   const params = await searchParams;
+  return (
+    <Suspense key={JSON.stringify(params)} fallback={<RouteSkeleton kind="browse" />}>
+      <BrowseContent params={params} />
+    </Suspense>
+  );
+}
+
+async function BrowseContent({ params }: { params: QueryParams }) {
   const sortParam = Array.isArray(params.sort) ? params.sort[0] : params.sort;
   const genresRaw = Array.isArray(params.genres)
     ? params.genres[0]

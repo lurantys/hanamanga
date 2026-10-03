@@ -255,7 +255,7 @@ function ReaderImage({
       : src;
 
   return (
-    <div className={`relative ${width && height ? "" : "min-h-[50vh]"}`}>
+    <div className={`relative ${loaded || (width && height) ? "" : "min-h-[50vh]"}`}>
       {!loaded && !failed && (
         <div
           className={`absolute inset-0 ${placeholderClassName} animate-pulse rounded-lg bg-zinc-900`}
@@ -1208,20 +1208,14 @@ export function Reader({
     return parts[parts.length - 1] ?? null;
   }, [nextHref]);
 
-  const preloadedChapterRef = useRef<string | null>(null);
+  // Depend on the threshold, not each scroll tick: the previous effect aborted
+  // its own request on progress changes after marking it permanently preloaded.
+  const nearChapterEnd = mode === "webtoon"
+    ? displayProgress > 0.85
+    : pagedIndex >= pages.length - (isTwoPage ? 3 : 2);
 
   useEffect(() => {
-    if (!nextHref || !nextChapterId || preloadUrls.length > 0) return;
-    const nearEnd =
-      mode === "webtoon"
-        ? displayProgress > 0.85
-        : isTwoPage
-          ? pagedIndex >= pages.length - 3
-          : pagedIndex >= pages.length - 2;
-    if (!nearEnd) return;
-    if (preloadedChapterRef.current === nextChapterId) return;
-    preloadedChapterRef.current = nextChapterId;
-    let cancelled = false;
+    if (!nextChapterId || !nearChapterEnd) return;
     const controller = new AbortController();
     fetch(
       `/api/preload-chapter?mangaId=${encodeURIComponent(mangaId)}&chapterId=${encodeURIComponent(nextChapterId)}`,
@@ -1229,24 +1223,13 @@ export function Reader({
     )
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
-        if (!cancelled && data?.pages?.length) setPreloadUrls(data.pages.slice(0, 2));
+        if (!controller.signal.aborted && data?.pages?.length) {
+          setPreloadUrls(data.pages.slice(0, 2));
+        }
       })
-       .catch(() => {});
-    return () => {
-      cancelled = true;
-      controller.abort();
-    };
-  }, [
-    mangaId,
-    nextHref,
-    nextChapterId,
-    mode,
-    isTwoPage,
-    displayProgress,
-    pagedIndex,
-    pages.length,
-    preloadUrls.length,
-  ]);
+      .catch(() => {});
+    return () => controller.abort();
+  }, [mangaId, nextChapterId, nearChapterEnd]);
 
   const pageFit = isMobile ? "width" : settings.fit;
 

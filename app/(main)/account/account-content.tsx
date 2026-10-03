@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useSearchParams, useRouter } from "next/navigation";
 import { AniListIcon, MalIcon } from "@/components/BrandIcons";
 import { useAuth, getDisplayName } from "@/lib/auth";
+import { RouteSkeleton } from "@/components/RouteSkeleton";
 import { LoadingIcon } from "@/components/LoadingIcon";
 import { syncNow } from "@/lib/sync";
 import { useProviderAvatar } from "@/lib/use-provider-avatar";
@@ -300,13 +301,7 @@ export default function AccountContent() {
     }
   }, [setSyncing, setSyncResult, setLastSummary, setRefreshKey]);
 
-  if (loading) {
-    return (
-      <main className="flex min-h-screen items-center justify-center bg-zinc-950 pb-24 pt-header">
-        <div className="h-8 w-32 animate-pulse rounded bg-zinc-800" />
-      </main>
-    );
-  }
+  if (loading) return <RouteSkeleton kind="account" />;
 
   if (!user) {
     return (

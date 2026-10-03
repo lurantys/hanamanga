@@ -4,6 +4,8 @@ import { Suspense, useEffect, useState } from "react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { RouteSkeleton } from "./RouteSkeleton";
 
+const MAX_VISIBLE_MS = 10_000;
+
 type SkeletonKind =
   | "home"
   | "browse"
@@ -47,6 +49,12 @@ function NavigationLoaderInner() {
   }, [routeKey]);
 
   useEffect(() => {
+    if (!destination) return;
+    const timeout = window.setTimeout(() => setDestination(null), MAX_VISIBLE_MS);
+    return () => window.clearTimeout(timeout);
+  }, [destination]);
+
+  useEffect(() => {
     const beginNavigation = (event: MouseEvent | PointerEvent) => {
       if (event.defaultPrevented || ("button" in event && event.button !== 0)) return;
       if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
@@ -81,7 +89,7 @@ function NavigationLoaderInner() {
 
   if (!destination) return null;
   return (
-    <div className="fixed inset-0 z-[100] overflow-y-auto bg-zinc-950">
+    <div className="pointer-events-none fixed inset-0 z-[100] overflow-y-auto bg-zinc-950">
       <RouteSkeleton kind={skeletonForPath(destination)} />
     </div>
   );

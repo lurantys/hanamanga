@@ -5,6 +5,7 @@ import { resolveFirstChapter } from "@/lib/read";
 // The first-chapter lookup is public and can be served from ISR between
 // updates instead of invoking a Function for every reader entry.
 export const revalidate = 300;
+export const generateStaticParams = async () => [];
 
 export const metadata: Metadata = { title: "Read | Hana" };
 

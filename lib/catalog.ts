@@ -505,23 +505,42 @@ export async function enhanceWithAniList(manga: Manga): Promise<Manga> {
   }
 }
 
+async function fetchCatalogMangaUncached(id: string, withStats: boolean): Promise<Manga> {
+  const { source, ref } = parseMangaId(id);
+  let manga: Manga;
+  if (source === "atsu") {
+    manga = atsuToManga(await fetchAtsuManga(ref));
+  } else if (source === "al") {
+    manga = await fetchAniListById(ref);
+  } else {
+    manga = await fetchMangaById(ref, { withStats });
+    const cleanCover = await resolveCleanCover(manga);
+    if (cleanCover) manga.coverUrl = cleanCover;
+  }
+  return enhanceWithAniList(manga);
+}
+
 const cachedCatalogManga = unstable_cache(
-  async (id: string, withStats: boolean): Promise<Manga> => {
-    const { source, ref } = parseMangaId(id);
-    let manga: Manga;
-    if (source === "atsu") {
-      manga = atsuToManga(await fetchAtsuManga(ref));
-    } else if (source === "al") {
-      manga = await fetchAniListById(ref);
-    } else {
-      manga = await fetchMangaById(ref, { withStats });
-      const cleanCover = await resolveCleanCover(manga);
-      if (cleanCover) manga.coverUrl = cleanCover;
-    }
-    return enhanceWithAniList(manga);
-  },
+  fetchCatalogMangaUncached,
   ["catalog-manga-v2"],
   { revalidate: 1800 },
+);
+
+// A preview should not inherit the live catalog's 30-minute revalidation.
+// Cache only its small public metadata; reading-list cookies never enter it.
+export const fetchCatalogMangaForPreview = unstable_cache(
+  async (id: string) => {
+    const manga = await fetchCatalogMangaUncached(id, false);
+    return {
+      title: manga.title,
+      description: manga.description,
+      genres: manga.genres,
+      status: manga.status,
+      coverUrl: manga.coverUrl,
+    };
+  },
+  ["catalog-preview-v1"],
+  { revalidate: 604800 },
 );
 
 /**

@@ -1,14 +1,16 @@
+/* eslint-disable react-hooks/error-boundaries -- ImageResponse rasterizes JSX imperatively; awaited rendering errors use the fallback card. */
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import sharp from "sharp";
 import { ImageResponse } from "next/og";
 import { statusLabel, truncate } from "@/lib/mangadex";
 import { upstreamCoverUrl } from "@/lib/cover-proxy";
-import { fetchCatalogMangaWithFallback } from "@/lib/catalog";
+import { fetchCatalogMangaForPreview } from "@/lib/catalog";
 
 export const alt = "Manga page on Hana";
 export const size = { width: 1200, height: 630 };
-export const contentType = "image/png";
-export const revalidate = 86400;
+export const contentType = "image/jpeg";
+export const revalidate = 604800;
 export const generateStaticParams = async () => [];
 
 type OgMangaCard = {
@@ -32,16 +34,17 @@ async function fetchCoverDataUrl(url: string): Promise<string | null> {
   if (!res.ok) return null;
   const mime = (res.headers.get("content-type") ?? "image/jpeg").split(";")[0];
   if (mime.includes("avif")) return null;
-  const bytes = Buffer.from(await res.arrayBuffer());
-  return `data:${mime};base64,${bytes.toString("base64")}`;
+  const bytes = await sharp(Buffer.from(await res.arrayBuffer()))
+    .rotate()
+    .resize({ width: 600, height: 900, fit: "inside", withoutEnlargement: true })
+    .jpeg({ quality: 85 })
+    .toBuffer();
+  return `data:image/jpeg;base64,${bytes.toString("base64")}`;
 }
 
 async function mangaCardFor(id: string): Promise<OgMangaCard> {
-  // No unstable_cache here on purpose: the rendered PNG itself is the ISR
-  // cache entry (revalidate above), and the manga metadata comes from the
-  // shared catalog cache. A per-id card cache would double Data Cache
-  // writes (card revalidated every 300s while the image lives 24h).
-  const manga = await fetchCatalogMangaWithFallback(id, { withStats: false });
+  // Metadata and the rendered image share the same weekly freshness window.
+  const manga = await fetchCatalogMangaForPreview(id);
   // Proxy URLs are same-origin relative paths — resolve to the upstream for
   // the server-side fetch (avoids a self-hop, same bytes).
   const upstream = upstreamCoverUrl(manga.coverUrl);
@@ -79,6 +82,18 @@ async function appIconDataUrl(): Promise<string | null> {
   return appIcon;
 }
 
+// Keep the same opaque 1200×630 card; JPEG avoids storing a large raster PNG.
+// Full chroma resolution preserves the colored logo and text edges.
+async function compactImage(response: ImageResponse): Promise<Response> {
+  const image = await sharp(Buffer.from(await response.arrayBuffer()))
+    .removeAlpha()
+    .jpeg({ quality: 90, chromaSubsampling: "4:4:4" })
+    .toBuffer();
+  return new Response(new Uint8Array(image), {
+    headers: { "Content-Type": contentType },
+  });
+}
+
 export default async function Image({
   params,
 }: {
@@ -88,7 +103,7 @@ export default async function Image({
   const icon = await appIconDataUrl();
   try {
     const card = await mangaCardFor(id);
-    return new ImageResponse(
+    return await compactImage(new ImageResponse(
       (
         <div
           style={{
@@ -239,9 +254,9 @@ export default async function Image({
         </div>
       ),
       { ...size },
-    );
+    ));
   } catch {
-    return new ImageResponse(
+    return await compactImage(new ImageResponse(
       (
         <div
           style={{
@@ -295,6 +310,6 @@ export default async function Image({
         </div>
       ),
       { ...size },
-    );
+    ));
   }
 }

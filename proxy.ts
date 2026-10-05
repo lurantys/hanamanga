@@ -1,22 +1,24 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { isBotUserAgent } from "@/lib/bots";
 
-/**
- * Auth gate for /account only.
- *
- * NOTE on Fast Origin Transfer: every request matched here pays for the
- * Middleware invocation itself, and requests that continue to a Function
- * page/API route can accrue origin transfer TWICE for a single view
- * (middleware + function). This matcher is therefore deliberately minimal —
- * only the route that needs server-side auth. In particular:
- * - /read/* is intentionally NOT matched: chapter HTML is small and
- *   robots.txt already disallows /read/ for crawlers; matching it would
- *   double-charge every human chapter view.
- * - /api/* is intentionally NOT matched: those responses are small cached
- *   JSON; matching them would double-charge every client-side fetch
- *   (search-as-you-type, infinite scroll, preload).
- */
+/** Auth refresh for account pages; crawler redirects before reader work. */
 export async function proxy(request: NextRequest) {
+  const pathname = request.nextUrl.pathname;
+  if (pathname.startsWith("/read/")) {
+    if (isBotUserAgent(request.headers.get("user-agent"))) {
+      const mangaId = pathname.split("/")[2];
+      if (mangaId) {
+        const url = request.nextUrl.clone();
+        url.pathname = `/manga/${mangaId}`;
+        url.search = "";
+        return NextResponse.redirect(url, 307);
+      }
+    }
+    // Reader traffic never needs an auth lookup.
+    return NextResponse.next({ request });
+  }
+
   const response = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -56,5 +58,16 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/account/:path*"],
+  matcher: [
+    "/account/:path*",
+    // Match only known crawlers so human chapter views skip the proxy entirely.
+    {
+      source: "/read/:path*",
+      has: [{
+        type: "header",
+        key: "user-agent",
+        value: ".*([Bb][Oo][Tt]|[Ss][Pp][Ii][Dd][Ee][Rr]|[Mm][Ee][Tt][Aa]-[Ee][Xx][Tt][Ee][Rr][Nn][Aa][Ll][Aa][Gg][Ee][Nn][Tt]|[Ff][Aa][Cc][Ee][Bb][Oo][Oo][Kk]|[Ww][Hh][Aa][Tt][Ss][Aa][Pp][Pp]|[Ii][Ff][Rr][Aa][Mm][Ee][Ll][Yy]|[Gg][Oo][Oo][Gg][Ll][Ee]).*",
+      }],
+    },
+  ],
 };

@@ -12,6 +12,7 @@ type ReadPageProps = {
 // ISR also keeps MangaDex's temporary image assignment well inside its
 // ~15-minute validity window while avoiding a Function render per page view.
 export const revalidate = 300;
+export const generateStaticParams = async () => [];
 
 export async function generateMetadata({
   params,

@@ -283,7 +283,7 @@ export function AtsuChapterList({
             return (
               <div
                 key={chapter.id}
-                className="group relative flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-zinc-900/60 px-4 py-3 backdrop-blur-xl transition-colors duration-200 hover:border-white/25"
+                className="group relative flex items-center justify-between gap-3 rounded-xl border border-white/10 bg-zinc-900/60 px-4 py-3 sm:backdrop-blur-xl transition-colors duration-200 hover:border-white/25"
               >
                 <Link
                   href={`/read/${mangaId}/${chapter.id}`}

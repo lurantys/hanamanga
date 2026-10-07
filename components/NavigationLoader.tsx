@@ -55,7 +55,7 @@ function NavigationLoaderInner() {
   }, [destination]);
 
   useEffect(() => {
-    const beginNavigation = (event: MouseEvent | PointerEvent) => {
+    const beginNavigation = (event: MouseEvent) => {
       if (event.defaultPrevented || ("button" in event && event.button !== 0)) return;
       if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
       const target = event.target as HTMLElement | null;
@@ -77,12 +77,10 @@ function NavigationLoaderInner() {
       }
     };
 
-    // Pointer down shows feedback as soon as a tap begins. Click also covers
-    // keyboard activation, which does not produce a pointer event.
-    document.addEventListener("pointerdown", beginNavigation, true);
+    // Wait for a confirmed activation. A touch pointerdown may be the start
+    // of a scroll; showing the full-screen loader then interrupts the gesture.
     document.addEventListener("click", beginNavigation, true);
     return () => {
-      document.removeEventListener("pointerdown", beginNavigation, true);
       document.removeEventListener("click", beginNavigation, true);
     };
   }, []);

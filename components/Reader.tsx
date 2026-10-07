@@ -1164,9 +1164,14 @@ export function Reader({
 
   useEffect(() => {
     if (open && listRef.current) {
-      listRef.current
-        .querySelector('[data-active="true"]')
-        ?.scrollIntoView({ block: "center" });
+      const list = listRef.current;
+      const active = list.querySelector<HTMLElement>('[data-active="true"]');
+      if (active) {
+        // Center within the menu without also scrolling the reader behind it.
+        list.scrollTop +=
+          active.getBoundingClientRect().top - list.getBoundingClientRect().top
+          - (list.clientHeight - active.offsetHeight) / 2;
+      }
     }
   }, [open]);
 
@@ -1412,7 +1417,7 @@ export function Reader({
                   ref={listRef}
                   id="reader-chapter-list"
                   role="menu"
-                  className={`${popoverSurface} absolute left-0 right-0 top-full z-40 mt-2 max-h-80 overflow-y-auto p-1.5`}
+                  className={`${popoverSurface} absolute left-0 right-0 top-full z-40 mt-2 max-h-80 overflow-y-auto overscroll-y-contain p-1.5`}
                 >
                   {chapters.map((chapter) => {
                     const isActive = chapter.id === currentChapterId;

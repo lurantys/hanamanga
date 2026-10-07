@@ -16,9 +16,10 @@ type CustomSelectProps = {
   value: string;
   options: Option[];
   onChange: (value: string) => void;
+  fullWidth?: boolean;
 };
 
-export function CustomSelect({ label, value, options, onChange }: CustomSelectProps) {
+export function CustomSelect({ label, value, options, onChange, fullWidth = false }: CustomSelectProps) {
   const [open, setOpen] = useState(false);
   const rootRef = useRef<HTMLDivElement>(null);
 
@@ -41,14 +42,14 @@ export function CustomSelect({ label, value, options, onChange }: CustomSelectPr
   }, [open]);
 
   return (
-    <div ref={rootRef} className="relative">
+    <div ref={rootRef} className={`relative ${fullWidth ? "w-full" : ""}`}>
       <button
         type="button"
         aria-label={label}
         aria-haspopup="listbox"
         aria-expanded={open}
         onClick={() => setOpen((v) => !v)}
-        className={`inline-flex items-center gap-2 rounded-full border bg-zinc-900/60 py-2.5 pl-4 pr-9 text-sm font-medium text-zinc-200 backdrop-blur-xl transition-colors duration-200 hover:border-white/25 focus:border-red-400/50 active:scale-[0.97] ${focusRing} ${
+        className={`inline-flex items-center gap-2 rounded-full border bg-zinc-900/60 py-2.5 pl-4 pr-9 text-sm font-medium text-zinc-200 backdrop-blur-xl transition-colors duration-200 hover:border-white/25 focus:border-red-400/50 active:scale-[0.97] ${fullWidth ? "w-full" : ""} ${focusRing} ${
           open ? "border-red-400/40 bg-zinc-900/80" : "border-white/10"
         }`}
       >

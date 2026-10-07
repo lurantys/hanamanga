@@ -7,6 +7,7 @@ import { useSearchParams, useRouter } from "next/navigation";
 import { AniListIcon, MalIcon } from "@/components/BrandIcons";
 import { useAuth, getDisplayName } from "@/lib/auth";
 import { RouteSkeleton } from "@/components/RouteSkeleton";
+import { CustomSelect } from "@/components/CustomSelect";
 import { LoadingIcon } from "@/components/LoadingIcon";
 import {
   DEFAULT_READER_SETTINGS,
@@ -18,7 +19,7 @@ import {
 } from "@/lib/reader-settings";
 import { syncNow } from "@/lib/sync";
 import { useProviderAvatar } from "@/lib/use-provider-avatar";
-import { SignInIcon, SignOutIcon } from "@/components/AuthIcons";
+import { EmailIcon, GoogleIcon, SignInIcon, SignOutIcon } from "@/components/AuthIcons";
 import type { SyncSummary } from "@/lib/provider-sync";
 import type { User } from "@supabase/supabase-js";
 import { getLibrarySnapshot, subscribeLibrary } from "@/lib/library";
@@ -166,6 +167,7 @@ export default function AccountContent() {
     id: "hana-local-preview",
     email: "reader@hana.local",
     user_metadata: { display_name: "Hana Reader" },
+    identities: [{ provider: "email" }, { provider: "google" }],
   } as unknown as User;
   const user = previewMode ? previewUser : auth.user;
   const loading = previewMode ? false : auth.loading;
@@ -201,9 +203,7 @@ export default function AccountContent() {
   const memberSince = user?.created_at && Number.isFinite(Date.parse(user.created_at))
     ? new Intl.DateTimeFormat("en", { month: "long", year: "numeric", timeZone: "Africa/Casablanca" }).format(new Date(user.created_at))
     : "Not available";
-  const signInMethods = [...new Set(user?.identities?.map(({ provider }) =>
-    provider === "email" ? "Email and password" : provider === "google" ? "Google" : provider,
-  ) ?? [])].join(", ") || "Not available";
+  const signInMethods = [...new Set(user?.identities?.map(({ provider }) => provider) ?? [])];
 
   useEffect(() => {
     const updateStats = () => {
@@ -578,12 +578,25 @@ export default function AccountContent() {
                 ["Email", user.email ?? "Not available"],
                 ["Email status", user.email_confirmed_at ? "Verified" : "Not verified"],
                 ["Member since", memberSince],
-                ["Sign-in method", signInMethods],
+                ["Sign-in method", signInMethods.join(", ") || "Not available"],
                 ["Profile picture", avatar?.provider === "anilist" ? "From AniList" : avatar?.provider === "mal" ? "From MyAnimeList" : "Hana initial"],
               ].map(([label, value]) => (
                 <div key={label} className="flex flex-wrap justify-between gap-x-4 gap-y-1 py-3 text-sm">
                   <dt className="text-zinc-500">{label}</dt>
-                  <dd className="min-w-0 break-all text-zinc-200">{value}</dd>
+                  <dd className="min-w-0 break-all text-zinc-200">
+                    {label === "Sign-in method" && signInMethods.length ? (
+                      <span className="flex flex-wrap items-center gap-2">
+                        {signInMethods.map((provider) => {
+                          const name = provider === "email" ? "Email" : provider === "google" ? "Google" : provider;
+                          return provider === "email" || provider === "google" ? (
+                            <span key={provider} role="img" aria-label={name} title={name} className="flex h-8 w-8 items-center justify-center rounded-lg border border-white/10 bg-zinc-900 text-zinc-300">
+                              {provider === "google" ? <GoogleIcon className="h-4 w-4" /> : <EmailIcon className="h-4 w-4" />}
+                            </span>
+                          ) : <span key={provider}>{name}</span>;
+                        })}
+                      </span>
+                    ) : value}
+                  </dd>
                 </div>
               ))}
             </dl>
@@ -635,33 +648,33 @@ export default function AccountContent() {
             <h2 id="reader-preferences-heading" className="text-lg font-bold text-white">Reader preferences</h2>
             <p className="mt-1 text-sm text-zinc-400">Choose how you like to read. Changes save automatically.</p>
             <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-              <label htmlFor="account-reading-mode" className="flex flex-col items-start gap-2 text-sm text-zinc-300">
-                Reading mode
-                <select
-                  id="account-reading-mode"
-                  aria-label="Reading mode"
+              <div className="space-y-2 text-sm text-zinc-300">
+                <p>Reading mode</p>
+                <CustomSelect
+                  label="Reading mode"
                   value={readerSettings.mode}
-                  onChange={(event) => setReaderSettings({ mode: event.target.value as ReaderMode })}
-                  className="w-full rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-                >
-                  <option value="webtoon">Webtoon (scroll)</option>
-                  <option value="paged">Single page</option>
-                  <option value="twopage">Two-page spread</option>
-                </select>
-              </label>
-              <label htmlFor="account-reading-direction" className="flex flex-col items-start gap-2 text-sm text-zinc-300">
-                Reading direction
-                <select
-                  id="account-reading-direction"
-                  aria-label="Reading direction"
+                  onChange={(value) => setReaderSettings({ mode: value as ReaderMode })}
+                  options={[
+                    { key: "webtoon", label: "Webtoon (scroll)" },
+                    { key: "paged", label: "Single page" },
+                    { key: "twopage", label: "Two-page spread" },
+                  ]}
+                  fullWidth
+                />
+              </div>
+              <div className="space-y-2 text-sm text-zinc-300">
+                <p>Reading direction</p>
+                <CustomSelect
+                  label="Reading direction"
                   value={readerSettings.direction}
-                  onChange={(event) => setReaderSettings({ direction: event.target.value as ReaderDirection })}
-                  className="w-full rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-                >
-                  <option value="ltr">Left to right</option>
-                  <option value="rtl">Right to left</option>
-                </select>
-              </label>
+                  onChange={(value) => setReaderSettings({ direction: value as ReaderDirection })}
+                  options={[
+                    { key: "ltr", label: "Left to right" },
+                    { key: "rtl", label: "Right to left" },
+                  ]}
+                  fullWidth
+                />
+              </div>
               <label className="flex min-h-10 items-center justify-between gap-3 self-end text-sm text-zinc-300">
                 Automatically open the next chapter
                 <input

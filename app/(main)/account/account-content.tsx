@@ -339,7 +339,7 @@ export default function AccountContent() {
   return (
     <main className="min-h-screen bg-[#09090b] pb-24">
       <div className="mx-auto max-w-5xl px-4 pt-header sm:px-6 lg:px-8">
-        <header className="border-b border-white/10 pb-7 sm:pb-8">
+        <header className="grid items-center gap-7 border-b border-white/10 pb-7 sm:gap-8 sm:pb-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:gap-12">
           <div className="flex items-center gap-5 sm:gap-6">
             <span className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-zinc-900 text-base font-bold text-zinc-200 sm:h-24 sm:w-24">
               {avatar?.url ? (
@@ -440,26 +440,30 @@ export default function AccountContent() {
               )}
             </div>
           </div>
+          <section className="min-w-0 rounded-2xl border border-white/10 bg-zinc-900/25 p-5" aria-labelledby="reading-stats-heading">
+            <div className="mb-4 flex items-center justify-between gap-3">
+              <h2 id="reading-stats-heading" className="text-sm font-semibold text-white">Reading stats</h2>
+              <Link href="/library" className="rounded text-xs text-zinc-400 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500">Open library <span aria-hidden>↗</span></Link>
+            </div>
+            <dl className="grid grid-cols-2">
+              {[
+                { value: libraryStats.total, label: "Titles saved" },
+                { value: libraryStats.reading, label: "Currently reading" },
+                { value: libraryStats.finished, label: "Completed" },
+                { value: libraryStats.chapters, label: "Chapters read" },
+              ].map(({ value, label }, index) => (
+                <div
+                  key={label}
+                  className={`flex min-w-0 flex-col-reverse gap-1.5 py-3 ${index % 2 === 1 ? "border-l border-white/[0.07] pl-5" : "pr-5"} ${index > 1 ? "border-t border-white/[0.07]" : ""}`}
+                >
+                  <dt className="text-xs text-zinc-400">{label}</dt>
+                  <dd className="text-3xl font-semibold leading-none tracking-tight tabular-nums text-white">{value.toLocaleString("en")}</dd>
+                </div>
+              ))}
+            </dl>
+            <p className="mt-3 text-[11px] leading-relaxed text-zinc-500">Reading and completion counts include titles outside your saved library.</p>
+          </section>
         </header>
-
-        <section className="mt-7 sm:mt-8">
-          <div className="mb-3 flex items-center justify-between">
-            <h2 className="text-base font-semibold tracking-tight text-white">Reading stats</h2>
-            <Link href="/library" className="text-sm text-zinc-500 transition-colors hover:text-white">Open library <span aria-hidden>↗</span></Link>
-          </div>
-          <div className="grid grid-cols-2 border-y border-white/[0.08] sm:grid-cols-4">
-            {[[libraryStats.total, "Titles saved"], [libraryStats.reading, "Currently reading"], [libraryStats.finished, "Completed"], [libraryStats.chapters, "Chapters read"]].map(([value, label], index) => (
-              <div
-                key={label}
-                className={`py-5 sm:py-6 ${index % 2 === 1 ? "border-l border-white/[0.07] pl-5 sm:pl-6" : "pr-5 sm:pr-6"} ${index > 1 ? "border-t border-white/[0.07] sm:border-t-0" : ""} ${index > 1 ? "sm:border-l sm:pl-6" : ""}`}
-              >
-                <p className="text-3xl font-semibold leading-none tracking-tight tabular-nums text-white sm:text-4xl">{value}</p>
-                <p className="mt-2 text-xs text-zinc-500 sm:text-sm">{label}</p>
-              </div>
-            ))}
-          </div>
-          <p className="mt-3 text-xs leading-relaxed text-zinc-500">Reading and completion counts include titles outside your saved library.</p>
-        </section>
 
         {importOk && error ? (
           <p className="mt-6 rounded-lg border border-red-500/30 bg-red-500/10 px-3 py-2 text-sm text-red-300">

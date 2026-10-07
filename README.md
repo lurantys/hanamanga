@@ -18,6 +18,8 @@ Discover, read, and track manga, manhwa, manhua, and webtoons — beautifully, o
 
 </div>
 
+![Hana desktop home page with a featured manga and Continue Reading shelf](docs/screenshots/home-desktop.png)
+
 ## Features
 
 <div align="left">
@@ -32,6 +34,12 @@ Discover, read, and track manga, manhwa, manhua, and webtoons — beautifully, o
 * **Fast & responsive** — server-rendered with Next.js, tuned for desktop and mobile.
 
 </div>
+
+<p align="center">
+  <img src="docs/screenshots/home-mobile.png" alt="Hana mobile home page with featured manga and Continue Reading" width="300" />
+  &nbsp;&nbsp;
+  <img src="docs/screenshots/reader-mobile.png" alt="Hana mobile manga reader with chapter navigation and reading controls" width="300" />
+</p>
 
 ## Try it live
 

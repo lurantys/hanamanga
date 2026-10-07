@@ -495,58 +495,24 @@ export default function AccountContent() {
           </p>
         )}
 
-        <div className="mt-8 grid items-start gap-4 sm:mt-9 lg:grid-cols-2 lg:gap-5">
-          <section className="rounded-2xl border border-white/10 bg-zinc-950/55 p-5 sm:p-6" aria-labelledby="account-details-heading">
-            <h2 id="account-details-heading" className="text-lg font-bold text-white">Account details</h2>
-            <p className="mt-1 text-sm text-zinc-400">Your profile and sign-in information.</p>
-            <dl className="mt-5 divide-y divide-white/10">
-              {[
-                ["Email", user.email ?? "Not available"],
-                ["Email status", user.email_confirmed_at ? "Verified" : "Not verified"],
-                ["Member since", memberSince],
-                ["Sign-in method", signInMethods],
-                ["Profile picture", avatar?.provider === "anilist" ? "From AniList" : avatar?.provider === "mal" ? "From MyAnimeList" : "Hana initial"],
-              ].map(([label, value]) => (
-                <div key={label} className="flex flex-wrap justify-between gap-x-4 gap-y-1 py-3 text-sm">
-                  <dt className="text-zinc-500">{label}</dt>
-                  <dd className="min-w-0 break-all text-zinc-200">{value}</dd>
-                </div>
-              ))}
-            </dl>
-            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-4">
-              <p className="max-w-60 text-xs leading-relaxed text-zinc-500">Signing out keeps data already synced to your Hana account.</p>
-              <button
-                type="button"
-                onClick={() => {
-                  void signOut().then(() => {
-                    router.push("/");
-                    router.refresh();
-                  });
-                }}
-                className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-sm text-zinc-300 transition-colors hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-              >
-                <SignOutIcon className="h-4 w-4" />
-                Sign out
-              </button>
-            </div>
-          </section>
-          <section className="rounded-2xl border border-zinc-700/40 bg-zinc-950/55 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.035)] backdrop-blur-xl transition-colors hover:border-zinc-600/50 sm:p-6 animate-page-in" style={{ animationDelay: '0ms' }}>
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div className="flex items-start gap-3">
+        <div className="mt-8 grid gap-4 sm:mt-9 lg:grid-cols-2 lg:gap-5">
+          <section className="rounded-2xl border border-white/10 bg-zinc-950/55 px-5 py-4 sm:px-6 lg:col-span-2" aria-labelledby="cloud-sync-heading">
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex min-w-0 items-start gap-3">
                 <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center text-zinc-400">
                   <SyncIcon className="h-4 w-4" />
                 </span>
                 <div>
-                  <h2 className="text-lg font-bold text-white">Cloud sync</h2>
+                  <h2 id="cloud-sync-heading" className="text-sm font-semibold text-white">Cloud sync</h2>
                   <p className="mt-0.5 text-sm text-zinc-400">
-                    Your library, reading progress, read chapters, and reader preferences sync across devices when signed in.
+                    Your library, progress, and reader preferences sync automatically across devices.
                   </p>
                 </div>
               </div>
               <button
                 onClick={handleSync}
                 disabled={syncing}
-                className="inline-flex shrink-0 items-center justify-center gap-2 rounded-md border border-white/15 px-3 py-2 text-sm font-medium text-zinc-300 transition-colors hover:border-red-500/50 hover:text-white disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                className="inline-flex shrink-0 self-start items-center justify-center gap-2 rounded-lg sm:self-center border border-white/15 px-3 py-2 text-sm font-medium text-zinc-300 transition-colors hover:border-red-500/50 hover:text-white disabled:cursor-not-allowed disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
               >
                 {syncing ? (
                   <>
@@ -560,11 +526,6 @@ export default function AccountContent() {
                   </>
                 )}
               </button>
-            </div>
-
-            <div className="mt-5 space-y-3 border-t border-white/10 pt-4 text-sm text-zinc-400">
-              <p>Use the same Hana account on each device to pick up where you left off.</p>
-              <p className="text-xs leading-relaxed text-zinc-500">Reading changes save automatically. Use Sync now to refresh your account and connected lists.</p>
             </div>
 
             {syncResult && (
@@ -609,7 +570,41 @@ export default function AccountContent() {
             )}
           </section>
 
-          <section className="rounded-2xl border border-zinc-700/40 bg-zinc-950/55 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.035)] backdrop-blur-xl transition-colors hover:border-zinc-600/50 sm:p-6 animate-page-in" style={{ animationDelay: '60ms' }}>
+          <section className="rounded-2xl border border-white/10 bg-zinc-950/55 p-5 sm:p-6" aria-labelledby="account-details-heading">
+            <h2 id="account-details-heading" className="text-lg font-bold text-white">Account details</h2>
+            <p className="mt-1 text-sm text-zinc-400">Your profile and sign-in information.</p>
+            <dl className="mt-5 divide-y divide-white/10">
+              {[
+                ["Email", user.email ?? "Not available"],
+                ["Email status", user.email_confirmed_at ? "Verified" : "Not verified"],
+                ["Member since", memberSince],
+                ["Sign-in method", signInMethods],
+                ["Profile picture", avatar?.provider === "anilist" ? "From AniList" : avatar?.provider === "mal" ? "From MyAnimeList" : "Hana initial"],
+              ].map(([label, value]) => (
+                <div key={label} className="flex flex-wrap justify-between gap-x-4 gap-y-1 py-3 text-sm">
+                  <dt className="text-zinc-500">{label}</dt>
+                  <dd className="min-w-0 break-all text-zinc-200">{value}</dd>
+                </div>
+              ))}
+            </dl>
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-4">
+              <p className="max-w-60 text-xs leading-relaxed text-zinc-500">Signing out keeps data already synced to your Hana account.</p>
+              <button
+                type="button"
+                onClick={() => {
+                  void signOut().then(() => {
+                    router.push("/");
+                    router.refresh();
+                  });
+                }}
+                className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-sm text-zinc-300 transition-colors hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+              >
+                <SignOutIcon className="h-4 w-4" />
+                Sign out
+              </button>
+            </div>
+          </section>
+          <section className="rounded-2xl border border-white/10 bg-zinc-950/55 p-5 sm:p-6">
             <div className="flex items-center gap-3">
               <span className="flex h-8 w-8 shrink-0 items-center justify-center text-zinc-400">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.85" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4" aria-hidden>
@@ -636,38 +631,38 @@ export default function AccountContent() {
             </div>
           </section>
 
-          <section className="rounded-2xl border border-white/10 bg-zinc-950/55 p-5 sm:p-6" aria-labelledby="reader-preferences-heading">
+          <section className="rounded-2xl border border-white/10 bg-zinc-950/55 p-5 sm:p-6 lg:col-span-2" aria-labelledby="reader-preferences-heading">
             <h2 id="reader-preferences-heading" className="text-lg font-bold text-white">Reader preferences</h2>
             <p className="mt-1 text-sm text-zinc-400">Choose how you like to read. Changes save automatically.</p>
-            <div className="mt-5 space-y-4">
-              <label htmlFor="account-reading-mode" className="flex flex-wrap items-center justify-between gap-3 text-sm text-zinc-300">
+            <div className="mt-5 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+              <label htmlFor="account-reading-mode" className="flex flex-col items-start gap-2 text-sm text-zinc-300">
                 Reading mode
                 <select
                   id="account-reading-mode"
                   aria-label="Reading mode"
                   value={readerSettings.mode}
                   onChange={(event) => setReaderSettings({ mode: event.target.value as ReaderMode })}
-                  className="rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                  className="w-full rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
                 >
                   <option value="webtoon">Webtoon (scroll)</option>
                   <option value="paged">Single page</option>
                   <option value="twopage">Two-page spread</option>
                 </select>
               </label>
-              <label htmlFor="account-reading-direction" className="flex flex-wrap items-center justify-between gap-3 text-sm text-zinc-300">
+              <label htmlFor="account-reading-direction" className="flex flex-col items-start gap-2 text-sm text-zinc-300">
                 Reading direction
                 <select
                   id="account-reading-direction"
                   aria-label="Reading direction"
                   value={readerSettings.direction}
                   onChange={(event) => setReaderSettings({ direction: event.target.value as ReaderDirection })}
-                  className="rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                  className="w-full rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
                 >
                   <option value="ltr">Left to right</option>
                   <option value="rtl">Right to left</option>
                 </select>
               </label>
-              <label className="flex items-center justify-between gap-3 border-t border-white/10 pt-4 text-sm text-zinc-300">
+              <label className="flex min-h-10 items-center justify-between gap-3 self-end text-sm text-zinc-300">
                 Automatically open the next chapter
                 <input
                   type="checkbox"

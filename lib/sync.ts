@@ -19,7 +19,6 @@ import {
   getFinishedSnapshot,
   getReadSnapshot,
   replaceReadState,
-  removeReadManga,
   READ_EVENT,
   type ReadMap,
 } from "./read-state";
@@ -109,9 +108,16 @@ let localDisposers: Array<() => void> = [];
 let realtimeChannel: { unsubscribe: () => Promise<void> } | null = null;
 const pendingPushes = new Set<Promise<void>>();
 
-const lastPushedLibrary = new Set<string>();
-const lastPushedProgress = new Set<string>();
-const lastPushedReadState = new Set<string>();
+const lastPushedLibrary = new Map<string, string>();
+const lastPushedProgress = new Map<string, string>();
+const lastPushedReadState = new Map<string, number>();
+const lastPushedScanlatorPrefs = new Map<string, string>();
+let lastPushedSettings: string | null = null;
+
+const pendingLocalChanges = new Set<string>();
+const realtimePullTimers = new Map<string, ReturnType<typeof setTimeout>>();
+const realtimePullsInFlight = new Set<string>();
+const pendingRealtimePulls = new Set<string>();
 
 function sameJson(a: unknown, b: unknown): boolean {
   return canonicalJson(a) === canonicalJson(b);
@@ -122,13 +128,16 @@ async function pushLibrary(userId: string): Promise<void> {
   const map = getLibrarySnapshot();
   const finished = getFinishedSnapshot();
   const progress = getAllProgress();
-  const rows = Object.entries(map).map(([mangaId, entry]) => ({
+  const allRows = Object.entries(map).map(([mangaId, entry]) => ({
     user_id: userId,
     manga_id: mangaId,
     manga: entry.manga,
     added_at: entry.addedAt,
     library_status: entry.status ?? (finished[mangaId] ? "read" : progress[mangaId] ? "reading" : "to_read"),
   }));
+  const rows = allRows.filter((row) =>
+    lastPushedLibrary.get(row.manga_id) !== canonicalJson(row),
+  );
   if (rows.length) {
     const { error } = await supabase.from("hana_library").upsert(rows, {
       onConflict: "user_id,manga_id",
@@ -139,27 +148,31 @@ async function pushLibrary(userId: string): Promise<void> {
         void library_status;
         return legacyRow;
       });
-      await supabase.from("hana_library").upsert(legacyRows, {
+      const { error: legacyError } = await supabase.from("hana_library").upsert(legacyRows, {
         onConflict: "user_id,manga_id",
       });
+      if (!legacyError) {
+        for (const row of rows) lastPushedLibrary.set(row.manga_id, canonicalJson(row));
+      }
+    } else if (!error) {
+      for (const row of rows) lastPushedLibrary.set(row.manga_id, canonicalJson(row));
     }
   }
-  const removed = [...lastPushedLibrary].filter((id) => !(id in map));
+  const removed = [...lastPushedLibrary].filter(([id]) => !(id in map));
   if (removed.length) {
-    await supabase
+    const { error } = await supabase
       .from("hana_library")
       .delete()
       .eq("user_id", userId)
-      .in("manga_id", removed);
+      .in("manga_id", removed.map(([id]) => id));
+    if (!error) for (const [id] of removed) lastPushedLibrary.delete(id);
   }
-  lastPushedLibrary.clear();
-  for (const id of Object.keys(map)) lastPushedLibrary.add(id);
 }
 
 async function pushProgress(userId: string): Promise<void> {
   const supabase = createClient();
   const map = getAllProgress();
-  const rows = Object.values(map).map((entry) => ({
+  const allRows = Object.values(map).map((entry) => ({
     user_id: userId,
     manga_id: entry.mangaId,
     chapter_id: entry.chapterId,
@@ -170,58 +183,70 @@ async function pushProgress(userId: string): Promise<void> {
     manga_fraction: entry.mangaFraction ?? null,
     updated_at: entry.updatedAt,
   }));
+  const rows = allRows.filter((row) =>
+    lastPushedProgress.get(row.manga_id) !== canonicalJson(row),
+  );
   if (rows.length) {
-    await supabase.from("hana_progress").upsert(rows, {
+    const { error } = await supabase.from("hana_progress").upsert(rows, {
       onConflict: "user_id,manga_id",
     });
+    if (!error) {
+      for (const row of rows) lastPushedProgress.set(row.manga_id, canonicalJson(row));
+    }
   }
-  const removed = [...lastPushedProgress].filter((id) => !(id in map));
+  const removed = [...lastPushedProgress].filter(([id]) => !(id in map));
   if (removed.length) {
-    await supabase
+    const { error } = await supabase
       .from("hana_progress")
       .delete()
       .eq("user_id", userId)
-      .in("manga_id", removed);
+      .in("manga_id", removed.map(([id]) => id));
+    if (!error) for (const [id] of removed) lastPushedProgress.delete(id);
   }
-  lastPushedProgress.clear();
-  for (const id of Object.keys(map)) lastPushedProgress.add(id);
 }
 
 async function pushReadState(userId: string): Promise<void> {
   const supabase = createClient();
   const map = getReadSnapshot();
-  const rows: ReadStateRow[] = [];
+  const allRows: ReadStateRow[] = [];
   for (const [mangaId, chapters] of Object.entries(map)) {
     for (const [chapterId, readAt] of Object.entries(chapters)) {
-      rows.push({ user_id: userId, manga_id: mangaId, chapter_id: chapterId, read_at: readAt });
+      allRows.push({ user_id: userId, manga_id: mangaId, chapter_id: chapterId, read_at: readAt });
     }
   }
+  const rows = allRows.filter((row) =>
+    lastPushedReadState.get(JSON.stringify([row.manga_id, row.chapter_id])) !== row.read_at,
+  );
   if (rows.length) {
-    await supabase.from("hana_read_state").upsert(rows, {
+    const { error } = await supabase.from("hana_read_state").upsert(rows, {
       onConflict: "user_id,manga_id,chapter_id",
     });
+    if (!error) {
+      for (const row of rows) {
+        lastPushedReadState.set(JSON.stringify([row.manga_id, row.chapter_id]), row.read_at);
+      }
+    }
   }
-  const removed: string[] = [];
-  for (const key of lastPushedReadState) {
-    const [mangaId, chapterId] = key.split("|");
-    if (!map[mangaId]?.[chapterId]) removed.push(`${mangaId}|${chapterId}`);
+  const removedByManga = new Map<string, string[]>();
+  for (const key of lastPushedReadState.keys()) {
+    const [mangaId, chapterId] = JSON.parse(key) as [string, string];
+    if (!map[mangaId]?.[chapterId]) {
+      const chapters = removedByManga.get(mangaId) ?? [];
+      chapters.push(chapterId);
+      removedByManga.set(mangaId, chapters);
+    }
   }
-  const removedRows = removed.map((key) => {
-    const [mangaId, chapterId] = key.split("|");
-    return { manga_id: mangaId, chapter_id: chapterId };
-  });
-  for (const row of removedRows) {
-    await supabase
+  for (const [mangaId, chapterIds] of removedByManga) {
+    const { error } = await supabase
       .from("hana_read_state")
       .delete()
       .eq("user_id", userId)
-      .eq("manga_id", row.manga_id)
-      .eq("chapter_id", row.chapter_id);
-  }
-  lastPushedReadState.clear();
-  for (const [mangaId, chapters] of Object.entries(map)) {
-    for (const chapterId of Object.keys(chapters)) {
-      lastPushedReadState.add(`${mangaId}|${chapterId}`);
+      .eq("manga_id", mangaId)
+      .in("chapter_id", chapterIds);
+    if (!error) {
+      for (const chapterId of chapterIds) {
+        lastPushedReadState.delete(JSON.stringify([mangaId, chapterId]));
+      }
     }
   }
 }
@@ -232,26 +257,42 @@ async function pushSettings(userId: string): Promise<void> {
   // Use the local updatedAt (set by setReaderSettings) so remote and local stay in sync.
   // If no local timestamp yet, fall back to now.
   const updated_at = getReaderSettingsUpdatedAt() || Date.now();
-  await supabase
+  const row = { user_id: userId, settings, updated_at };
+  const signature = canonicalJson(row);
+  if (lastPushedSettings === signature) return;
+  const { error } = await supabase
     .from("hana_reader_settings")
-    .upsert(
-      [{ user_id: userId, settings, updated_at }],
-      { onConflict: "user_id" },
-    );
+    .upsert([row], { onConflict: "user_id" });
+  if (!error) lastPushedSettings = signature;
 }
 
 async function pushScanlatorPrefs(userId: string): Promise<void> {
   const supabase = createClient();
   const map = getPreferredScanlators();
-  const rows = Object.entries(map).map(([mangaId, scanlatorId]) => ({
+  const allRows = Object.entries(map).map(([mangaId, scanlatorId]) => ({
     user_id: userId,
     manga_id: mangaId,
     scanlator_id: scanlatorId,
   }));
+  const rows = allRows.filter((row) =>
+    lastPushedScanlatorPrefs.get(row.manga_id) !== row.scanlator_id,
+  );
   if (rows.length) {
-    await supabase.from("hana_scanlator_preference").upsert(rows, {
+    const { error } = await supabase.from("hana_scanlator_preference").upsert(rows, {
       onConflict: "user_id,manga_id",
     });
+    if (!error) {
+      for (const row of rows) lastPushedScanlatorPrefs.set(row.manga_id, row.scanlator_id);
+    }
+  }
+  const removed = [...lastPushedScanlatorPrefs.keys()].filter((id) => !(id in map));
+  if (removed.length) {
+    const { error } = await supabase
+      .from("hana_scanlator_preference")
+      .delete()
+      .eq("user_id", userId)
+      .in("manga_id", removed);
+    if (!error) for (const id of removed) lastPushedScanlatorPrefs.delete(id);
   }
 }
 
@@ -288,6 +329,16 @@ async function pullLibrary(userId: string): Promise<void> {
       .eq("user_id", userId));
   }
   if (!data || currentUserId !== userId) return;
+  lastPushedLibrary.clear();
+  for (const row of data as LibraryRow[]) {
+    lastPushedLibrary.set(row.manga_id, canonicalJson({
+      user_id: userId,
+      manga_id: row.manga_id,
+      manga: row.manga,
+      added_at: row.added_at,
+      library_status: row.library_status ?? "to_read",
+    }));
+  }
   const local = getLibrarySnapshot();
   const merged: LibraryMap = { ...local };
   for (const row of data as LibraryRow[]) {
@@ -308,7 +359,6 @@ async function pullLibrary(userId: string): Promise<void> {
       };
     }
   }
-  for (const id of Object.keys(merged)) lastPushedLibrary.add(id);
   if (!sameJson(local, merged)) replaceLibrary(merged);
 }
 
@@ -319,6 +369,20 @@ async function pullProgress(userId: string): Promise<void> {
     .select("*")
     .eq("user_id", userId);
   if (!data || currentUserId !== userId) return;
+  lastPushedProgress.clear();
+  for (const row of data as ProgressRow[]) {
+    lastPushedProgress.set(row.manga_id, canonicalJson({
+      user_id: userId,
+      manga_id: row.manga_id,
+      chapter_id: row.chapter_id,
+      chapter_label: row.chapter_label,
+      manga_title: row.manga_title,
+      cover_url: row.cover_url ?? null,
+      scroll_fraction: row.scroll_fraction,
+      manga_fraction: row.manga_fraction ?? null,
+      updated_at: row.updated_at,
+    }));
+  }
   const local = getAllProgress();
   const merged: Record<string, ProgressEntry> = { ...local };
   for (const row of data as ProgressRow[]) {
@@ -337,31 +401,36 @@ async function pullProgress(userId: string): Promise<void> {
       merged[row.manga_id] = entry;
     }
   }
-  for (const id of Object.keys(merged)) lastPushedProgress.add(id);
   if (!sameJson(local, merged)) replaceProgress(merged);
 }
 
 async function pullReadState(userId: string): Promise<void> {
   const supabase = createClient();
-  const { data } = await supabase
-    .from("hana_read_state")
-    .select("manga_id, chapter_id, read_at")
-    .eq("user_id", userId);
-  if (!data || currentUserId !== userId) return;
+  const data: ReadStateRow[] = [];
+  for (let from = 0; ; from += 1000) {
+    const { data: page, error } = await supabase
+      .from("hana_read_state")
+      .select("manga_id, chapter_id, read_at")
+      .eq("user_id", userId)
+      .range(from, from + 999);
+    if (error || !page) return;
+    data.push(...(page as ReadStateRow[]));
+    if (page.length < 1000) break;
+  }
+  if (currentUserId !== userId) return;
+  lastPushedReadState.clear();
+  for (const row of data) {
+    lastPushedReadState.set(JSON.stringify([row.manga_id, row.chapter_id]), row.read_at);
+  }
   const local = getReadSnapshot();
   const merged: ReadMap = structuredClone(local);
-  for (const row of data as ReadStateRow[]) {
+  for (const row of data) {
     const current = merged[row.manga_id]?.[row.chapter_id];
     if (!current || row.read_at > current) {
       merged[row.manga_id] = {
         ...(merged[row.manga_id] ?? {}),
         [row.chapter_id]: row.read_at,
       };
-    }
-  }
-  for (const [mangaId, chapters] of Object.entries(merged)) {
-    for (const chapterId of Object.keys(chapters)) {
-      lastPushedReadState.add(`${mangaId}|${chapterId}`);
     }
   }
   if (!sameJson(local, merged)) replaceReadState(merged);
@@ -374,8 +443,17 @@ async function pullSettings(userId: string): Promise<void> {
     .select("settings, updated_at")
     .eq("user_id", userId)
     .single();
-  if (!data || currentUserId !== userId) return;
+  if (currentUserId !== userId) return;
+  if (!data) {
+    lastPushedSettings = null;
+    return;
+  }
   const row = data as SettingsRow;
+  lastPushedSettings = canonicalJson({
+    user_id: userId,
+    settings: row.settings,
+    updated_at: row.updated_at,
+  });
   const remote = row.settings;
   const remoteUpdatedAt = row.updated_at ?? 0;
   // Don't overwrite a newer local change that hasn't been pushed yet.
@@ -396,6 +474,10 @@ async function pullScanlatorPrefs(userId: string): Promise<void> {
     .select("manga_id, scanlator_id")
     .eq("user_id", userId);
   if (!data || currentUserId !== userId) return;
+  lastPushedScanlatorPrefs.clear();
+  for (const row of data as ScanlatorRow[]) {
+    lastPushedScanlatorPrefs.set(row.manga_id, row.scanlator_id);
+  }
   const local = getPreferredScanlators();
   const merged: ScanlatorMap = { ...local };
   for (const row of data as ScanlatorRow[]) {
@@ -466,13 +548,20 @@ async function refreshProgress(userId: string): Promise<void> {
 /** Replace the local read state with the current DB contents. */
 async function refreshReadState(userId: string): Promise<void> {
   const supabase = createClient();
-  const { data } = await supabase
-    .from("hana_read_state")
-    .select("manga_id, chapter_id, read_at")
-    .eq("user_id", userId);
-  if (!data || currentUserId !== userId) return;
+  const data: ReadStateRow[] = [];
+  for (let from = 0; ; from += 1000) {
+    const { data: page, error } = await supabase
+      .from("hana_read_state")
+      .select("manga_id, chapter_id, read_at")
+      .eq("user_id", userId)
+      .range(from, from + 999);
+    if (error || !page) return;
+    data.push(...(page as ReadStateRow[]));
+    if (page.length < 1000) break;
+  }
+  if (currentUserId !== userId) return;
   const next: ReadMap = {};
-  for (const row of data as ReadStateRow[]) {
+  for (const row of data) {
     next[row.manga_id] = {
       ...(next[row.manga_id] ?? {}),
       [row.chapter_id]: row.read_at,
@@ -487,15 +576,54 @@ export async function syncAll(userId: string): Promise<void> {
   if (currentUserId === userId) await pushAll(userId);
 }
 
-const localPush = debounce(() => {
-  if (!currentUserId) return;
-  void pushAll(currentUserId).catch(() => {});
-}, FLUSH_MS);
+function pushLocalChanges(): void {
+  const userId = currentUserId;
+  if (!userId || pendingLocalChanges.size === 0) return;
+  const changes = [...pendingLocalChanges];
+  pendingLocalChanges.clear();
+  const tasks = changes.map((change) => {
+    switch (change) {
+      case LIBRARY_EVENT: return pushLibrary(userId);
+      case PROGRESS_EVENT: return pushProgress(userId);
+      case READ_EVENT: return pushReadState(userId);
+      case READER_SETTINGS_EVENT: return pushSettings(userId);
+      case SCANLATOR_PREFERENCE_EVENT: return pushScanlatorPrefs(userId);
+      default: return Promise.resolve();
+    }
+  });
+  const task = Promise.allSettled(tasks).then(() => {});
+  pendingPushes.add(task);
+  void task.finally(() => pendingPushes.delete(task));
+}
 
-const localPushFlush = () => {
-  if (!currentUserId) return;
-  void pushAll(currentUserId).catch(() => {});
-};
+const localPush = debounce(pushLocalChanges, FLUSH_MS);
+
+const localPushFlush = () => localPush.flush();
+
+function scheduleRealtimePull(
+  table: string,
+  userId: string,
+  pull: (userId: string) => Promise<void>,
+): void {
+  const existing = realtimePullTimers.get(table);
+  if (existing) clearTimeout(existing);
+  const timer = setTimeout(() => {
+    realtimePullTimers.delete(table);
+    if (currentUserId !== userId) return;
+    if (realtimePullsInFlight.has(table)) {
+      pendingRealtimePulls.add(table);
+      return;
+    }
+    realtimePullsInFlight.add(table);
+    void pull(userId).catch(() => {}).finally(() => {
+      realtimePullsInFlight.delete(table);
+      if (pendingRealtimePulls.delete(table) && currentUserId === userId) {
+        scheduleRealtimePull(table, userId, pull);
+      }
+    });
+  }, 300);
+  realtimePullTimers.set(table, timer);
+}
 
 function attachLocalListeners(): void {
   const events = [
@@ -505,8 +633,14 @@ function attachLocalListeners(): void {
     READER_SETTINGS_EVENT,
     SCANLATOR_PREFERENCE_EVENT,
   ];
+  const eventDisposers: Array<() => void> = [];
   for (const event of events) {
-    window.addEventListener(event, localPush);
+    const onLocalChange = () => {
+      pendingLocalChanges.add(event);
+      localPush();
+    };
+    window.addEventListener(event, onLocalChange);
+    eventDisposers.push(() => window.removeEventListener(event, onLocalChange));
   }
   window.addEventListener(LIBRARY_EVENT, scheduleProviderSync);
   window.addEventListener(READ_EVENT, scheduleProviderSync);
@@ -522,7 +656,7 @@ function attachLocalListeners(): void {
   };
   window.addEventListener("visibilitychange", onVisibility);
   localDisposers = [
-    ...events.map((event) => () => window.removeEventListener(event, localPush)),
+    ...eventDisposers,
     () => window.removeEventListener(LIBRARY_EVENT, scheduleProviderSync),
     () => window.removeEventListener(READ_EVENT, scheduleProviderSync),
     () => window.removeEventListener("beforeunload", localPushFlush),
@@ -543,7 +677,7 @@ function setupRealtime(userId: string): void {
           const removedId = payload.old?.manga_id;
           if (removedId) removeFromLibrary(removedId);
         } else {
-          void pullLibrary(userId);
+          scheduleRealtimePull("hana_library", userId, pullLibrary);
         }
       },
     )
@@ -555,31 +689,30 @@ function setupRealtime(userId: string): void {
           const removedId = payload.old?.manga_id;
           if (removedId) clearProgress(removedId);
         } else {
-          void pullProgress(userId);
+          scheduleRealtimePull("hana_progress", userId, pullProgress);
         }
       },
     )
     .on(
       "postgres_changes",
       { event: "*", schema: "public", table: "hana_read_state" },
-      (payload: { eventType?: string; old?: { manga_id?: string } | null }) => {
+      (payload: { eventType?: string }) => {
         if (payload.eventType === "DELETE") {
-          const removedId = payload.old?.manga_id;
-          if (removedId) removeReadManga(removedId);
+          scheduleRealtimePull("hana_read_state", userId, refreshReadState);
         } else {
-          void pullReadState(userId);
+          scheduleRealtimePull("hana_read_state", userId, pullReadState);
         }
       },
     )
     .on(
       "postgres_changes",
       { event: "*", schema: "public", table: "hana_reader_settings" },
-      () => void pullSettings(userId),
+      () => scheduleRealtimePull("hana_reader_settings", userId, pullSettings),
     )
     .on(
       "postgres_changes",
       { event: "*", schema: "public", table: "hana_scanlator_preference" },
-      () => void pullScanlatorPrefs(userId),
+      () => scheduleRealtimePull("hana_scanlator_preference", userId, pullScanlatorPrefs),
     )
     .subscribe();
 }
@@ -587,6 +720,9 @@ function setupRealtime(userId: string): void {
 async function stopRealtime(): Promise<void> {
   const channel = realtimeChannel;
   realtimeChannel = null;
+  for (const timer of realtimePullTimers.values()) clearTimeout(timer);
+  realtimePullTimers.clear();
+  pendingRealtimePulls.clear();
   if (channel) await channel.unsubscribe();
 }
 
@@ -639,6 +775,9 @@ function switchAccountStores(userId: string | null): void {
   lastPushedLibrary.clear();
   lastPushedProgress.clear();
   lastPushedReadState.clear();
+  lastPushedScanlatorPrefs.clear();
+  lastPushedSettings = null;
+  pendingLocalChanges.clear();
 }
 
 async function changeAccount(

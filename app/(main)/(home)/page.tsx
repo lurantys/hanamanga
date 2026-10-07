@@ -1,4 +1,5 @@
 import { Suspense } from "react";
+import type { Metadata } from "next";
 import { HeroSpotlight } from "@/components/HeroSpotlight";
 import { HeroLoading } from "@/components/HeroLoading";
 import { MangaRowLoading } from "@/components/MangaRowLoading";
@@ -17,6 +18,14 @@ import {
 import type { Manga } from "@/lib/mangadex";
 
 export const revalidate = 300;
+
+export const metadata: Metadata = {
+  robots: {
+    index: true,
+    follow: true,
+    "max-image-preview": "none",
+  },
+};
 
 function RowUnavailable({ title }: { title: string }) {
   return (

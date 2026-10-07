@@ -1726,13 +1726,14 @@ export function Reader({
                 )}
               </>
             ) : (
-              pages[pagedIndex + 1] && (
+              pages.slice(pagedIndex + 1, pagedIndex + 5).map((page) => (
                 <link
+                  key={page.id}
                   rel="preload"
                   as="image"
-                  href={pages[pagedIndex + 1].image}
+                  href={page.image}
                 />
-              )
+              ))
             )}
 
           {settings.tapZones && (

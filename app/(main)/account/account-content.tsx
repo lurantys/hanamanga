@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useSearchParams, useRouter } from "next/navigation";
@@ -8,6 +8,14 @@ import { AniListIcon, MalIcon } from "@/components/BrandIcons";
 import { useAuth, getDisplayName } from "@/lib/auth";
 import { RouteSkeleton } from "@/components/RouteSkeleton";
 import { LoadingIcon } from "@/components/LoadingIcon";
+import {
+  DEFAULT_READER_SETTINGS,
+  getReaderSettings,
+  setReaderSettings,
+  subscribeReaderSettings,
+  type ReaderMode,
+  type ReaderDirection,
+} from "@/lib/reader-settings";
 import { syncNow } from "@/lib/sync";
 import { useProviderAvatar } from "@/lib/use-provider-avatar";
 import { SignInIcon, SignOutIcon } from "@/components/AuthIcons";
@@ -185,6 +193,17 @@ export default function AccountContent() {
   const [libraryStats, setLibraryStats] = useState({ total: 0, reading: 0, finished: 0, chapters: 0 });
 
   const displayName = getDisplayName(user);
+  const readerSettings = useSyncExternalStore(
+    subscribeReaderSettings,
+    getReaderSettings,
+    () => DEFAULT_READER_SETTINGS,
+  );
+  const memberSince = user?.created_at && Number.isFinite(Date.parse(user.created_at))
+    ? new Intl.DateTimeFormat("en", { month: "long", year: "numeric", timeZone: "Africa/Casablanca" }).format(new Date(user.created_at))
+    : "Not available";
+  const signInMethods = [...new Set(user?.identities?.map(({ provider }) =>
+    provider === "email" ? "Email and password" : provider === "google" ? "Google" : provider,
+  ) ?? [])].join(", ") || "Not available";
 
   useEffect(() => {
     const updateStats = () => {
@@ -247,13 +266,6 @@ export default function AccountContent() {
         .catch(() => {});
     }
   }, [importOk, user]);
-
-  const syncedTimes = [anilist.syncedAt, mal.syncedAt].filter(
-    (value): value is string => Boolean(value),
-  );
-  const lastSynced = syncedTimes.length
-    ? syncedTimes.reduce((a, b) => (new Date(a) > new Date(b) ? a : b))
-    : null;
 
   const handleSync = useCallback(async () => {
     setSyncing(true);
@@ -345,6 +357,7 @@ export default function AccountContent() {
               )}
             </span>
             <div className="min-w-0 flex-1">
+              <p className="mb-2 text-xs font-medium uppercase tracking-widest text-zinc-500">Your Hana account</p>
               <div className="flex items-center gap-2">
                 <h1 className="truncate text-3xl font-bold tracking-tight text-white sm:text-4xl">
                   {displayName ?? "Account"}
@@ -388,13 +401,15 @@ export default function AccountContent() {
                       }
                     });
                   }}
-                  className="mt-0.5 flex items-center gap-2"
+                  className="mt-2 flex flex-wrap items-center gap-2"
                 >
                   <input
                     autoFocus
+                    aria-label="Display name"
+                    maxLength={80}
                     value={nameValue}
                     onChange={(e) => setNameValue(e.target.value)}
-                    className="w-48 rounded-lg border border-white/10 bg-zinc-900/60 px-2 py-1 text-[16px] text-zinc-100 outline-none transition-colors duration-200 placeholder:text-zinc-500 hover:border-white/25 focus:border-red-400/50 sm:text-sm"
+                    className="min-w-0 w-full rounded-lg border border-white/10 bg-zinc-900/60 px-2 py-1 text-[16px] text-zinc-100 outline-none transition-colors duration-200 placeholder:text-zinc-500 hover:border-white/25 focus:border-red-400/50 sm:text-sm"
                     placeholder="Display name"
                   />
                   <button
@@ -419,7 +434,7 @@ export default function AccountContent() {
                   )}
                 </form>
               ) : (
-                <p className="mt-1.5 text-sm text-zinc-400">
+                <p className="mt-1.5 break-all text-sm text-zinc-400">
                   {user.email}
                 </p>
               )}
@@ -443,6 +458,7 @@ export default function AccountContent() {
               </div>
             ))}
           </div>
+          <p className="mt-3 text-xs leading-relaxed text-zinc-500">Reading and completion counts include titles outside your saved library.</p>
         </section>
 
         {importOk && error ? (
@@ -472,24 +488,58 @@ export default function AccountContent() {
               ? "The connection request expired or was interrupted — please try again."
               : error === "mal_token_failed" ||
                   error === "anilist_token_failed"
-                ? "The service rejected the connection (bad client credentials or redirect URL mismatch). Check the app credentials on Vercel and the registered callback URL."
+                ? "The service could not connect to Hana. Please try again later."
                 : error === "sign_in_required"
                   ? "Please sign in first, then connect the service."
                   : `Something went wrong connecting that service (${error}). Please try again.`}
           </p>
         )}
 
-        <div className="mt-8 grid items-start gap-4 sm:mt-9 lg:grid-cols-[minmax(0,0.9fr)_minmax(0,1.1fr)] lg:gap-5">
+        <div className="mt-8 grid items-start gap-4 sm:mt-9 lg:grid-cols-2 lg:gap-5">
+          <section className="rounded-2xl border border-white/10 bg-zinc-950/55 p-5 sm:p-6" aria-labelledby="account-details-heading">
+            <h2 id="account-details-heading" className="text-lg font-bold text-white">Account details</h2>
+            <p className="mt-1 text-sm text-zinc-400">Your profile and sign-in information.</p>
+            <dl className="mt-5 divide-y divide-white/10">
+              {[
+                ["Email", user.email ?? "Not available"],
+                ["Email status", user.email_confirmed_at ? "Verified" : "Not verified"],
+                ["Member since", memberSince],
+                ["Sign-in method", signInMethods],
+                ["Profile picture", avatar?.provider === "anilist" ? "From AniList" : avatar?.provider === "mal" ? "From MyAnimeList" : "Hana initial"],
+              ].map(([label, value]) => (
+                <div key={label} className="flex flex-wrap justify-between gap-x-4 gap-y-1 py-3 text-sm">
+                  <dt className="text-zinc-500">{label}</dt>
+                  <dd className="min-w-0 break-all text-zinc-200">{value}</dd>
+                </div>
+              ))}
+            </dl>
+            <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-4">
+              <p className="max-w-60 text-xs leading-relaxed text-zinc-500">Signing out keeps data already synced to your Hana account.</p>
+              <button
+                type="button"
+                onClick={() => {
+                  void signOut().then(() => {
+                    router.push("/");
+                    router.refresh();
+                  });
+                }}
+                className="inline-flex shrink-0 items-center gap-2 rounded-lg border border-white/10 px-3 py-2 text-sm text-zinc-300 transition-colors hover:border-red-500/40 hover:bg-red-500/10 hover:text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+              >
+                <SignOutIcon className="h-4 w-4" />
+                Sign out
+              </button>
+            </div>
+          </section>
           <section className="rounded-2xl border border-zinc-700/40 bg-zinc-950/55 p-5 shadow-[inset_0_1px_0_rgba(255,255,255,0.035)] backdrop-blur-xl transition-colors hover:border-zinc-600/50 sm:p-6 animate-page-in" style={{ animationDelay: '0ms' }}>
-            <div className="flex items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center justify-between gap-4">
               <div className="flex items-start gap-3">
                 <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center text-zinc-400">
                   <SyncIcon className="h-4 w-4" />
                 </span>
                 <div>
-                  <h2 className="text-lg font-bold text-white">Sync</h2>
+                  <h2 className="text-lg font-bold text-white">Cloud sync</h2>
                   <p className="mt-0.5 text-sm text-zinc-400">
-                    Library, progress, and read chapters across devices.
+                    Your library, reading progress, read chapters, and reader preferences sync across devices when signed in.
                   </p>
                 </div>
               </div>
@@ -512,11 +562,10 @@ export default function AccountContent() {
               </button>
             </div>
 
-            {lastSynced && (
-              <p className="mt-3 text-xs text-zinc-500">
-                Last synced {timeAgo(lastSynced, now)}
-              </p>
-            )}
+            <div className="mt-5 space-y-3 border-t border-white/10 pt-4 text-sm text-zinc-400">
+              <p>Use the same Hana account on each device to pick up where you left off.</p>
+              <p className="text-xs leading-relaxed text-zinc-500">Reading changes save automatically. Use Sync now to refresh your account and connected lists.</p>
+            </div>
 
             {syncResult && (
               <div
@@ -570,7 +619,7 @@ export default function AccountContent() {
                 </svg>
               </span>
               <div>
-                <h2 className="text-lg font-bold text-white">External Lists</h2>
+                <h2 className="text-lg font-bold text-white">Connected lists</h2>
                 <p className="mt-0.5 text-sm text-zinc-400">Two-way sync with AniList and MyAnimeList.</p>
               </div>
             </div>
@@ -581,30 +630,57 @@ export default function AccountContent() {
                   key={config.provider}
                   {...config}
                   state={config.provider === "anilist" ? anilist : mal}
+                  now={now}
                 />
               ))}
             </div>
           </section>
+
+          <section className="rounded-2xl border border-white/10 bg-zinc-950/55 p-5 sm:p-6" aria-labelledby="reader-preferences-heading">
+            <h2 id="reader-preferences-heading" className="text-lg font-bold text-white">Reader preferences</h2>
+            <p className="mt-1 text-sm text-zinc-400">Choose how you like to read. Changes save automatically.</p>
+            <div className="mt-5 space-y-4">
+              <label htmlFor="account-reading-mode" className="flex flex-wrap items-center justify-between gap-3 text-sm text-zinc-300">
+                Reading mode
+                <select
+                  id="account-reading-mode"
+                  aria-label="Reading mode"
+                  value={readerSettings.mode}
+                  onChange={(event) => setReaderSettings({ mode: event.target.value as ReaderMode })}
+                  className="rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                >
+                  <option value="webtoon">Webtoon (scroll)</option>
+                  <option value="paged">Single page</option>
+                  <option value="twopage">Two-page spread</option>
+                </select>
+              </label>
+              <label htmlFor="account-reading-direction" className="flex flex-wrap items-center justify-between gap-3 text-sm text-zinc-300">
+                Reading direction
+                <select
+                  id="account-reading-direction"
+                  aria-label="Reading direction"
+                  value={readerSettings.direction}
+                  onChange={(event) => setReaderSettings({ direction: event.target.value as ReaderDirection })}
+                  className="rounded-lg border border-white/10 bg-zinc-900 px-3 py-2 text-sm text-zinc-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                >
+                  <option value="ltr">Left to right</option>
+                  <option value="rtl">Right to left</option>
+                </select>
+              </label>
+              <label className="flex items-center justify-between gap-3 border-t border-white/10 pt-4 text-sm text-zinc-300">
+                Automatically open the next chapter
+                <input
+                  type="checkbox"
+                  checked={readerSettings.autoAdvance}
+                  onChange={(event) => setReaderSettings({ autoAdvance: event.target.checked })}
+                  className="h-4 w-4 shrink-0 accent-red-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                />
+              </label>
+            </div>
+            <p className="mt-5 text-xs leading-relaxed text-zinc-500">Two-page spreads use single pages on phones. Zoom, brightness, page fit, and more are available in the reader settings.</p>
+          </section>
         </div>
 
-        <section className="mt-7 flex items-center justify-between gap-4 border-t border-white/10 py-4">
-          <div>
-            <h2 className="text-sm font-medium text-zinc-300">Account</h2>
-            <p className="mt-1 text-xs text-zinc-500">Your library stays saved.</p>
-          </div>
-          <button
-            onClick={() => {
-              void signOut().then(() => {
-                router.push("/");
-                router.refresh();
-              });
-            }}
-            className="shrink-0 inline-flex items-center justify-center gap-2 rounded-md px-3 py-2 text-sm font-medium text-zinc-400 transition-colors hover:bg-red-500/10 hover:text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-          >
-            <SignOutIcon className="h-4 w-4" />
-            Sign out
-          </button>
-        </section>
       </div>
     </main>
   );
@@ -617,6 +693,7 @@ function IntegrationRow({
   href,
   tileClass,
   state,
+  now,
 }: {
   provider: ProviderId;
   name: string;
@@ -624,9 +701,10 @@ function IntegrationRow({
   href: string;
   tileClass: string;
   state: IntegrationState;
+  now: number;
 }) {
   return (
-    <div className="flex items-center justify-between gap-4 py-3">
+    <div className="flex flex-wrap items-center justify-between gap-3 py-4">
       <div className="flex min-w-0 items-center gap-3">
         <span
           className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${tileClass} text-white`}
@@ -638,7 +716,7 @@ function IntegrationRow({
           <p className="truncate text-sm text-zinc-400">{description}</p>
           {state.status === "not_configured" && (
             <p className="mt-0.5 text-xs text-amber-400">
-              Not configured — set env vars to enable.
+              Currently unavailable.
             </p>
           )}
         </div>
@@ -655,10 +733,12 @@ function IntegrationRow({
           {state.syncedAt && (
             <span className="inline-flex items-center gap-1 text-[11px] text-zinc-500">
               <SyncIcon className="h-3 w-3" />
-              Synced {timeAgo(state.syncedAt)}
+              Synced {timeAgo(state.syncedAt, now)}
             </span>
           )}
         </div>
+      ) : state.status === "not_configured" ? (
+        <span className="text-xs text-zinc-500">Unavailable</span>
       ) : (
         <a
           href={href}

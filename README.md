@@ -33,29 +33,9 @@ Discover, read, and track manga, manhwa, manhua, and webtoons — beautifully, o
 
 </div>
 
-## Tech Stack
-
-* [Next.js](https://nextjs.org) (App Router) + React 19 + TypeScript
-* [Tailwind CSS](https://tailwindcss.com) for styling
-* [Supabase](https://supabase.com) for authentication and library storage
-* Live on [Vercel](https://hanamanga.online/)
-
 ## Try it live
 
 Hana is deployed and running at **[hanamanga.online](https://hanamanga.online/)** — no setup required.
-
-## Atsu image proxy
-
-The app uses a Cloudflare Worker to serve cached Atsu page and poster images
-outside Vercel. To update the Worker, authenticate Wrangler and run:
-
-```sh
-npx wrangler deploy --config wrangler.atsu.jsonc
-```
-
-The deployed Worker URL is the app default. Set
-`NEXT_PUBLIC_ATSU_IMAGE_PROXY_URL` only when overriding it. The Vercel
-`/api/atsu-image` route remains as a local or desktop fallback option.
 
 ## Contributing
 
@@ -70,16 +50,3 @@ Hana is a reader app only — it does not host, store, or distribute any manga. 
 ## License
 
 This project is currently **unlicensed / proprietary**. All rights reserved. You may view the source, but reuse, redistribution, or modification is not permitted without explicit permission from the author.
-
-### Loading regression checks
-
-Run `npm test` for the store and reader-provider regressions. Run
-`npm run test:loading-ui` for browser checks of all route skeletons at mobile,
-tablet, and desktop widths, live search, failed covers, pagination, and chapter
-preloading. This starts a temporary Next dev server on port 3107 and removes
-the temporary fixture route afterward. Chrome is required; set `CHROME_PATH`
-if it is not installed at the default macOS location.
-
-If a dev server is already running, use
-`TEST_BASE_URL=http://localhost:3000 npm run test:loading-ui`. Set
-`TEST_SCREENSHOT_DIR=/tmp/hana-loading` to save skeleton screenshots.

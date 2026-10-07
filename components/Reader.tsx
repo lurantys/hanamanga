@@ -1601,164 +1601,167 @@ export function Reader({
           </nav>
         </>
       ) : (
-        <div
-          ref={pagedViewportRef}
-          className={`relative z-0 flex min-h-[calc(100dvh-4rem)] items-center bg-zinc-950 px-0 py-8 sm:px-4 ${
-            pagedZoomed
-              ? "max-h-[calc(100dvh-4rem)] overflow-auto"
-              : "justify-center overflow-hidden"
-          }`}
-          onTouchStart={onTouchStart}
-          onTouchEnd={onTouchEnd}
-          onClick={onViewportClick}
-        >
+        <div className="relative z-0">
           <div
-            key={`${pagedIndex}-${isTwoPage ? "two" : "one"}`}
-            className={`${slideDir === 1 ? "animate-page-next" : slideDir === -1 ? "animate-page-prev" : ""} ${
-              pagedZoomed ? "m-auto shrink-0" : ""
+            ref={pagedViewportRef}
+            className={`relative z-0 flex min-h-[calc(100dvh-4rem)] items-center bg-zinc-950 px-0 py-8 sm:px-4 ${
+              pagedZoomed
+                ? "max-h-[calc(100dvh-4rem)] overflow-auto"
+                : "justify-center overflow-hidden"
             }`}
+            onTouchStart={onTouchStart}
+            onTouchEnd={onTouchEnd}
+            onClick={onViewportClick}
           >
             <div
-              className={
-                zoomedSize
-                  ? "relative shrink-0"
-                  : "flex items-center justify-center"
-              }
-              style={
-                zoomedSize
-                  ? { width: zoomedSize.width, height: zoomedSize.height }
-                  : undefined
-              }
+              key={`${pagedIndex}-${isTwoPage ? "two" : "one"}`}
+              className={`${slideDir === 1 ? "animate-page-next" : slideDir === -1 ? "animate-page-prev" : ""} ${
+                pagedZoomed ? "m-auto shrink-0" : ""
+              }`}
             >
-              {isTwoPage ? (
               <div
-                ref={spreadRef}
-                className={`flex items-center justify-center gap-2 sm:gap-3 ${
-                  settings.direction === "rtl" ? "flex-row-reverse" : ""
-                } ${zoomedSize ? "absolute left-1/2 top-1/2" : ""}`}
-                style={{
-                  transform: zoomedSize
-                    ? `translate(-50%, -50%) scale(${displayZoom})`
-                    : `scale(${displayZoom})`,
-                  transformOrigin: "center",
-                  filter: imageFilterCss,
-                  willChange: "transform",
-                }}
+                className={
+                  zoomedSize
+                    ? "relative shrink-0"
+                    : "flex items-center justify-center"
+                }
+                style={
+                  zoomedSize
+                    ? { width: zoomedSize.width, height: zoomedSize.height }
+                    : undefined
+                }
               >
-                {settings.direction === "rtl" && pages[pagedIndex + 1] && (
+                {isTwoPage ? (
+                <div
+                  ref={spreadRef}
+                  className={`flex items-center justify-center gap-2 sm:gap-3 ${
+                    settings.direction === "rtl" ? "flex-row-reverse" : ""
+                  } ${zoomedSize ? "absolute left-1/2 top-1/2" : ""}`}
+                  style={{
+                    transform: zoomedSize
+                      ? `translate(-50%, -50%) scale(${displayZoom})`
+                      : `scale(${displayZoom})`,
+                    transformOrigin: "center",
+                    filter: imageFilterCss,
+                    willChange: "transform",
+                  }}
+                >
+                  {settings.direction === "rtl" && pages[pagedIndex + 1] && (
+                    <ReaderImage
+                      key={`${pages[pagedIndex + 1]?.id}-right`}
+                      src={pages[pagedIndex + 1]?.image ?? ""}
+                      alt={`${chapterPrefix ? `${chapterPrefix} · ` : ""}Page ${pagedIndex + 2}`}
+                      width={pages[pagedIndex + 1]?.width}
+                      height={pages[pagedIndex + 1]?.height}
+                      loading="eager"
+                      className="rounded-lg object-contain shadow-2xl shadow-zinc-950/60 ring-1 ring-white/5"
+                      style={twoPageFitStyle}
+                    />
+                  )}
                   <ReaderImage
-                    key={`${pages[pagedIndex + 1]?.id}-right`}
-                    src={pages[pagedIndex + 1]?.image ?? ""}
-                    alt={`${chapterPrefix ? `${chapterPrefix} · ` : ""}Page ${pagedIndex + 2}`}
-                    width={pages[pagedIndex + 1]?.width}
-                    height={pages[pagedIndex + 1]?.height}
+                    key={`${pages[pagedIndex]?.id}-left`}
+                    src={pages[pagedIndex]?.image ?? ""}
+                    alt={`${chapterPrefix ? `${chapterPrefix} · ` : ""}Page ${pagedIndex + 1}`}
+                    width={pages[pagedIndex]?.width}
+                    height={pages[pagedIndex]?.height}
                     loading="eager"
                     className="rounded-lg object-contain shadow-2xl shadow-zinc-950/60 ring-1 ring-white/5"
                     style={twoPageFitStyle}
                   />
-                )}
-                <ReaderImage
-                  key={`${pages[pagedIndex]?.id}-left`}
-                  src={pages[pagedIndex]?.image ?? ""}
-                  alt={`${chapterPrefix ? `${chapterPrefix} · ` : ""}Page ${pagedIndex + 1}`}
-                  width={pages[pagedIndex]?.width}
-                  height={pages[pagedIndex]?.height}
-                  loading="eager"
-                  className="rounded-lg object-contain shadow-2xl shadow-zinc-950/60 ring-1 ring-white/5"
-                  style={twoPageFitStyle}
-                />
-                {settings.direction === "ltr" && pages[pagedIndex + 1] && (
+                  {settings.direction === "ltr" && pages[pagedIndex + 1] && (
+                    <ReaderImage
+                      key={`${pages[pagedIndex + 1]?.id}-left`}
+                      src={pages[pagedIndex + 1]?.image ?? ""}
+                      alt={`${chapterPrefix ? `${chapterPrefix} · ` : ""}Page ${pagedIndex + 2}`}
+                      width={pages[pagedIndex + 1]?.width}
+                      height={pages[pagedIndex + 1]?.height}
+                      loading="lazy"
+                      className="rounded-lg object-contain shadow-2xl shadow-zinc-950/60 ring-1 ring-white/5"
+                      style={twoPageFitStyle}
+                    />
+                  )}
+                </div>
+              ) : (
+                <div
+                  ref={spreadRef}
+                  className={zoomedSize ? "absolute left-1/2 top-1/2" : undefined}
+                  style={{
+                    transform: zoomedSize
+                      ? `translate(-50%, -50%) scale(${displayZoom})`
+                      : `scale(${displayZoom})`,
+                    transformOrigin: "center",
+                    filter: imageFilterCss,
+                    willChange: "transform",
+                  }}
+                >
                   <ReaderImage
-                    key={`${pages[pagedIndex + 1]?.id}-left`}
-                    src={pages[pagedIndex + 1]?.image ?? ""}
-                    alt={`${chapterPrefix ? `${chapterPrefix} · ` : ""}Page ${pagedIndex + 2}`}
-                    width={pages[pagedIndex + 1]?.width}
-                    height={pages[pagedIndex + 1]?.height}
-                    loading="lazy"
+                    key={pages[pagedIndex]?.id}
+                    src={pages[pagedIndex]?.image ?? ""}
+                    alt={`${chapterPrefix ? `${chapterPrefix} · ` : ""}Page ${pagedIndex + 1}`}
+                    width={pages[pagedIndex]?.width}
+                    height={pages[pagedIndex]?.height}
+                    loading="eager"
                     className="rounded-lg object-contain shadow-2xl shadow-zinc-950/60 ring-1 ring-white/5"
-                    style={twoPageFitStyle}
+                    style={fitStyle}
                   />
-                )}
-              </div>
-            ) : (
-              <div
-                ref={spreadRef}
-                className={zoomedSize ? "absolute left-1/2 top-1/2" : undefined}
-                style={{
-                  transform: zoomedSize
-                    ? `translate(-50%, -50%) scale(${displayZoom})`
-                    : `scale(${displayZoom})`,
-                  transformOrigin: "center",
-                  filter: imageFilterCss,
-                  willChange: "transform",
-                }}
-              >
-                <ReaderImage
-                  key={pages[pagedIndex]?.id}
-                  src={pages[pagedIndex]?.image ?? ""}
-                  alt={`${chapterPrefix ? `${chapterPrefix} · ` : ""}Page ${pagedIndex + 1}`}
-                  width={pages[pagedIndex]?.width}
-                  height={pages[pagedIndex]?.height}
-                  loading="eager"
-                  className="rounded-lg object-contain shadow-2xl shadow-zinc-950/60 ring-1 ring-white/5"
-                  style={fitStyle}
-                />
-              </div>
-            )}
-          </div>
-          </div>
+                </div>
+              )}
+            </div>
+            </div>
 
-          {isTwoPage ? (
+            {isTwoPage ? (
+                <>
+                  {pages[pagedIndex + 2] && (
+                    <link
+                      rel="preload"
+                      as="image"
+                      href={pages[pagedIndex + 2].image}
+                    />
+                  )}
+                  {pages[pagedIndex + 3] && (
+                    <link
+                      rel="preload"
+                      as="image"
+                      href={pages[pagedIndex + 3].image}
+                    />
+                  )}
+                </>
+              ) : (
+                pages.slice(pagedIndex + 1, pagedIndex + 5).map((page) => (
+                  <link
+                    key={page.id}
+                    rel="preload"
+                    as="image"
+                    href={page.image}
+                  />
+                ))
+              )}
+
+            {settings.tapZones && (
               <>
-                {pages[pagedIndex + 2] && (
-                  <link
-                    rel="preload"
-                    as="image"
-                    href={pages[pagedIndex + 2].image}
-                  />
-                )}
-                {pages[pagedIndex + 3] && (
-                  <link
-                    rel="preload"
-                    as="image"
-                    href={pages[pagedIndex + 3].image}
-                  />
-                )}
-              </>
-            ) : (
-              pages.slice(pagedIndex + 1, pagedIndex + 5).map((page) => (
-                <link
-                  key={page.id}
-                  rel="preload"
-                  as="image"
-                  href={page.image}
+                <button
+                  type="button"
+                  onClick={zonePrev}
+                  aria-label="Previous page"
+                  title="Previous page"
+                  tabIndex={-1}
+                  className="absolute inset-y-0 left-0 z-10 w-1/3"
                 />
-              ))
+                <button
+                  type="button"
+                  onClick={zoneNext}
+                  aria-label="Next page"
+                  title="Next page"
+                  tabIndex={-1}
+                  className="absolute inset-y-0 right-0 z-10 w-1/3"
+                />
+              </>
             )}
 
-          {settings.tapZones && (
-            <>
-              <button
-                type="button"
-                onClick={zonePrev}
-                aria-label="Previous page"
-                title="Previous page"
-                tabIndex={-1}
-                className="absolute inset-y-0 left-0 z-10 w-1/3"
-              />
-              <button
-                type="button"
-                onClick={zoneNext}
-                aria-label="Next page"
-                title="Next page"
-                tabIndex={-1}
-                className="absolute inset-y-0 right-0 z-10 w-1/3"
-              />
-            </>
-          )}
-
+          </div>
+          {/* Keep the indicator outside the scrollable zoom viewport. */}
           <div className="pointer-events-none absolute bottom-4 left-1/2 z-10 -translate-x-1/2">
-            <span className="rounded-full border border-white/10 bg-zinc-950/70 px-3 py-1 text-xs font-semibold text-zinc-300 backdrop-blur-xl">
+            <span className="whitespace-nowrap rounded-full border border-white/10 bg-zinc-950/70 px-3 py-1 text-xs font-semibold text-zinc-300 backdrop-blur-xl">
               {isTwoPage
                 ? `${pagedIndex + 1}–${Math.min(pagedIndex + 2, pages.length)} / ${pages.length}`
                 : `${pagedIndex + 1} / ${pages.length}`}

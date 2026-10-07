@@ -339,8 +339,8 @@ export default function AccountContent() {
   return (
     <main className="min-h-screen bg-[#09090b] pb-24">
       <div className="mx-auto max-w-5xl px-4 pt-header sm:px-6 lg:px-8">
-        <header className="grid items-center gap-7 border-b border-white/10 pb-7 sm:gap-8 sm:pb-8 lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:gap-12">
-          <div className="flex items-center gap-5 sm:gap-6">
+        <header className="grid items-start gap-7 border-b border-white/10 pb-7 sm:gap-8 sm:pb-8 lg:grid-cols-2 lg:gap-5">
+          <div className="flex min-w-0 items-center gap-5 sm:gap-6">
             <span className="flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-zinc-900 text-base font-bold text-zinc-200 sm:h-24 sm:w-24">
               {avatar?.url ? (
                 <Image

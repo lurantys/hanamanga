@@ -156,7 +156,7 @@ function Segmented<T extends string>({
   onChange,
 }: {
   value: T;
-  options: { value: T; label: string }[];
+  options: { value: T; label: string; disabled?: boolean }[];
   onChange: (value: T) => void;
 }) {
   return (
@@ -165,9 +165,10 @@ function Segmented<T extends string>({
         <button
           key={option.value}
           type="button"
+          disabled={option.disabled}
           onClick={() => onChange(option.value)}
           aria-pressed={value === option.value}
-          className={`flex-1 rounded-full px-4 py-1.5 text-sm font-medium transition duration-200 active:scale-[0.97] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 ${
+          className={`flex-1 rounded-full px-4 py-1.5 text-sm font-medium transition duration-200 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/70 ${
             value === option.value
               ? "bg-zinc-100 text-zinc-950"
               : "text-zinc-300 hover:bg-zinc-800 hover:text-white"
@@ -956,6 +957,7 @@ export function Reader({
 
   const switchMode = useCallback(
     (target: ReaderMode) => {
+      if (target === "twopage" && isMobile) return;
       // Read the latest mode from the store to avoid stale closure when
       // the user taps modes rapidly before React has re-rendered.
       const currentMode = getReaderSettings().mode;
@@ -974,7 +976,7 @@ export function Reader({
       }
       updateSettings({ mode: target });
     },
-    [updateSettings],
+    [isMobile, updateSettings],
   );
 
   const toggleUi = useCallback(() => setUiHidden((value) => !value), []);
@@ -1861,7 +1863,7 @@ export function Reader({
                   options={[
                     { value: "webtoon" as const, label: "Webtoon" },
                     { value: "paged" as const, label: "Paged" },
-                    { value: "twopage" as const, label: isMobile ? "2-Page (Desktop)" : "2-Page" },
+                    { value: "twopage" as const, label: isMobile ? "2-Page (Desktop)" : "2-Page", disabled: isMobile },
                   ]}
                 />
                 {mode === "twopage" && (

@@ -19,8 +19,10 @@ function load(file, mocks = {}) {
 }
 
 let authCalls = 0;
+const accountStatus = load('lib/account-status.ts');
 const { proxy, config } = load('proxy.ts', {
   '@/lib/bots': load('lib/bots.ts'),
+  '@/lib/account-status': accountStatus,
   '@supabase/ssr': { createServerClient: () => {
     authCalls++;
     return { auth: { getUser: async () => ({ data: { user: null } }) } };
@@ -45,8 +47,13 @@ const readerMatcher = new RegExp(`^(?:${config.matcher[1].has[0].value})$`);
     assert.equal(response.headers.get('location'), null);
   }
   assert.equal(authCalls, 0, 'reader requests must never call Supabase auth');
+  accountStatus.ACCOUNT_MAINTENANCE = true;
+  const maintenance = await proxy(new NextRequest('https://hana.example/account'));
+  assert.equal(authCalls, 0, 'account maintenance must bypass Supabase auth');
+  assert.equal(maintenance.headers.get('location'), null, 'maintenance page must be reachable directly');
+  accountStatus.ACCOUNT_MAINTENANCE = false;
   const account = await proxy(new NextRequest('https://hana.example/account'));
   assert.equal(authCalls, 1);
   assert.equal(account.headers.get('location'), 'https://hana.example/login?next=%2Faccount');
-  console.log('Usage routing checks passed: crawler redirects, human bypass, account auth');
+  console.log('Usage routing checks passed: crawler redirects, human bypass, account maintenance and active auth');
 })().catch((error) => { console.error(error); process.exitCode = 1; });

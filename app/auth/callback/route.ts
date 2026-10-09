@@ -1,8 +1,12 @@
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { SITE_URL } from "@/lib/site";
+import { ACCOUNT_MAINTENANCE } from "@/lib/account-status";
 
 export async function GET(request: Request) {
+  if (ACCOUNT_MAINTENANCE) {
+    return NextResponse.redirect(`${SITE_URL}/login`);
+  }
   const { searchParams } = new URL(request.url);
   const code = searchParams.get("code");
 

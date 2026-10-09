@@ -1,4 +1,5 @@
 import { createClient } from "./supabase/client";
+import { ACCOUNT_MAINTENANCE } from "./account-status";
 import {
   getLibrarySnapshot,
   replaceLibrary,
@@ -819,6 +820,7 @@ export function getCurrentUserId(): string | null {
 }
 
 export async function refreshSession(): Promise<string | null> {
+  if (ACCOUNT_MAINTENANCE) return null;
   const supabase = createClient();
   const {
     data: { session },

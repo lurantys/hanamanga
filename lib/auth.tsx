@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
+import { ACCOUNT_MAINTENANCE, ACCOUNT_UNAVAILABLE_MESSAGE } from "@/lib/account-status";
 import type { Session, User, AuthChangeEvent } from "@supabase/supabase-js";
 import {
   getCurrentUserId,
@@ -65,6 +66,28 @@ type AuthContextValue = {
 const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
+  if (ACCOUNT_MAINTENANCE) {
+    const unavailable = async () => ({ error: ACCOUNT_UNAVAILABLE_MESSAGE });
+    return (
+      <AuthContext.Provider value={{
+        session: null,
+        user: null,
+        loading: false,
+        dataReady: true,
+        signIn: unavailable,
+        signUp: unavailable,
+        signInWithGoogle: unavailable,
+        updateDisplayName: unavailable,
+        signOut: async () => {},
+      }}>
+        {children}
+      </AuthContext.Provider>
+    );
+  }
+  return <ActiveAuthProvider>{children}</ActiveAuthProvider>;
+}
+
+function ActiveAuthProvider({ children }: { children: React.ReactNode }) {
   const supabase = createClient();
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);

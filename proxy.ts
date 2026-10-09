@@ -1,6 +1,7 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { isBotUserAgent } from "@/lib/bots";
+import { ACCOUNT_MAINTENANCE } from "@/lib/account-status";
 
 /** Auth refresh for account pages; crawler redirects before reader work. */
 export async function proxy(request: NextRequest) {
@@ -20,6 +21,7 @@ export async function proxy(request: NextRequest) {
   }
 
   const response = NextResponse.next({ request });
+  if (ACCOUNT_MAINTENANCE) return response;
 
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,

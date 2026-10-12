@@ -8,10 +8,7 @@
     "start": "next start",
     "lint": "eslint",
     "test": "node tests/home-state.cjs && node tests/reader-loading.cjs && node tests/usage-routing.cjs",
-    "test:loading-ui": "node tests/loading-ui.cjs",
-    "desktop:dev": "tauri dev",
-    "desktop:build": "tauri build",
-    "desktop:prepare": "node scripts/desktop-prepare.mjs"
+    "test:loading-ui": "node tests/loading-ui.cjs"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",
@@ -24,7 +21,6 @@
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
-    "@tauri-apps/cli": "^2.11.4",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",

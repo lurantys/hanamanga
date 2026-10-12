@@ -352,7 +352,7 @@ export async function fetchAtsuChapter(
 }
 
 // Serve Atsu bytes through a cached Worker outside Vercel by default. The
-// environment override can select the same-origin route for local/desktop use.
+// environment override can select the same-origin route for local use.
 const ATSU_IMAGE_PROXY =
   process.env.NEXT_PUBLIC_ATSU_IMAGE_PROXY_URL?.replace(/\/+$/, "") ||
   "https://hana-atsu-image-proxy.a-nhaila.workers.dev";

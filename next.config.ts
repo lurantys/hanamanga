@@ -1,9 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  ...(process.env.DESKTOP_STANDALONE === "1"
-    ? { output: "standalone" as const }
-    : {}),
   images: {
     // Vercel Image Optimization is unavailable on the current deployment plan.
     // Serve approved remote images directly so uncached media still renders.
